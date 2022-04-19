@@ -1,6 +1,5 @@
 from django.db import models
 from utils.models import BaseModel
-from utils.enums import TransactionType
 from accounts.models import User
 from django.utils import timezone
 
@@ -15,6 +14,7 @@ class Trade(BaseModel):
     first_release = models.BooleanField(blank=True, default=False, verbose_name='是否首发')
 
     class Meta:
+        ordering = ['id', 'user', 'issue']
         verbose_name = '书籍转卖'
         verbose_name_plural = verbose_name
 
@@ -32,5 +32,6 @@ class Transaction(BaseModel):
     hash = models.CharField(max_length=150, verbose_name='交易哈希值', unique=True, db_index=True)
 
     class Meta:
+        ordering = ['id', 'trade']
         verbose_name = '交易记录'
         verbose_name_plural = verbose_name

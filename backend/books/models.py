@@ -71,6 +71,7 @@ class Contract(BaseModel):
     token = models.CharField(max_length=150, blank=True, default='USDT', verbose_name='代币')
 
     class Meta:
+        ordering = ['id', 'issue']
         verbose_name = '书籍合约'
         verbose_name_plural = verbose_name
 
@@ -83,6 +84,7 @@ class Bookmark(BaseModel):
     current_page = models.IntegerField(blank=True, default=0, verbose_name='当前阅读页码')
 
     class Meta:
+        ordering = ['id', 'user', 'issue']
         verbose_name = '书签'
         verbose_name_plural = verbose_name
 
@@ -94,6 +96,7 @@ class Banner(BaseModel):
     redirect_url = models.URLField(blank=True, default=None)
 
     class Meta:
+        ordering = ['id', 'name']
         verbose_name = 'banner'
         verbose_name_plural = verbose_name
 
@@ -126,6 +129,7 @@ class Asset(BaseModel):
     file = models.FileField(upload_to='tmp', blank=True, default='')
 
     class Meta:
+        ordering = ['id', 'user', 'issue']
         verbose_name = '个人资产'
         verbose_name_plural = verbose_name
 
