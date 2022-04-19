@@ -1,0 +1,5 @@
+*/*.log
+media/
+static/
+pdf/
+*/migrations/000*.py

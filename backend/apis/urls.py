@@ -1,0 +1,43 @@
+"""erp URL Configuration
+The `urlpatterns` list routes URLs to views. For more information please see:
+    https://docs.djangoproject.com/en/3.0/topics/http/urls/
+Examples:
+Function views
+    1. Add an import:  from my_app import views
+    2. Add a URL to urlpatterns:  path('', views.home, name='home')
+Class-based views
+    1. Add an import:  from other_app.views import Home
+    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
+Including another URLconf
+    1. Import the include() function: from django.urls import include, path
+    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
+"""
+from django.conf.urls import url, include
+from rest_framework.routers import DefaultRouter
+
+
+import books.apis
+import stores.apis
+import accounts.apis
+
+
+router = DefaultRouter(trailing_slash=False)
+router.register(r"categories", books.apis.CategoryViewSet, basename="category")
+router.register(r"issues", books.apis.IssueViewSet, basename="issue")
+router.register(r"bookmarks", books.apis.BookmarkViewSet, basename="bookmark")
+router.register(r"banners", books.apis.BannerViewSet, basename="banner")
+# router.register(r"previews", books.apis.PreviewViewSet, basename="preview")
+router.register(r"assets", books.apis.AssetViewSet, basename="asset")
+router.register(r"contracts", books.apis.ContractViewSet, basename="contract")
+# router.register(r"fragments", books.apis.FragmentViewSet, basename="fragment")
+
+router.register(r"trades", stores.apis.TradeViewSet, basename="trade")
+router.register(r"transactions", stores.apis.TransactionViewSet, basename="transaction")
+
+
+urlpatterns = [
+    url(r'^', include(router.urls)),
+    url(r'login', accounts.apis.LoginAPIView.as_view(), name='login'),
+    url(r'logout', accounts.apis.LogoutAPIView.as_view(), name='logout'),
+    url(r'nonce', accounts.apis.NonceAPIView.as_view(), name='nonce')
+]
