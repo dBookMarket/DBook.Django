@@ -30,3 +30,61 @@ headers: {
   "authorization": "Bearer {token}"
 }
 ```
+# API
+## Mobile Client
+```html
+1, login
+http://localhost/api/v1/login
+method: post
+2, 获取登录随机数
+http://localhost/api/v1/nonce
+method: post
+3, logout
+http://localhost/api/v1/logout
+method: post
+3, 个人资产
+http://localhost/api/v1/assets
+methods: get
+4, 书签
+http://localhost/api/v1/bookmarks
+methods: patch
+5, 阅读书籍
+http://localhost/api/v1/assets/{id}/read
+methods: get
+```
+## Web Client
+```html
+1, login
+http://localhost/api/v1/login
+method: post
+2, 获取登录随机数
+http://localhost/api/v1/nonce
+method: post
+3, logout
+http://localhost/api/v1/logout
+method: post
+3, 个人资产
+http://localhost/api/v1/assets
+methods: get
+4, 书签
+http://localhost/api/v1/bookmarks
+methods: patch
+5, 书籍
+http://localhost/api/v1/issues
+methods: post, patch, get
+6, banner
+http://localhost/api/v1/banners
+methods: post, patch, get, delete
+7, 挂单
+http://localhost/api/v1/trades
+methods: post, patch, get, delete
+8, 购买
+http://localhost/api/v1/transactions
+methods: post, get
+9, 合约
+http://localhost/api/v1/contracts
+methods: post, patch, get, delete
+10, 书籍分类
+http://localhost/api/v1/categories
+methods: post, patch, get, delete
+```
