@@ -12,12 +12,12 @@ online book store based-on block-chain
 ```
 ## 0x3, 启动server
 ```shell
-cd backend //进入项目根目录
+//进入项目根目录
 docker-compose up --build
 ```
 ## 0x4, 关闭server
 ```shell
-cd backend //进入项目根目录
+//进入项目根目录
 docker-compose down
 ```
 ## 0x5, 访问api doc
