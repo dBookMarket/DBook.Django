@@ -76,7 +76,7 @@ class NFTStorageHandler:
                 raise e
 
     @staticmethod
-    def get_token_url(cid: str):
+    def get_nft_url(cid: str):
         """
         the url of token level, which means a token is a file
         :param cid: str
@@ -92,8 +92,8 @@ class NFTStorageHandler:
         :param file_name: str
         :return:
         """
-        token_url = cls.get_token_url(cid)
-        return f'{token_url}/{file_name}'
+        nft_url = cls.get_nft_url(cid)
+        return f'{nft_url}/{file_name}'
 
     def retrieve(self, cid: str):
         try:

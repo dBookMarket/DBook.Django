@@ -68,7 +68,7 @@ class AssetViewSet(BaseViewSet):
         instance = self.get_object()
         if not instance.file:
             # get zip file from nft.storage
-            file = PDFHandler().get_pdf(instance.issue.token_url, instance.issue.token)
+            file = PDFHandler().get_pdf(instance.issue.nft_url, instance.issue.cid)
             instance.file = file
             instance.save()
         return Response({'file': request.build_absolute_uri(instance.file.url)})
@@ -78,8 +78,3 @@ class ContractViewSet(BaseViewSet):
     permission_classes = [IsPublisher]
     queryset = models.Contract.objects.all()
     serializer_class = serializers.ContractSerializer
-
-
-# class FragmentViewSet(BaseViewSet):
-#     queryset = models.Fragment.objects.all()
-#     serializer_class = serializers.FragmentSerializer

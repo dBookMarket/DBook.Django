@@ -84,8 +84,8 @@ class IssueSerializer(BaseSerializer):
     price = serializers.FloatField()
     ratio = serializers.FloatField(required=False)
 
-    token = serializers.ReadOnlyField()
-    token_url = serializers.ReadOnlyField()
+    cid = serializers.ReadOnlyField()
+    nft_url = serializers.ReadOnlyField()
 
     contract = ContractSerializer(read_only=True, many=False)
     preview = PreviewSerializer(read_only=True, many=False)
@@ -116,9 +116,9 @@ class IssueBuildSerializer(IssueSerializer):
         upload_file = attrs.get('file')
         if upload_file.content_type != 'application/pdf':
             raise serializers.ValidationError({'file': 'This field must be pdf file'})
-        # # check file size
-        # if upload_file.size > 5 * 1024 * 1024:  # 5Mb
-        #     raise ValidationError({'file': 'The file size must be no more than 5Mb'})
+        # check file size
+        if upload_file.size > 60 * 1024 * 1024:  # 60Mb
+            raise serializers.ValidationError({'file': 'The file size must be no more than 60Mb'})
         return attrs
 
     @transaction.atomic
@@ -129,26 +129,23 @@ class IssueBuildSerializer(IssueSerializer):
         file = BytesIO(file.read())
         pdf_handler = PDFHandler(file)
         n_pages = pdf_handler.get_pages()
-        nft_token = pdf_handler.save_img()
-        token_url = NFTStorageHandler.get_token_url(nft_token)
-        obj_issue = self.Meta.model.objects.create(**validated_data, n_pages=n_pages, token=nft_token,
-                                                   token_url=token_url)
+        cid = pdf_handler.save_img()
+        nft_url = NFTStorageHandler.get_nft_url(cid)
+        obj_issue = self.Meta.model.objects.create(**validated_data, n_pages=n_pages, cid=cid, nft_url=nft_url)
         # 1, update publisher
         obj_issue.publisher.name = publisher_name
         obj_issue.publisher.desc = publisher_desc
         obj_issue.publisher.save()
         # 2, save preview
-        # todo how to store previews?
-        # current solution
         obj_preview = models.Preview.objects.create(issue=obj_issue)
         file = pdf_handler.get_preview_doc(from_page=obj_preview.start_page - 1,
                                            to_page=obj_preview.start_page + obj_preview.n_pages - 2)
         obj_preview.file = file
         obj_preview.save()
-        # 4, save trade
+        # 3, save trade
         Trade.objects.create(issue=obj_issue, price=obj_issue.price, amount=obj_issue.amount,
                              user=obj_issue.publisher, first_release=True)
-        # 5, asset
+        # 4, asset
         models.Asset.objects.create(user=obj_issue.publisher, issue_id=obj_issue.id, amount=obj_issue.amount)
         return obj_issue
 

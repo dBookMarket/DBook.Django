@@ -31,7 +31,7 @@ class Issue(BaseModel):
     author_name = models.CharField(max_length=150, verbose_name='作者名称')
     author_desc = models.TextField(max_length=1500, verbose_name='作者描述')
 
-    cover = models.ImageField(blank=True, default=None, verbose_name='书籍封面')
+    cover = models.ImageField(blank=True, default=None, verbose_name='书籍封面', upload_to='covers')
     name = models.CharField(max_length=150, verbose_name='书籍名称')
     desc = models.TextField(max_length=1500, verbose_name='书籍描述')
     n_pages = models.IntegerField(blank=True, default=0, verbose_name='书籍总页数')
@@ -41,9 +41,9 @@ class Issue(BaseModel):
     price = models.FloatField(blank=True, default=0, verbose_name='发行价格')
     ratio = models.FloatField(blank=True, default=0.2, verbose_name='版税比例')
 
-    # NFTStorage token
-    token = models.CharField(max_length=150, unique=True, db_index=True, verbose_name='NFT asset token')
-    token_url = models.URLField(blank=True, verbose_name='NFT token url')
+    # NFTStorage id
+    cid = models.CharField(max_length=150, unique=True, db_index=True, verbose_name='NFT asset id')
+    nft_url = models.URLField(blank=True, verbose_name='NFT asset url')
 
     class Meta:
         ordering = ['id', 'name', 'category']
@@ -88,7 +88,7 @@ class Bookmark(BaseModel):
 
 
 class Banner(BaseModel):
-    img = models.ImageField(blank=True, default=None, verbose_name='宣传图')
+    img = models.ImageField(blank=True, default=None, verbose_name='宣传图', upload_to='images')
     name = models.CharField(max_length=150, verbose_name='宣传标语')
     desc = models.TextField(max_length=1500, verbose_name='宣传内容')
     redirect_url = models.URLField(blank=True, default=None)
@@ -134,20 +134,7 @@ class Asset(BaseModel):
         instance, _ = Bookmark.objects.get_or_create(user=self.user, issue=self.issue, defaults={'current_page': 0})
         return model_to_dict(instance, fields=['id', 'issue', 'current_page'])
 
-# class Fragment(BaseModel):
-#     issue = models.ForeignKey(to='Issue', to_field='id', related_name='fragment_issue', on_delete=models.CASCADE,
-#                               verbose_name='书籍发行')
-#     file_url = models.URLField(blank=False, verbose_name='书籍链接')
-#     page = models.IntegerField(blank=False, verbose_name='页码')
-#     # if the files are same, their tokens will be also same in NFTStorage
-#     token = models.CharField(max_length=150, verbose_name='NFT asset token')
-#     is_preview = models.BooleanField(blank=True, default=False, verbose_name='是否可预览')
-#
-#     class Meta:
-#         verbose_name = '书籍链接'
-#         verbose_name_plural = verbose_name
-
-# def delete(self, using=None, keep_parents=False):
-#     if self.token:
-#         NFTStorageHandler().delete(self.token)
-#     super().delete(using, keep_parents)
+    def delete(self, using=None, keep_parents=False):
+        if self.file:
+            self.file.delete()
+        super().delete(using, keep_parents)
