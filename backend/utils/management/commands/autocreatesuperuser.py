@@ -15,10 +15,14 @@ class Command(BaseCommand):
         password = options.get('password')
         email = options.get('email', '')
 
+        # unique key
+        account_addr = options.get('account_addr', 'admin')
+
         if username and password:
             try:
                 User.objects.get(username=username)
             except User.DoesNotExist:
-                User.objects.create_superuser(username=username, password=password, email=email)
+                User.objects.create_superuser(username=username, password=password, email=email,
+                                              account_addr=account_addr)
         else:
             raise ValueError('Please give the username and password,')
