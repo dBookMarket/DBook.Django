@@ -13,6 +13,7 @@ class CategoryViewSet(BaseViewSet):
     permission_classes = [IsAdminUserOrReadOnly]
     queryset = models.Category.objects.all()
     serializer_class = serializers.CategorySerializer
+    filterset_class = filters.CategoryFilter
 
 
 class IssueViewSet(BaseViewSet):
@@ -47,6 +48,7 @@ class BannerViewSet(BaseViewSet):
     permission_classes = [IsAdminUserOrReadOnly]
     queryset = models.Banner.objects.all()
     serializer_class = serializers.BannerSerializer
+    filterset_class = filters.BannerFilter
 
 
 class PreviewViewSet(BaseViewSet):
