@@ -2,6 +2,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from utils.enums import UserType
 from .models import User
+from django.contrib.auth.models import Permission
 
 
 class UserListingSerializer(serializers.ModelSerializer):
@@ -30,3 +31,14 @@ class UserLoginSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['account_addr', 'nonce', 'signature']
+
+
+class UserSerializer(serializers.ModelSerializer):
+    has_perm = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ['id', 'account_addr', 'wallet_addr', 'name', 'desc']
+
+    def get_has_perm(self, obj):
+        return obj.has_perm('books.add_issue')

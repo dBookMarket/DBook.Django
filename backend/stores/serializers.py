@@ -37,7 +37,10 @@ class TradeSerializer(BaseSerializer):
         return attrs
 
     def create(self, validated_data):
-        return self.Meta.model.objects.create(**validated_data)
+        obj = self.Meta.model.objects.create(**validated_data)
+        # assign perms
+        self.assign_perms(obj.user, obj)
+        return obj
 
 
 class TransactionSerializer(BaseSerializer):

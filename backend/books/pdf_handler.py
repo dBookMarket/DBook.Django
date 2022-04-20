@@ -99,10 +99,14 @@ class PDFHandler(FileHandler):
                 os.makedirs(img_dir_path)
 
             matrix = fitz.Matrix(zoom['x'], zoom['y']).prerotate(0)
+            n_digits = len(str(self.get_pages()))
             for i, page in enumerate(self.pdf):
                 # todo if the page already is an image?
                 pixmap = page.get_pixmap(matrix=matrix, alpha=False)
-                img_path = os.path.join(img_dir_path, f'page-{i + 1}.jpg')
+                # todo 需要使用多位数做页码，不然后期排序会出现问题
+                current_page = str(i + 1)
+                p_num = '0' * (n_digits - len(current_page)) + current_page
+                img_path = os.path.join(img_dir_path, f'page-{p_num}.jpg')
                 pixmap.pil_save(img_path, optimize=True)
                 # TODO 对图片进行加密
                 # 存储到filestorage
@@ -182,10 +186,13 @@ class PDFHandler(FileHandler):
         if not os.path.isdir(path):
             raise ValueError('The value of path must be a directory path')
         try:
+            n_digits = len(str(len(urls)))
             for idx, url in enumerate(urls):
                 # InsecureRequestWarning: Unverified HTTPS request is being made to host
                 res = requests.get(url, stream=True)
-                with open(os.path.join(path, f'page-{idx+1}.jpg'), 'wb+') as f:
+                current_page = str(idx + 1)
+                p_num = '0' * (n_digits - len(current_page)) + current_page
+                with open(os.path.join(path, f'page-{p_num}.jpg'), 'wb+') as f:
                     for chunk in res.iter_content(chunk_size=chunk_size):
                         f.write(chunk)
                 res.close()
@@ -259,11 +266,15 @@ class PDFHandler(FileHandler):
     #         pdf_doc.close()
     #     return pdf_file
 
-    def get_pdf(self, token_url: str, cid: str) -> str:
+    def get_img_urls(self, token_url: str, cid: str) -> list:
         # 1, get files according to cid
         data = NFTStorageHandler().retrieve(cid)
         # sort urls to ordering pages
         urls = sorted([os.path.join(token_url, file['name']) for file in data['files']])
+        return urls
+
+    def get_pdf(self, token_url: str, cid: str) -> str:
+        urls = self.get_img_urls(token_url, cid)
         # 2, download file by url
         img_dir = self.download_images(urls)
         # convert images to pdf
@@ -298,7 +309,6 @@ class PDFHandler(FileHandler):
         finally:
             preview_doc.close()
         return f'{settings.PREVIEW_DIR}/{file_name}'
-
 
 # if __name__ == '__main__':
 # #     # pdf_file = '../pdf/test.pdf'

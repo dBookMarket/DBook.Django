@@ -10,7 +10,7 @@ from .pdf_handler import PDFHandler
 from django.db import transaction
 from stores.models import Trade
 from .nft_storage_handler import NFTStorageHandler
-from django.core.files.base import File
+from guardian.shortcuts import assign_perm
 
 
 class CategorySerializer(BaseSerializer):
@@ -132,6 +132,10 @@ class IssueBuildSerializer(IssueSerializer):
         cid = pdf_handler.save_img()
         nft_url = NFTStorageHandler.get_nft_url(cid)
         obj_issue = self.Meta.model.objects.create(**validated_data, n_pages=n_pages, cid=cid, nft_url=nft_url)
+        # add perm
+        # assign_perm('change_issue', obj_issue.publiser, obj_issue)
+        # assign_perm('delete_issue', obj_issue.publiser, obj_issue)
+        self.assign_perms(obj_issue.publisher, obj_issue)
         # 1, update publisher
         obj_issue.publisher.name = publisher_name
         obj_issue.publisher.desc = publisher_desc

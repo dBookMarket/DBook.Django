@@ -38,7 +38,8 @@ THIRD_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'django_filters',
-    'rest_swagger'
+    'rest_swagger',
+    'guardian'
 ]
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -151,6 +152,11 @@ AUTH_USER_MODEL = 'accounts.User'
 ATOMIC_REQUESTS = True
 
 APPEND_SLASH = False
+
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',  # this is default
+    'guardian.backends.ObjectPermissionBackend',
+)
 
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema',

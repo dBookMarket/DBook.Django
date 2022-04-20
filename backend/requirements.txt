@@ -15,3 +15,4 @@ rest-swagger==1.0.0
 web3==5.28.0
 PyMuPDF==1.19.6
 requests-toolbelt==0.9.1
+django-guardian==2.4.0

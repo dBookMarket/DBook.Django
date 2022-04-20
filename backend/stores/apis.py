@@ -1,8 +1,10 @@
 from rest_framework import viewsets
 from . import models, serializers
+from authorities.permissions import ObjectPermissionsOrReadOnly
 
 
 class TradeViewSet(viewsets.ModelViewSet):
+    permission_classes = [ObjectPermissionsOrReadOnly]
     queryset = models.Trade.objects.all()
     serializer_class = serializers.TradeSerializer
 

@@ -1,4 +1,3 @@
-from rest_framework.reverse import reverse
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -7,17 +6,17 @@ from utils.views import BaseViewSet
 from . import models, serializers, filters
 from .pdf_handler import PDFHandler
 
-from authorities.permissions import IsOwner, IsPublisher
+from authorities.permissions import IsOwner, IsPublisher, ObjectPermissionsOrReadOnly, IsAdminUserOrReadOnly
 
 
 class CategoryViewSet(BaseViewSet):
+    permission_classes = [IsAdminUserOrReadOnly]
     queryset = models.Category.objects.all()
     serializer_class = serializers.CategorySerializer
 
-    http_method_names = ['get']
-
 
 class IssueViewSet(BaseViewSet):
+    permission_classes = [ObjectPermissionsOrReadOnly]
     queryset = models.Issue.objects.all()
     serializer_class = serializers.IssueSerializer
     search_fields = ['name', 'author_name', 'publisher__name', 'publisher__account_addr', 'desc']
@@ -45,10 +44,9 @@ class BookmarkViewSet(BaseViewSet):
 
 
 class BannerViewSet(BaseViewSet):
+    permission_classes = [IsAdminUserOrReadOnly]
     queryset = models.Banner.objects.all()
     serializer_class = serializers.BannerSerializer
-
-    http_method_names = ['get']
 
 
 class PreviewViewSet(BaseViewSet):
@@ -66,12 +64,14 @@ class AssetViewSet(BaseViewSet):
     @action(methods=['GET'], detail=True, url_path='read')
     def read(self, request, *args, **kwargs):
         instance = self.get_object()
-        if not instance.file:
-            # get zip file from nft.storage
-            file = PDFHandler().get_pdf(instance.issue.nft_url, instance.issue.cid)
-            instance.file = file
-            instance.save()
-        return Response({'file': request.build_absolute_uri(instance.file.url)})
+        # if not instance.file:
+        #     # get zip file from nft.storage
+        #     file = PDFHandler().get_pdf(instance.issue.nft_url, instance.issue.cid)
+        #     instance.file = file
+        #     instance.save()
+        # return Response({'file': request.build_absolute_uri(instance.file.url)})
+        urls = PDFHandler().get_img_urls(instance.issue.nft_url, instance.issue.cid)
+        return Response({'files': urls})
 
 
 class ContractViewSet(BaseViewSet):

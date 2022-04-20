@@ -1,5 +1,5 @@
 from rest_framework.authtoken.views import APIView
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework.response import Response
 from rest_framework.validators import ValidationError
 from rest_framework.authtoken.models import Token
@@ -7,8 +7,12 @@ from django.contrib import auth
 from rest_framework.permissions import IsAuthenticated
 from django.core.exceptions import ObjectDoesNotExist
 from accounts.models import User
+from accounts.serializers import UserSerializer
 from web3 import Web3
 from utils.helper import Helper
+from rest_framework.permissions import IsAdminUser
+from rest_framework.decorators import action
+from django.contrib.auth.models import Permission
 
 
 class NonceAPIView(APIView):
@@ -72,3 +76,25 @@ class LogoutAPIView(APIView):
         # logout for django backend
         auth.logout(request)
         return Response({"detail": "Logout success."}, status=status.HTTP_200_OK)
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAdminUser]
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+    @action(methods=['POST'], detail=True, url_path='issue-perm')
+    def assign_issue_perm(self, request, *args, **kwargs):
+        user = self.get_object()
+        issue_perm = Permission.objects.get(codename='books.add_issue')
+        user.user_permissions.add(issue_perm)
+        serializer = self.get_serializer(user, many=False)
+        return Response(serializer.data)
+
+    @action(methods=['DELETE'], detail=True, url_path='issue-perm')
+    def delete_issue_perm(self, request, *args, **kwargs):
+        user = self.get_object()
+        issue_perm = Permission.objects.get(codename='books.add_issue')
+        user.user_permissions.remove(issue_perm)
+        serializer = self.get_serializer(user, many=False)
+        return Response(serializer.data)
