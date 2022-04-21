@@ -38,7 +38,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'account_addr', 'wallet_addr', 'name', 'desc']
+        fields = ['id', 'account_addr', 'wallet_addr', 'name', 'desc', 'has_perm']
 
     def get_has_perm(self, obj):
         return obj.has_perm('books.add_issue')
