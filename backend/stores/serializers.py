@@ -28,12 +28,13 @@ class TradeSerializer(BaseSerializer):
         user = self.context['request'].user
         issue = attrs.get('issue')
         amount = attrs.get('amount', 0)
-        try:
-            obj_asset = Asset.objects.get(user=user, issue=issue)
-            if obj_asset.amount < amount:
-                raise serializers.ValidationError({'amount': 'The amount is beyond the number of books owned'})
-        except Asset.DoesNotExist:
-            raise serializers.ValidationError({'issue': 'The user does not have this book.'})
+        if issue:
+            try:
+                obj_asset = Asset.objects.get(user=user, issue=issue)
+                if obj_asset.amount < amount:
+                    raise serializers.ValidationError({'amount': 'The amount is beyond the number of books owned'})
+            except Asset.DoesNotExist:
+                raise serializers.ValidationError({'issue': 'The user does not have this book.'})
         return attrs
 
     def create(self, validated_data):
@@ -66,7 +67,7 @@ class TransactionSerializer(BaseSerializer):
         super().validate(attrs)
         trade = attrs.get('trade')
         amount = attrs.get('amount')
-        if trade.amount < amount:
+        if trade and amount and trade.amount < amount:
             raise serializers.ValidationError({'amount': 'The amount is beyond the remaining number'})
         return attrs
 

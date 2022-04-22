@@ -3,7 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from rest_framework.decorators import permission_classes as dec_permission_classes
-
+from django.contrib.auth.decorators import login_required
 from utils.views import BaseViewSet
 from . import models, serializers, filters
 from stores.models import Trade
@@ -29,6 +29,11 @@ class IssueViewSet(BaseViewSet):
     search_fields = ['name', 'author_name', 'publisher__name', 'publisher__account_addr', 'desc']
 
     http_method_names = ['get', 'post', 'update', 'patch', 'head', 'options']
+
+    def get_permissions(self):
+        if self.action in {'list_private_issues', 'retrieve_private_issue'}:
+            self.permission_classes = [IsPublisher]
+        return super().get_permissions()
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -62,7 +67,13 @@ class IssueViewSet(BaseViewSet):
         serializer = self.get_serializer(queryset, many=True, serializer_class=serializer_class)
         return Response(serializer.data)
 
-    @dec_permission_classes([IsPublisher])
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.status != FileUploadStatus.SUCCESS.value:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        serializer = self.get_serializer(instance, many=False)
+        return Response(serializer.data)
+
     @action(methods=['GET'], detail=False, url_path='private')
     def list_private_issues(self, request, *args, **kwargs):
         """
@@ -80,7 +91,18 @@ class IssueViewSet(BaseViewSet):
         serializer = self.get_serializer(queryset, many=True, serializer_class=serializer_class)
         return Response(serializer.data)
 
-    @action(methods=['POST', 'PATCH'], detail=True, url_path='trade')
+    @action(methods=['GET'], detail=True, url_path='private')
+    def retrieve_private_issue(self, request, *args, **kwargs):
+        """
+        Show publisher's issue detail
+        """
+        instance = self.get_object()
+        if instance.publisher != request.user:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        serializer = self.get_serializer(instance, many=False)
+        return Response(serializer.data)
+
+    @action(methods=['PATCH'], detail=True, url_path='trade')
     def trade(self, request, *args, **kwargs):
         """
         Call it when the file is uploaded.
@@ -105,6 +127,9 @@ class IssueViewSet(BaseViewSet):
             # 4, asset
             models.Asset.objects.create(user=obj_issue.publisher, issue_id=obj_issue.id, amount=obj_issue.amount)
         serializer = self.get_serializer(obj_issue, many=False)
+        # delete temporary file
+        if obj_issue.file:
+            obj_issue.file.delete()
         return Response(serializer.data)
 
 

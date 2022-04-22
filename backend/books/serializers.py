@@ -5,11 +5,6 @@ from accounts.models import User
 from accounts.serializers import UserListingSerializer
 from utils.serializers import BaseSerializer, CurrentUserDefault
 from rest_framework.validators import UniqueValidator, UniqueTogetherValidator
-from io import BytesIO
-from .pdf_handler import PDFHandler
-from django.db import transaction
-from stores.models import Trade
-from .file_service_connector import FileServiceConnector
 
 
 class CategorySerializer(BaseSerializer):
@@ -48,6 +43,9 @@ class ContractSerializer(BaseSerializer):
         super().validate(attrs)
         issue = attrs.get('issue')
         user = self.context['request'].user
+        # update operation
+        if not issue and self.instance:
+            issue = self.instance.issue
         if issue.publisher != user:
             raise PermissionDenied(detail='You do not have permission to perform this action.')
         return attrs
@@ -106,11 +104,12 @@ class IssueSerializer(BaseSerializer):
         """
         super().validate(attrs)
         upload_file = attrs.get('file')
-        if upload_file.content_type != 'application/pdf':
-            raise serializers.ValidationError({'file': 'This field must be pdf file'})
-        # check file size
-        if upload_file.size > 60 * 1024 * 1024:  # 60Mb
-            raise serializers.ValidationError({'file': 'The file size must be no more than 60Mb'})
+        if upload_file:
+            if upload_file.content_type != 'application/pdf':
+                raise serializers.ValidationError({'file': 'This field must be pdf file'})
+            # check file size
+            if upload_file.size > 60 * 1024 * 1024:  # 60Mb
+                raise serializers.ValidationError({'file': 'The file size must be no more than 60Mb'})
         return attrs
 
     def create(self, validated_data):
@@ -153,14 +152,19 @@ class BookmarkSerializer(BaseSerializer):
         issue = attrs.get('issue')
         current_page = attrs.get('current_page')
         user = self.context['request'].user
-        try:
-            asset = models.Asset.objects.get(user=user, issue=issue)
-            if asset.amount < 1:
+        if issue:
+            try:
+                asset = models.Asset.objects.get(user=user, issue=issue)
+                if asset.amount < 1:
+                    raise serializers.ValidationError({'issue': 'Book not found'})
+            except models.Asset.DoesNotExist:
                 raise serializers.ValidationError({'issue': 'Book not found'})
-        except models.Asset.DoesNotExist:
-            raise serializers.ValidationError({'issue': 'Book not found'})
-        if current_page and (current_page > issue.n_pages or current_page < 1):
-            raise serializers.ValidationError({'current_page': f'The range of page number is [1, {issue.n_pages}]'})
+        if current_page:
+            # update operation
+            if not issue and self.instance:
+                issue = self.instance.issue
+            if current_page > issue.n_pages or current_page < 1:
+                raise serializers.ValidationError({'current_page': f'The range of page number is [1, {issue.n_pages}]'})
         return attrs
 
 
