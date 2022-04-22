@@ -9,8 +9,7 @@ from io import BytesIO
 from .pdf_handler import PDFHandler
 from django.db import transaction
 from stores.models import Trade
-from .nft_storage_handler import NFTStorageHandler
-from guardian.shortcuts import assign_perm
+from .file_service_connector import FileServiceConnector
 
 
 class CategorySerializer(BaseSerializer):
@@ -28,7 +27,7 @@ class CategorySerializer(BaseSerializer):
 class IssueListSerializer(BaseSerializer):
     class Meta:
         model = models.Issue
-        fields = ['id', 'name', 'author_name', 'cover', 'n_pages']
+        fields = ['id', 'name', 'author_name', 'cover', 'n_pages', 'status']
 
 
 class ContractSerializer(BaseSerializer):
@@ -84,28 +83,21 @@ class IssueSerializer(BaseSerializer):
     price = serializers.FloatField()
     ratio = serializers.FloatField(required=False)
 
+    publisher_name = serializers.CharField(required=True, max_length=150, write_only=True)
+    publisher_desc = serializers.CharField(required=True, max_length=1500, write_only=True)
+    file = serializers.FileField(required=True)
+
     cid = serializers.ReadOnlyField()
     nft_url = serializers.ReadOnlyField()
+    status = serializers.ReadOnlyField()
 
     contract = ContractSerializer(read_only=True, many=False)
     preview = PreviewSerializer(read_only=True, many=False)
 
     class Meta:
         model = models.Issue
-        fields = '__all__'
-
-    def create(self, validated_data):
-        return self.Meta.model.objects.create(**validated_data)
-
-
-class IssueBuildSerializer(IssueSerializer):
-    publisher_name = serializers.CharField(required=True, max_length=150)
-    publisher_desc = serializers.CharField(required=True, max_length=1500)
-    file = serializers.FileField(required=True)
-
-    class Meta:
-        model = models.Issue
-        fields = '__all__'
+        # fields = '__all__'
+        exclude = ['task_id']
 
     def validate(self, attrs):
         """
@@ -121,36 +113,16 @@ class IssueBuildSerializer(IssueSerializer):
             raise serializers.ValidationError({'file': 'The file size must be no more than 60Mb'})
         return attrs
 
-    @transaction.atomic
     def create(self, validated_data):
-        file = validated_data.pop('file')
         publisher_name = validated_data.pop('publisher_name')
         publisher_desc = validated_data.pop('publisher_desc')
-        file = BytesIO(file.read())
-        pdf_handler = PDFHandler(file)
-        n_pages = pdf_handler.get_pages()
-        cid = pdf_handler.save_img()
-        nft_url = NFTStorageHandler.get_nft_url(cid)
-        obj_issue = self.Meta.model.objects.create(**validated_data, n_pages=n_pages, cid=cid, nft_url=nft_url)
+        obj_issue = self.Meta.model.objects.create(**validated_data)
         # add perm
-        # assign_perm('change_issue', obj_issue.publiser, obj_issue)
-        # assign_perm('delete_issue', obj_issue.publiser, obj_issue)
         self.assign_perms(obj_issue.publisher, obj_issue)
-        # 1, update publisher
+        # update publisher
         obj_issue.publisher.name = publisher_name
         obj_issue.publisher.desc = publisher_desc
         obj_issue.publisher.save()
-        # 2, save preview
-        obj_preview = models.Preview.objects.create(issue=obj_issue)
-        file = pdf_handler.get_preview_doc(from_page=obj_preview.start_page - 1,
-                                           to_page=obj_preview.start_page + obj_preview.n_pages - 2)
-        obj_preview.file = file
-        obj_preview.save()
-        # 3, save trade
-        Trade.objects.create(issue=obj_issue, price=obj_issue.price, amount=obj_issue.amount,
-                             user=obj_issue.publisher, first_release=True)
-        # 4, asset
-        models.Asset.objects.create(user=obj_issue.publisher, issue_id=obj_issue.id, amount=obj_issue.amount)
         return obj_issue
 
 

@@ -39,32 +39,26 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       NFT_STORAGE_ACCESS_TOKEN: ${NFT_STORAGE_ACCESS_TOKEN}
-#      REDIS_HOST: ${REDIS_HOST}
-#      REDIS_PORT: ${REDIS_PORT}
-#      REDIS_DB: ${REDIS_DB}
+      RABBITMQ_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_PASS: ${RABBITMQ_DEFAULT_PASS}
+      RABBITMQ_VHOST: ${RABBITMQ_DEFAULT_VHOST}
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
+      RABBITMQ_PORT: ${RABBITMQ_PORT}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      REDIS_DB: ${REDIS_DB}
     ports:
       - "8000:8000"
     depends_on:
       - db
-#      - redis
     links:
       - db
+      - rabbitmq
+      - redis
     volumes:
       - media_file:/code/media:rw
       - static_file:/code/static:rw
       - ./logs/:/code/logs/:rw
-
-#  redis:
-#    build:
-#      context: ./redis
-#      args:
-#        REDIS_VERSION: ${REDIS_VERSION}
-#    image: epic-redis:${VERSION}
-#    restart: unless-stopped
-#    ports:
-#      - "6379:6379"
-#    privileged: true
-#    command: sh -c "./start.sh"
 
   nginx:
     build:
@@ -86,7 +80,65 @@ services:
     links:
       - server
 
+  redis:
+    build:
+      context: redis
+      args:
+        REDIS_VERSION: ${REDIS_VERSION}
+    image: dbook-redis:${VERSION}
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    privileged: true
+    command: sh -c "./start.sh"
+    volumes:
+      - redis_data:/data
+
+  rabbitmq:
+    build:
+      context: rabbitmq
+      args:
+        RABBITMQ_VERSION: ${RABBITMQ_VERSION}
+    image: dbook-rabbitmq:${VERSION}
+    restart: unless-stopped
+    environment:
+      - RABBITMQ_CONFIG_FILE=/rabbit/rabbitmq.conf
+    ports:
+      - "5672:5672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq/mnesia
+
+  celery:
+    build:
+      context: fileservice
+      args:
+        PYTHON_VERSION: ${PYTHON_VERSION}
+    image: dbook-file-service:${VERSION}
+    restart: unless-stopped
+    command: celery -A tasks.main worker --loglevel=INFO
+    environment:
+      - RABBITMQ_USER=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ_PASS=${RABBITMQ_DEFAULT_PASS}
+      - RABBITMQ_VHOST=${RABBITMQ_DEFAULT_VHOST}
+      - RABBITMQ_HOST=${RABBITMQ_HOST}
+      - RABBITMQ_PORT=${RABBITMQ_PORT}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_DB=${REDIS_DB}
+      - NFT_STORAGE_ACCESS_TOKEN=${NFT_STORAGE_ACCESS_TOKEN}
+    volumes:
+      - media_file:/code/media
+    depends_on:
+      - rabbitmq
+      - redis
+    links:
+      - rabbitmq
+      - redis
+
 volumes:
   db_data: { }
   media_file: { }
   static_file: { }
+  redis_data: {}
+  rabbitmq_data: {}
+

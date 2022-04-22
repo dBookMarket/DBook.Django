@@ -16,3 +16,5 @@ web3==5.28.0
 PyMuPDF==1.19.6
 requests-toolbelt==0.9.1
 django-guardian==2.4.0
+celery==5.2.6
+django-apscheduler==0.6.2

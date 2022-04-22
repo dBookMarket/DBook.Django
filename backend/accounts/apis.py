@@ -13,6 +13,7 @@ from utils.helper import Helper
 from rest_framework.permissions import IsAdminUser
 from rest_framework.decorators import action
 from django.contrib.auth.models import Permission
+from . import filters
 
 
 class NonceAPIView(APIView):
@@ -82,19 +83,18 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminUser]
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    filterset_class = filters.UserFilter
 
-    @action(methods=['POST'], detail=True, url_path='issue-perm')
+    @action(methods=['POST', 'DELETE'], detail=True, url_path='issue-perm')
     def assign_issue_perm(self, request, *args, **kwargs):
         user = self.get_object()
-        issue_perm = Permission.objects.get(codename='books.add_issue')
-        user.user_permissions.add(issue_perm)
-        serializer = self.get_serializer(user, many=False)
-        return Response(serializer.data)
-
-    @action(methods=['DELETE'], detail=True, url_path='issue-perm')
-    def delete_issue_perm(self, request, *args, **kwargs):
-        user = self.get_object()
-        issue_perm = Permission.objects.get(codename='books.add_issue')
-        user.user_permissions.remove(issue_perm)
+        try:
+            issue_perm = Permission.objects.get(codename='add_issue')
+        except Permission.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        if request.method == 'POST':
+            user.user_permissions.add(issue_perm)
+        elif request.method == 'DELETE':
+            user.user_permissions.remove(issue_perm)
         serializer = self.get_serializer(user, many=False)
         return Response(serializer.data)

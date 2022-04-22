@@ -18,3 +18,18 @@ class TransactionType(BaseEnum):
     SELL = 'sell'
     PURCHASE = 'purchase'
     PRESENT = 'present'
+
+
+class CeleryTaskStatus(BaseEnum):
+    PENDING = 'PENDING'
+    STARTED = 'STARTED'
+    RETRY = 'RETRY'
+    FAILURE = 'FAILURE'
+    SUCCESS = 'SUCCESS'
+
+
+class FileUploadStatus(BaseEnum):
+    UPLOADING = 'Uploading'
+    UPLOADED = 'Uploaded'
+    FAILURE = 'Failure'
+    SUCCESS = 'Success'

@@ -39,7 +39,8 @@ THIRD_APPS = [
     'rest_framework.authtoken',
     'django_filters',
     'rest_swagger',
-    'guardian'
+    'guardian',
+    'django_apscheduler'
 ]
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -164,7 +165,7 @@ REST_FRAMEWORK = {
     # or allow read-only access for unauthenticated users.
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'accounts.authentication.BaseTokenAuthentication',
-        # 'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.SessionAuthentication',
         # 'rest_framework.authentication.TokenAuthentication',
     ],

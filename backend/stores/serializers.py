@@ -6,7 +6,7 @@ from accounts.serializers import UserListingSerializer
 from . import models
 
 
-# No need to call contract when create a trade
+# No need to call fileservice when create a trade
 class TradeSerializer(BaseSerializer):
     user = UserListingSerializer(required=False, default=CurrentUserDefault(), many=False)
     issue = serializers.PrimaryKeyRelatedField(queryset=Issue.objects.all(), many=False)
@@ -49,7 +49,6 @@ class TransactionSerializer(BaseSerializer):
                                      format='%Y-%m-%d %H:%M:%S')
     amount = serializers.IntegerField(required=True)
     price = serializers.FloatField(required=True)
-    # seller = serializers.CharField(read_only=True)
     buyer = UserListingSerializer(required=False, default=CurrentUserDefault(), many=False)
     status = serializers.CharField(required=False, max_length=50, allow_blank=True)
     hash = serializers.CharField(required=True, max_length=150,

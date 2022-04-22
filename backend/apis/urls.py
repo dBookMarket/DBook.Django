@@ -21,13 +21,13 @@ import stores.apis
 import accounts.apis
 
 
-class OptionalSimpleRouter(SimpleRouter):
+class OptionalRouter(DefaultRouter):
     def __init__(self):
         super().__init__()
         self.trailing_slash = '/?'
 
 
-router = OptionalSimpleRouter()
+router = OptionalRouter()
 router.register(r"categories", books.apis.CategoryViewSet, basename="category")
 router.register(r"issues", books.apis.IssueViewSet, basename="issue")
 router.register(r"bookmarks", books.apis.BookmarkViewSet, basename="bookmark")
@@ -35,7 +35,6 @@ router.register(r"banners", books.apis.BannerViewSet, basename="banner")
 # router.register(r"previews", books.apis.PreviewViewSet, basename="preview")
 router.register(r"assets", books.apis.AssetViewSet, basename="asset")
 router.register(r"contracts", books.apis.ContractViewSet, basename="contract")
-# router.register(r"fragments", books.apis.FragmentViewSet, basename="fragment")
 
 router.register(r"trades", stores.apis.TradeViewSet, basename="trade")
 router.register(r"transactions", stores.apis.TransactionViewSet, basename="transaction")

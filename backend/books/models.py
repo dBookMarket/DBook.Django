@@ -35,6 +35,7 @@ class Issue(BaseModel):
     name = models.CharField(max_length=150, verbose_name='书籍名称')
     desc = models.TextField(max_length=1500, verbose_name='书籍描述')
     n_pages = models.IntegerField(blank=True, default=0, verbose_name='书籍总页数')
+    file = models.FileField(upload_to='tmp', blank=True, null=True, default=None, verbose_name='pdf文档')
 
     number = models.CharField(blank=True, max_length=50, verbose_name='Issue number')
     amount = models.IntegerField(blank=True, default=1, verbose_name='发行数量')
@@ -42,8 +43,12 @@ class Issue(BaseModel):
     ratio = models.FloatField(blank=True, default=0.2, verbose_name='版税比例')
 
     # NFTStorage id
-    cid = models.CharField(max_length=150, unique=True, db_index=True, verbose_name='NFT asset id')
-    nft_url = models.URLField(blank=True, verbose_name='NFT asset url')
+    cid = models.CharField(max_length=150, blank=True, default='', verbose_name='NFT asset id')
+    nft_url = models.URLField(blank=True, default='', verbose_name='NFT asset url')
+
+    status = models.CharField(max_length=50, blank=True, default='uploading', verbose_name='File upload status')
+    # celery task status
+    task_id = models.CharField(max_length=50, blank=True, default='', verbose_name='Celery task id')
 
     class Meta:
         ordering = ['id', 'name', 'category']

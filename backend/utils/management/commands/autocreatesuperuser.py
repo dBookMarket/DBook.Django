@@ -16,7 +16,7 @@ class Command(BaseCommand):
         email = options.get('email', '')
 
         # unique key
-        account_addr = options.get('account_addr', 'admin')
+        account_addr = options.get('account_addr', '0x'+('0'*64))
 
         if username and password:
             try:

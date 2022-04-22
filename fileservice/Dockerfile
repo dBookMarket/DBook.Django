@@ -16,11 +16,6 @@ RUN python -m pip install --upgrade pip -i https://pypi.mirrors.ustc.edu.cn/simp
 RUN pip install -r requirements.txt -i https://pypi.mirrors.ustc.edu.cn/simple/
 
 # install nft.storage
-#RUN pip install git+https://github.com/nftstorage/python-client.git
+RUN pip install git+https://github.com/nftstorage/python-client.git
 
 COPY ./ ./
-
-RUN chmod +x checkdbconnection.py
-RUN chmod +x startserver.sh
-
-#COPY ./supervisord.conf /etc/supervisor/

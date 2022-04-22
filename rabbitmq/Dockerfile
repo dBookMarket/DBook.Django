@@ -1,0 +1,6 @@
+ARG RABBITMQ_VERSION=${RABBITMQ_VERSION}
+FROM rabbitmq:${RABBITMQ_VERSION}
+
+WORKDIR /rabbit
+
+COPY ./rabbitmq.conf ./
