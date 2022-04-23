@@ -7,7 +7,7 @@ class IssueFilter(django_filters.FilterSet):
 
     class Meta:
         model = models.Issue
-        fields = ['status', 'publisher', 'publisher__account_addr', 'name']
+        fields = ['publisher', 'publisher__account_addr', 'name']
 
 
 class AssetFilter(django_filters.FilterSet):

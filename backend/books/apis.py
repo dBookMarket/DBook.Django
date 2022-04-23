@@ -2,15 +2,13 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
-from rest_framework.decorators import permission_classes as dec_permission_classes
-from django.contrib.auth.decorators import login_required
 from utils.views import BaseViewSet
 from . import models, serializers, filters
 from stores.models import Trade
 from .pdf_handler import PDFHandler
 from django.db.transaction import atomic
 from .file_service_connector import FileServiceConnector
-from utils.enums import FileUploadStatus
+from utils.enums import IssueStatus
 from authorities.permissions import IsOwner, IsPublisher, ObjectPermissionsOrReadOnly, IsAdminUserOrReadOnly
 
 
@@ -28,10 +26,10 @@ class IssueViewSet(BaseViewSet):
     filterset_class = filters.IssueFilter
     search_fields = ['name', 'author_name', 'publisher__name', 'publisher__account_addr', 'desc']
 
-    http_method_names = ['get', 'post', 'update', 'patch', 'head', 'options']
+    http_method_names = ['get', 'post', 'put', 'patch', 'head', 'options']
 
     def get_permissions(self):
-        if self.action in {'list_private_issues', 'retrieve_private_issue'}:
+        if self.action == 'retrieve_current_issue':
             self.permission_classes = [IsPublisher]
         return super().get_permissions()
 
@@ -45,19 +43,18 @@ class IssueViewSet(BaseViewSet):
             result = FileServiceConnector().upload_file(obj_issue.file.path)
             if result:
                 obj_issue.task_id = result.task_id
-                obj_issue.status = FileUploadStatus.UPLOADING.value
+                obj_issue.status = IssueStatus.UPLOADING.value
                 obj_issue.save()
         except Exception as e:
             print(f'Exception when create issue: {e}')
-            obj_issue.status = FileUploadStatus.FAILURE.value
+            obj_issue.status = IssueStatus.FAILURE.value
             obj_issue.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def list(self, request, *args, **kwargs):
         serializer_class = serializers.IssueListSerializer
         queryset = self.filter_queryset(self.get_queryset())
-        # only show successful issues
-        queryset = queryset.filter(status=FileUploadStatus.SUCCESS.value)
+        queryset = queryset.filter(status=IssueStatus.SUCCESS.value)
 
         page = self.paginate_queryset(queryset)
         if page is not None:
@@ -69,38 +66,24 @@ class IssueViewSet(BaseViewSet):
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        if instance.status != FileUploadStatus.SUCCESS.value:
+        if instance.status != IssueStatus.SUCCESS.value:
             return Response(status=status.HTTP_404_NOT_FOUND)
         serializer = self.get_serializer(instance, many=False)
         return Response(serializer.data)
 
-    @action(methods=['GET'], detail=False, url_path='private')
-    def list_private_issues(self, request, *args, **kwargs):
-        """
-        Show publisher's issues all built
-        """
-        serializer_class = serializers.IssueListSerializer
-        queryset = self.filter_queryset(self.get_queryset())
-        queryset = queryset.filter(publisher=request.user)
-
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True, serializer_class=serializer_class)
-            return self.get_paginated_response(serializer.data)
-
-        serializer = self.get_serializer(queryset, many=True, serializer_class=serializer_class)
-        return Response(serializer.data)
-
-    @action(methods=['GET'], detail=True, url_path='private')
-    def retrieve_private_issue(self, request, *args, **kwargs):
-        """
-        Show publisher's issue detail
-        """
-        instance = self.get_object()
-        if instance.publisher != request.user:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-        serializer = self.get_serializer(instance, many=False)
-        return Response(serializer.data)
+    def update(self, request, *args, **kwargs):
+        if 'file' in request.FILES:
+            instance = self.get_object()
+            # revoke last file upload task
+            if instance.task_id:
+                try:
+                    FileServiceConnector().revoke_task(instance.task_id)
+                except Exception as e:
+                    print(f'Exception when revoking file upload task: {e}, task id: {instance.task_id}')
+                    raise ValidationError(
+                        {'file': 'Update file failed because of the failure of revoking the old one.'}
+                    )
+        return super().update(request, *args, **kwargs)
 
     @action(methods=['PATCH'], detail=True, url_path='trade')
     def trade(self, request, *args, **kwargs):
@@ -108,12 +91,12 @@ class IssueViewSet(BaseViewSet):
         Call it when the file is uploaded.
         """
         obj_issue = self.get_object()
-        if obj_issue.status != FileUploadStatus.UPLOADED.value:
+        if obj_issue.status != IssueStatus.UPLOADED.value:
             raise ValidationError({'detail': 'The file uploading is failure, or not finished.'})
         with atomic():
             pdf_handler = PDFHandler(obj_issue.file.path)
             # 1, update status
-            obj_issue.status = FileUploadStatus.SUCCESS.value
+            obj_issue.status = IssueStatus.SUCCESS.value
             obj_issue.save()
             # 2, save preview
             obj_preview = models.Preview.objects.create(issue=obj_issue)
@@ -130,6 +113,16 @@ class IssueViewSet(BaseViewSet):
         # delete temporary file
         if obj_issue.file:
             obj_issue.file.delete()
+        return Response(serializer.data)
+
+    @action(methods=['GET'], detail=False, url_path='current')
+    def retrieve_current_issue(self, request, *args, **kwargs):
+        """
+        Fetch the current issue which the user is building. If not, will return 404
+        """
+        queryset = self.get_queryset()
+        issue = queryset.filter(publisher=request.user).exclude(status=IssueStatus.SUCCESS.value).first()
+        serializer = self.get_serializer(issue)
         return Response(serializer.data)
 
 

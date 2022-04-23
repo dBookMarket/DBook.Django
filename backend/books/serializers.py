@@ -83,7 +83,7 @@ class IssueSerializer(BaseSerializer):
 
     publisher_name = serializers.CharField(required=True, max_length=150, write_only=True)
     publisher_desc = serializers.CharField(required=True, max_length=1500, write_only=True)
-    file = serializers.FileField(required=True)
+    file = serializers.FileField(required=True, write_only=True)
 
     cid = serializers.ReadOnlyField()
     nft_url = serializers.ReadOnlyField()

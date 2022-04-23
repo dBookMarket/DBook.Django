@@ -28,7 +28,7 @@ class CeleryTaskStatus(BaseEnum):
     SUCCESS = 'SUCCESS'
 
 
-class FileUploadStatus(BaseEnum):
+class IssueStatus(BaseEnum):
     UPLOADING = 'Uploading'
     UPLOADED = 'Uploaded'
     FAILURE = 'Failure'
