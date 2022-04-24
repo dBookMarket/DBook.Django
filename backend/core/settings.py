@@ -43,6 +43,7 @@ THIRD_APPS = [
     'django_apscheduler'
 ]
 INSTALLED_APPS = [
+    'grappelli',  # admin skin
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -66,7 +67,7 @@ ROOT_URLCONF = 'core.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -134,6 +135,9 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'staticfiles')
+]
 
 MEDIA_URL = 'media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -154,10 +158,11 @@ ATOMIC_REQUESTS = True
 
 APPEND_SLASH = False
 
-AUTHENTICATION_BACKENDS = (
+AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',  # this is default
-    'guardian.backends.ObjectPermissionBackend',
-)
+    'authens.backends.MetaMaskBackend',
+    'guardian.backends.ObjectPermissionBackend'
+]
 
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema',
@@ -286,4 +291,453 @@ NFT_STORAGE = {
     'SUFFIX': 'ipfs.nftstorage.link',
     'PREFIX': 'https://ipfs.io/ipfs',
     'ACCESS_TOKEN': os.getenv('NFT_STORAGE_ACCESS_TOKEN', '')
+}
+
+# contract
+CONTRACT_SETTINGS = {
+    'PLATFORM_CONTRACT_ADDRESS': '0x4f2C793DB2163A7A081b984E6E8e2c504825668b',
+    'PLATFORM_CONTRACT_ABI': '''
+    [{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"to","type":"address"},
+    {"indexed":false,"internalType":"uint256","name":"nftId","type":"uint256"},
+    {"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"},
+    {"indexed":false,"internalType":"bytes","name":"data","type":"bytes"},
+    {"indexed":false,"internalType":"uint256","name":"price","type":"uint256"},
+    {"indexed":false,"internalType":"address","name":"publisherAddress","type":"address"},
+    {"indexed":false,"internalType":"uint256","name":"publisherRatio","type":"uint256"}],"name":"Issue","type":"event"},
+    {"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"seller","type":"address"},
+    {"indexed":false,"internalType":"address","name":"receiver","type":"address"},
+    {"indexed":false,"internalType":"uint256","name":"nftId","type":"uint256"},
+    {"indexed":false,"internalType":"uint256","name":"nftAmount","type":"uint256"},
+    {"indexed":false,"internalType":"bytes","name":"data","type":"bytes"},
+    {"indexed":false,"internalType":"uint256","name":"tradeValue","type":"uint256"},
+    {"indexed":false,"internalType":"uint256","name":"fee","type":"uint256"}],"name":"Trade","type":"event"},
+    {"inputs":[{"internalType":"address","name":"token1155","type":"address"},
+    {"internalType":"address","name":"token20","type":"address"},
+    {"internalType":"string","name":"version","type":"string"}],
+    "name":"__DBookPlatform_init","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"address","name":"minter","type":"address"}],
+    "name":"addAuth","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"address","name":"minter","type":"address"}],
+    "name":"delAuth","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[],"name":"getFee","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],
+    "stateMutability":"view","type":"function"},
+    {"inputs":[],"name":"getFrozen","outputs":[{"internalType":"bool","name":"","type":"bool"}],
+    "stateMutability":"view","type":"function"},
+    {"inputs":[],"name":"getIssueList","outputs":[{"internalType":"address[]","name":"","type":"address[]"}],
+    "stateMutability":"view","type":"function"},
+    {"inputs":[{"internalType":"uint256","name":"nftId","type":"uint256"}],
+    "name":"getNftPrice","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],
+    "stateMutability":"view","type":"function"},{"inputs":[],"name":"getPlatformAddress",
+    "outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+    {"inputs":[],"name":"getPlatformRatio","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],
+    "stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"nftId","type":"uint256"}],
+    "name":"getPublisherAddress","outputs":[{"internalType":"address","name":"","type":"address"}],
+    "stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"nftId","type":"uint256"}],
+    "name":"getPublisherRatio","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],
+    "stateMutability":"view","type":"function"},{"inputs":[],"name":"getVersion",
+    "outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
+    {"inputs":[{"internalType":"address","name":"to","type":"address"},
+    {"internalType":"uint256","name":"nftId","type":"uint256"},
+    {"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"bytes","name":"data","type":"bytes"},
+    {"internalType":"uint256","name":"price","type":"uint256"},
+    {"internalType":"address","name":"publisherAddress","type":"address"},
+    {"internalType":"uint256","name":"publisherRatio","type":"uint256"}],
+    "name":"issue","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"uint256","name":"fee","type":"uint256"}],
+    "name":"setFee","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"bool","name":"isFrozen","type":"bool"}],"name":"setFrozen","outputs":[],
+    "stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"uint256","name":"nftId","type":"uint256"},
+    {"internalType":"uint256","name":"price","type":"uint256"}],
+    "name":"setNftPrice","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"address","name":"platformAddress","type":"address"}],
+    "name":"setPlatformAddress","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"uint256","name":"platformRatio","type":"uint256"}],
+    "name":"setPlatformRatio","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"uint256","name":"nftId","type":"uint256"},
+    {"internalType":"address","name":"publishAddress","type":"address"}],
+    "name":"setPublisherAddress","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"uint256","name":"nftId","type":"uint256"},
+    {"internalType":"uint256","name":"publishRatio","type":"uint256"}],"name":"setPublisherRatio","outputs":[],
+    "stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"string","name":"version","type":"string"}],
+    "name":"setVersion","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"address","name":"seller","type":"address"},{"internalType":"address",
+    "name":"receiver","type":"address"},{"internalType":"uint256","name":"nftId","type":"uint256"},
+    {"internalType":"uint256","name":"nftAmount","type":"uint256"},{"internalType":"bytes",
+    "name":"data","type":"bytes"},{"internalType":"uint256","name":"tradeValue","type":"uint256"},
+    {"internalType":"uint256","name":"fee","type":"uint256"}],
+    "name":"trade","outputs":[],"stateMutability":"nonpayable","type":"function"}]
+    ''',
+    'NFT_CONTRACT_ADDRESS': '0xa18C1feF1F76a554cD716096f39a051cf4F94523',
+    'NFT_CONTRACT_ABI': '''
+    [{"inputs":[{"internalType":"string","name":"name","type":"string"},
+    {"internalType":"string","name":"symbol","type":"string"},
+    {"internalType":"string","name":"uri","type":"string"}],
+    "stateMutability":"nonpayable","type":"constructor"},
+    {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"account","type":"address"},
+    {"indexed":true,"internalType":"address","name":"operator","type":"address"},
+    {"indexed":false,"internalType":"bool","name":"approved","type":"bool"}],
+    "name":"ApprovalForAll","type":"event"},
+    {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},
+    {"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],
+    "name":"OwnershipTransferred","type":"event"},
+    {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"operator","type":"address"},
+    {"indexed":true,"internalType":"address","name":"from","type":"address"},
+    {"indexed":true,"internalType":"address","name":"to","type":"address"},
+    {"indexed":false,"internalType":"uint256[]","name":"ids","type":"uint256[]"},
+    {"indexed":false,"internalType":"uint256[]","name":"values","type":"uint256[]"}],
+    "name":"TransferBatch","type":"event"},
+    {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"operator","type":"address"},
+    {"indexed":true,"internalType":"address","name":"from","type":"address"},
+    {"indexed":true,"internalType":"address","name":"to","type":"address"},
+    {"indexed":false,"internalType":"uint256","name":"id","type":"uint256"},
+    {"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"TransferSingle","type":"event"},
+    {"anonymous":false,"inputs":[{"indexed":false,"internalType":"string","name":"value","type":"string"},
+    {"indexed":true,"internalType":"uint256","name":"id","type":"uint256"}],"name":"URI","type":"event"},
+    {"inputs":[{"internalType":"address","name":"account","type":"address"},
+    {"internalType":"uint256","name":"id","type":"uint256"}],
+    "name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],
+    "stateMutability":"view","type":"function"},
+    {"inputs":[{"internalType":"address[]","name":"accounts","type":"address[]"},
+    {"internalType":"uint256[]","name":"ids","type":"uint256[]"}],
+    "name":"balanceOfBatch","outputs":[{"internalType":"uint256[]","name":"","type":"uint256[]"}],
+    "stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"},
+    {"internalType":"address","name":"operator","type":"address"}],
+    "name":"isApprovedForAll","outputs":[{"internalType":"bool","name":"","type":"bool"}],
+    "stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"to","type":"address"},
+    {"internalType":"uint256","name":"tokenId","type":"uint256"},
+    {"internalType":"uint256","name":"amount","type":"uint256"},
+    {"internalType":"bytes","name":"data","type":"bytes"}],
+    "name":"mint","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],
+    "stateMutability":"view","type":"function"},{"inputs":[],"name":"owner",
+    "outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+    {"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"address","name":"from","type":"address"},
+    {"internalType":"address","name":"to","type":"address"},
+    {"internalType":"uint256[]","name":"ids","type":"uint256[]"},
+    {"internalType":"uint256[]","name":"amounts","type":"uint256[]"},
+    {"internalType":"bytes","name":"data","type":"bytes"}],
+    "name":"safeBatchTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"address","name":"from","type":"address"},
+    {"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"id","type":"uint256"},
+    {"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"bytes","name":"data","type":"bytes"}],
+    "name":"safeTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"address","name":"operator","type":"address"},
+    {"internalType":"bool","name":"approved","type":"bool"}],
+    "name":"setApprovalForAll","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"address","name":"platformAddress","type":"address"}],
+    "name":"setPlatformAddress","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"bytes4","name":"interfaceId","type":"bytes4"}],
+    "name":"supportsInterface","outputs":[{"internalType":"bool","name":"","type":"bool"}],
+    "stateMutability":"view","type":"function"},{"inputs":[],"name":"symbol",
+    "outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
+    {"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],
+    "name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},
+    {"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],
+    "name":"uri","outputs":[{"internalType":"string","name":"","type":"string"}],
+    "stateMutability":"view","type":"function"}]
+    ''',
+    'USDC_CONTRACT_ADDRESS': '0xB556b362EC02d2384F4645d7160562538fdf40c4',
+    'USDC_CONTRACT_ABI': '''
+    [
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "_name",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "_symbol",
+          "type": "string"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint8",
+          "name": "decimals",
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "spender",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "Approval",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        }
+      ],
+      "name": "Transfer",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "spender",
+          "type": "address"
+        }
+      ],
+      "name": "allowance",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "spender",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "approve",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "balanceOf",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "decimals",
+      "outputs": [
+        {
+          "internalType": "uint8",
+          "name": "",
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "spender",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "subtractedValue",
+          "type": "uint256"
+        }
+      ],
+      "name": "decreaseAllowance",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "spender",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "addedValue",
+          "type": "uint256"
+        }
+      ],
+      "name": "increaseAllowance",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "name",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "symbol",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "totalSupply",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "recipient",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "transfer",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "recipient",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "transferFrom",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ]
+    ''',
 }

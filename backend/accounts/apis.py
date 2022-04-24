@@ -50,7 +50,7 @@ class LoginAPIView(APIView):
             user = User.objects.get(account_addr=account_addr)
             signer = Helper.eth_recover(user.nonce, signature)
             print('signer: ', signer)
-            if account_addr == signer:
+            if Helper.equal(account_addr, signer):
                 token, _ = Token.objects.get_or_create(user=user)
                 # update nonce
                 user.nonce = Helper.rand_nonce()

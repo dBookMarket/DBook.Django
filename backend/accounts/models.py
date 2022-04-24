@@ -15,3 +15,7 @@ class User(AbstractUser):
 
     def __str__(self):
         return f'{self.account_addr}-{self.name}'
+
+    @property
+    def has_issue_perm(self):
+        return self.has_perm('books.add_issue')

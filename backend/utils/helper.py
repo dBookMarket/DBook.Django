@@ -22,3 +22,7 @@ class Helper:
         msg_hash = encode_defunct(text=message)
         signer = w3.eth.account.recover_message(msg_hash, signature=signature)
         return signer
+
+    @staticmethod
+    def equal(str1: str, str2: str):
+        return str(str1).lower() == str(str2).lower()

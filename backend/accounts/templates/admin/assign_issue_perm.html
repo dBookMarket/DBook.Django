@@ -1,0 +1,142 @@
+{% extends 'admin/base_site.html' %}
+{% load i18n admin_urls static admin_list %}
+{% block extrastyle %}
+    <link rel="stylesheet" type="text/css" href="{% static 'css/bootstrap.min.css' %}">
+    {{ block.super }}
+{% endblock %}
+{% block javascripts %}
+    {{ block.super }}
+    <script src="{% static "js/libs/jquery-3.6.0.min.js" %}"></script>
+    {#    <script src="{% static "js/libs/web3.min.js" %}"></script>#}
+    {#    <script type="module" src="{% static "js/libs/ethers-5.1.esm.min.js" %}"></script>#}
+    <script src="{% static "js/libs/bootstrap.min.js" %}"></script>
+    <script src="{% static "js/libs/require.js" %}"></script>
+    <script type="module">
+        import {ethers} from "{% static "js/libs/ethers-5.1.esm.min.js" %}";
+
+        const back = (to = '{% url 'admin:accounts_user_changelist' %}') => {
+            window.location.href = to;
+        }
+
+        $(document).ready(function () {
+            $("#cancel").on('click', function () {
+               back();
+            });
+            $("#submit").on('click', async function () {
+                const ethereum = window.ethereum;
+                // check if install metamask
+                if (typeof ethereum === 'undefined' || !ethereum.isMetaMask) {
+                    alert('Metamask is not installed');
+                    return;
+                }
+                {#console.log(ethereum);#}
+                // connect to metamask
+                const provider = new ethers.providers.Web3Provider(ethereum);
+                await provider.send("eth_requestAccounts", []);
+                {#console.log('provider', provider);#}
+                const signer = provider.getSigner();
+                {#console.log('signer', signer);#}
+                const contract = new ethers.Contract(
+                    "{{ contract.platform_address|safe }}",
+                    {{ contract.platform_abi|safe }},
+                    signer
+                );
+                {#console.log('contract', contract);#}
+                // add auth in contract
+                let transaction;
+                let method;
+                {% if action == 'Add' %}
+                    method = 'POST'
+                    {% for user in users %}
+                        transaction = await contract.addAuth("{{ user.account_addr }}");
+                        await transaction.wait();
+                    {% endfor %}
+                {% else %}
+                    method = 'PUT'
+                    {% for user in users %}
+                        transaction = await contract.delAuth("{{ user.account_addr }}");
+                        await transaction.wait();
+                    {% endfor %}
+                {% endif %}
+                // add auth in server
+                let users = [];
+                {% for user in users %}
+                    users.push({{ user.id }})
+                {% endfor %}
+                $.ajax({
+                    url: '{% url 'accounts:issue-perm' %}',
+                    method: method,
+                    data: JSON.stringify({
+                        'users': users
+                    }),
+                    dataType: 'json',
+                    contentType: 'application/json; charset=utf-8',
+                    beforeSend: (xhr, settings) => {
+                        xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}");
+                    },
+                    success: data => {
+                        {#window.location.href = data.detail;#}
+                        back(data.detail);
+                    },
+                    error: data => {
+                        alert(data.detail);
+                    }
+                })
+            })
+        })
+    </script>
+{% endblock %}
+
+{% block breadcrumbs %}
+    <ul class="grp-horizontal-list">
+        <li><a href="{% url 'admin:index' %}">{% trans "Home" %}</a></li>
+        {% for app in app_list %}
+            {% blocktrans with app.name as name %}
+                <li>{{ name }}</li>{% endblocktrans %}
+        {% endfor %}
+        <li><a href="{% url 'admin:accounts_user_changelist' %}">{% trans "User" %}</a></li>
+        <li>Assign perm</li>
+    </ul>
+{% endblock %}
+
+{% block content_title %}
+    <h1>{{ action }} Issue Perm</h1>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <div class="row justify-content-center">
+            <table class="table table-striped">
+                <thead>
+                <tr>
+                    <th>account address</th>
+                    <th>name</th>
+                    <th>description</th>
+                    <th>has perm</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for user in users %}
+                    <tr>
+                        <td>{{ user.account_addr }}</td>
+                        <td>{{ user.name }}</td>
+                        <td>{{ user.description }}</td>
+                        <td>{{ user.has_issue_perm }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-outline-dark" id="cancel">Cancel</button>
+                <button type="button" class="btn btn-outline-success" id="submit">
+                    {% if action == 'add' %}
+                        Add Auth in Contract
+                    {% else %}
+                        Del Auth in Contract
+                    {% endif %}
+                </button>
+            </div>
+
+        </div>
+    </div>
+{% endblock %}
