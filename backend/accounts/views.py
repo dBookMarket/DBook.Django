@@ -5,9 +5,29 @@ from django.urls import reverse
 from django.contrib.auth.models import Permission
 from .models import User
 import json
+from web3.auto import Web3
+from utils.helper import Helper
 
 
 class LoginWithMetaMaskView(generic.View):
+
+    def put(self, request, *args, **kwargs):
+        try:
+            data = json.loads(request.body)
+        except TypeError:
+            data = request.body
+        address = data.get('address')
+        try:
+            address = Web3.toChecksumAddress(address)
+        except ValueError:
+            return JsonResponse({'address': 'Invalid address'}, status=400)
+        user, _ = User.objects.get_or_create(account_addr=address, defaults={
+            'username': Helper.rand_username()
+        })
+        new_nonce = Helper.rand_nonce()
+        user.nonce = new_nonce
+        user.save()
+        return JsonResponse({'nonce': new_nonce}, status=200)
 
     def post(self, request, *args, **kwargs):
         address = request.POST.get('address')

@@ -23,9 +23,10 @@
                 ethereum.request({method: 'eth_requestAccounts'}).then(accounts => {
                     const address = accounts[0];
                     $.ajax({
-                        type: "POST",
-                        url: "/api/v1/nonce",
-                        data: {'address': address},
+                        contentType: "applicaton/json",
+                        type: "PUT",
+                        url: "{% url 'accounts:login-with-metamask' %}",
+                        data: JSON.stringify({'address': address}),
                         beforeSend: (xhr, settings) => {
                             xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}");
                         },
