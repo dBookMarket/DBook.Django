@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from accounts.models import User
+from django.contrib.auth import get_user_model
 
 
 class Command(BaseCommand):
@@ -19,10 +19,13 @@ class Command(BaseCommand):
         account_addr = '0x' + '0' * 40
 
         if username and password:
+            model_user = get_user_model()
             try:
-                User.objects.get(username=username)
-            except User.DoesNotExist:
-                User.objects.create_superuser(username=username, password=password, email=email,
-                                              account_addr=account_addr)
+                print('Get super user...')
+                model_user.objects.get(username=username)
+            except model_user.DoesNotExist:
+                print('Super user not found...')
+                model_user.objects.create_superuser(username=username, password=password, email=email,
+                                                    account_addr=account_addr)
         else:
             raise ValueError('Please give the username and password,')
