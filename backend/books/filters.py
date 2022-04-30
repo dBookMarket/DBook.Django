@@ -1,5 +1,6 @@
 import django_filters
 from . import models
+from utils.enums import IssueStatus
 
 
 class IssueFilter(django_filters.FilterSet):
@@ -7,7 +8,12 @@ class IssueFilter(django_filters.FilterSet):
 
     class Meta:
         model = models.Issue
-        fields = ['publisher', 'publisher__account_addr', 'name']
+        fields = ['category', 'publisher', 'publisher__account_addr', 'name']
+
+    @property
+    def qs(self):
+        parent = super().qs
+        return parent.filter(status=IssueStatus.SUCCESS.value)
 
 
 class AssetFilter(django_filters.FilterSet):

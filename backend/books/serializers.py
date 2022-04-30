@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
-from . import models
+from . import models, signals
 from accounts.models import User
 from accounts.serializers import UserListingSerializer
 from utils.serializers import BaseSerializer, CurrentUserDefault
@@ -88,6 +88,10 @@ class IssueSerializer(BaseSerializer):
     cid = serializers.ReadOnlyField()
     nft_url = serializers.ReadOnlyField()
     status = serializers.ReadOnlyField()
+    n_owners = serializers.ReadOnlyField()
+    n_circulations = serializers.ReadOnlyField()
+
+    is_owned = serializers.SerializerMethodField()
 
     contract = ContractSerializer(read_only=True, many=False)
     preview = PreviewSerializer(read_only=True, many=False)
@@ -96,6 +100,13 @@ class IssueSerializer(BaseSerializer):
         model = models.Issue
         # fields = '__all__'
         exclude = ['task_id']
+
+    def get_is_owned(self, obj):
+        user = self.context['request'].user
+        try:
+            return models.Asset.objects.get(user=user, issue=obj).amount > 0
+        except models.Asset.DoesNotExist:
+            return False
 
     def validate(self, attrs):
         """
@@ -122,7 +133,16 @@ class IssueSerializer(BaseSerializer):
         obj_issue.publisher.name = publisher_name
         obj_issue.publisher.desc = publisher_desc
         obj_issue.publisher.save()
+        # send signal
+        signals.post_create_issue.send(sender=self.Meta.model, instance=obj_issue)
         return obj_issue
+
+    def update(self, instance, validated_data):
+        obj = super().update(instance, validated_data)
+        if len(self.context['request'].FILES) != 0:
+            # send signal
+            signals.post_create_issue.send(sender=self.Meta.model, instance=obj)
+        return obj
 
 
 class BookmarkSerializer(BaseSerializer):

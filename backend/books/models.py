@@ -1,6 +1,8 @@
 from django.db import models
 from utils.models import BaseModel
 from django.forms.models import model_to_dict
+from stores.models import Trade
+from utils.enums import IssueStatus
 
 
 class Category(BaseModel):
@@ -46,7 +48,8 @@ class Issue(BaseModel):
     cid = models.CharField(max_length=150, blank=True, default='', verbose_name='NFT asset id')
     nft_url = models.URLField(blank=True, default='', verbose_name='NFT asset url')
 
-    status = models.CharField(max_length=50, blank=True, default='uploading', verbose_name='File upload status')
+    status = models.CharField(max_length=50, choices=IssueStatus.choices(),
+                              default=IssueStatus.UPLOADING.value, verbose_name='File upload status')
     # celery task status
     task_id = models.CharField(max_length=50, blank=True, default='', verbose_name='Celery task id')
 
@@ -62,6 +65,20 @@ class Issue(BaseModel):
     @property
     def preview(self):
         return Preview.objects.get(issue=self.id)
+
+    @property
+    def n_owners(self):
+        """the number of whom owns this book"""
+        return Asset.objects.filter(issue_id=self.id).count()
+
+    @property
+    def n_circulations(self):
+        """the number of books in circulation"""
+        queryset = Trade.objects.filter(issue_id=self.id)
+        total_amount = 0
+        if queryset:
+            total_amount = queryset.aggregate(total_amount=models.Sum('amount'))['total_amount']
+        return total_amount
 
 
 class Contract(BaseModel):
