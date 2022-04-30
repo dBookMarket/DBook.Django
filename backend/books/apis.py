@@ -38,23 +38,12 @@ class IssueViewSet(BaseViewSet):
             self.permission_classes = [IsPublisher]
         return super().get_permissions()
 
-    # def create(self, request, *args, **kwargs):
-    #     serializer = self.get_serializer(data=request.data)
-    #     serializer.is_valid(raise_exception=True)
-    #     obj_issue = self.perform_create(serializer)
-    #     headers = self.get_success_headers(serializer.data)
-    #     # send a celery task to upload file to nft.storage
-    #     try:
-    #         result = FileServiceConnector().upload_file(obj_issue.file.path)
-    #         if result:
-    #             obj_issue.task_id = result.task_id
-    #             obj_issue.status = IssueStatus.UPLOADING.value
-    #             obj_issue.save()
-    #     except Exception as e:
-    #         print(f'Exception when create issue: {e}')
-    #         obj_issue.status = IssueStatus.FAILURE.value
-    #         obj_issue.save()
-    #     return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+    def create(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        obj = queryset.filter(publisher=request.user).exclude(status=IssueStatus.SUCCESS.value).first()
+        if obj:
+            raise ValidationError({'detail': 'You are issuing a book, please finish it firstly.'})
+        return super().create(request, *args, **kwargs)
 
     # def list(self, request, *args, **kwargs):
     #     serializer_class = serializers.IssueListSerializer
@@ -76,27 +65,50 @@ class IssueViewSet(BaseViewSet):
     #     serializer = self.get_serializer(instance, many=False)
     #     return Response(serializer.data)
 
-    # def update(self, request, *args, **kwargs):
-    #     if 'file' in request.FILES:
-    #         instance = self.get_object()
-    #         # revoke last file upload task
-    #         if instance.task_id:
-    #             try:
-    #                 FileServiceConnector().revoke_task(instance.task_id)
-    #             except Exception as e:
-    #                 print(f'Exception when revoking file upload task: {e}, task id: {instance.task_id}')
-    #                 raise ValidationError(
-    #                     {'file': 'Update file failed because of the failure of revoking the old one.'}
-    #                 )
-    #     return super().update(request, *args, **kwargs)
+    def get_issuing_object(self):
+        queryset = self.get_queryset()
+
+        # Perform the lookup filtering.
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+
+        assert lookup_url_kwarg in self.kwargs, (
+            'Expected view %s to be called with a URL keyword argument '
+            'named "%s". Fix your URL conf, or set the `.lookup_field` '
+            'attribute on the view correctly.' %
+            (self.__class__.__name__, lookup_url_kwarg)
+        )
+
+        filter_kwargs = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
+        obj = get_object_or_404(queryset, **filter_kwargs)
+
+        # May raise a permission denied
+        self.check_object_permissions(self.request, obj)
+        return obj
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        # instance = get_object_or_404(self.get_queryset(), **{'pk': kwargs.get('pk')})
+        # self.check_object_permissions(request, instance)
+        instance = self.get_issuing_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        if getattr(instance, '_prefetched_objects_cache', None):
+            # If 'prefetch_related' has been applied to a queryset, we need to
+            # forcibly invalidate the prefetch cache on the instance.
+            instance._prefetched_objects_cache = {}
+
+        return Response(serializer.data)
 
     @action(methods=['PATCH'], detail=True, url_path='trade')
     def trade(self, request, *args, **kwargs):
         """
         Call it when the file is uploaded.
         """
-        obj_issue = get_object_or_404(self.get_queryset(), **{'pk': kwargs.get('pk')})
-        self.check_object_permissions(request, obj_issue)
+        # obj_issue = get_object_or_404(self.get_queryset(), **{'pk': kwargs.get('pk')})
+        # self.check_object_permissions(request, obj_issue)
+        obj_issue = self.get_issuing_object()
         if obj_issue.status == IssueStatus.SUCCESS.value:
             raise ValidationError(
                 {'detail': 'The file uploading already has been finished successfully. '

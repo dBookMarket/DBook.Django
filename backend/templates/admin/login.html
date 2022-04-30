@@ -23,9 +23,9 @@
                 ethereum.request({method: 'eth_requestAccounts'}).then(accounts => {
                     const address = accounts[0];
                     $.ajax({
-                        contentType: "applicaton/json",
+                        contentType: "application/json",
                         type: "PUT",
-                        url: "{% url 'accounts:login-with-metamask' %}",
+                        url: "{% url 'admin:accounts_user_metamask' %}",
                         data: JSON.stringify({'address': address}),
                         beforeSend: (xhr, settings) => {
                             xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}");
@@ -36,7 +36,7 @@
                             web3.eth.personal.sign(nonce, address).then(signature => {
                                 $.ajax({
                                     type: "POST",
-                                    url: "{% url 'accounts:login-with-metamask' %}",
+                                    url: "{% url 'admin:accounts_user_metamask' %}",
                                     data: {
                                         'address': address,
                                         'signature': signature

@@ -1,14 +1,14 @@
 from django.contrib import admin
 from . import models
 
-from django.contrib.auth.models import Permission
+from django.urls import path, include
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 from django.shortcuts import render
 
-import json
+import accounts.views
 
 
 class UserAdmin(BaseUserAdmin, ModelBackend):
@@ -27,32 +27,26 @@ class UserAdmin(BaseUserAdmin, ModelBackend):
 
     @admin.action(description='assign issue permission')
     def assign_issue_perm(self, request, queryset):
-        # try:
-        #     issue_perm = Permission.objects.get(codename='add_issue')
-        #     for user in queryset:
-        #         user.user_permissions.add(issue_perm)
         return render(request, "admin/assign_issue_perm.html",
                       {'users': queryset, 'action': 'Add', 'contract': {
                           'platform_address': settings.CONTRACT_SETTINGS['PLATFORM_CONTRACT_ADDRESS'],
                           'platform_abi': settings.CONTRACT_SETTINGS['PLATFORM_CONTRACT_ABI']
                       }})
 
-    # except Permission.DoesNotExist:
-    #     self.message_user(request, _('Permission not found, cannot assign it to user.'))
-
     @admin.action(description='remove issue permission')
     def remove_issue_perm(self, request, queryset):
-        # try:
-        #     issue_perm = Permission.objects.get(codename='add_issue')
-        #     for user in queryset:
-        #         user.user_permissions.remove(issue_perm)
         return render(request, "admin/assign_issue_perm.html",
                       {'users': queryset, 'action': 'Remove', 'contract': {
                           'platform_address': settings.CONTRACT_SETTINGS['PLATFORM_CONTRACT_ADDRESS'],
                           'platform_abi': settings.CONTRACT_SETTINGS['PLATFORM_CONTRACT_ABI']
                       }})
-    # except Permission.DoesNotExist:
-    #     self.message_user(request, _('Permission not found, cannot assign it to user.'))
+
+    def get_urls(self):
+        info = self.model._meta.app_label, self.model._meta.model_name
+        return [
+            path('login-with-metamask/', accounts.views.LoginWithMetaMaskView.as_view(), name='%s_%s_metamask' % info),
+            path('issue-perm/', accounts.views.IssuePermView.as_view(), name='%s_%s_issue_perm' % info)
+        ] + super().get_urls()
 
 
 admin.site.register(models.User, UserAdmin)

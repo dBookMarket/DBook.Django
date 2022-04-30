@@ -64,7 +64,7 @@
                     users.push({{ user.id }})
                 {% endfor %}
                 $.ajax({
-                    url: '{% url 'accounts:issue-perm' %}',
+                    url: '{% url 'admin:accounts_user_issue_perm' %}',
                     method: method,
                     data: JSON.stringify({
                         'users': users
@@ -129,7 +129,7 @@
             <div class="btn-group" role="group">
                 <button type="button" class="btn btn-outline-dark" id="cancel">Cancel</button>
                 <button type="button" class="btn btn-outline-success" id="submit">
-                    {% if action == 'add' %}
+                    {% if action == 'Add' %}
                         Add Auth in Contract
                     {% else %}
                         Del Auth in Contract
