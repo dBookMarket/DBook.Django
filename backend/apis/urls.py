@@ -13,7 +13,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.conf.urls import url, include
-from rest_framework.routers import DefaultRouter, SimpleRouter
+from rest_framework.routers import DefaultRouter
 
 
 import books.apis
@@ -39,7 +39,7 @@ router.register(r"contracts", books.apis.ContractViewSet, basename="contract")
 router.register(r"trades", stores.apis.TradeViewSet, basename="trade")
 router.register(r"transactions", stores.apis.TransactionViewSet, basename="transaction")
 
-router.register(r"users", accounts.apis.UserViewSet, basename='user')
+# router.register(r"users", accounts.apis.UserViewSet, basename='user')
 
 urlpatterns = [
     url(r'^', include(router.urls)),

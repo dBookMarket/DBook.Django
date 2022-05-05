@@ -1,6 +1,6 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from .models import Asset, Issue
+from .models import Asset, Issue, EncryptionKey
 from .signals import post_create_issue
 from utils.enums import IssueStatus
 from .file_service_connector import FileServiceConnector
@@ -19,14 +19,16 @@ def upload_pdf(issue_obj):
             {'file': 'Update file failed because of the failure of revoking the old one.'}
         )
     try:
+        ek = EncryptionKey.objects.get(issue=issue_obj)
         # start a new task
-        result = file_service_connector.upload_file(issue_obj.file.path)
+        print(f'pdf path -> {issue_obj.file.path}, private key name -> {ek.private_key.name}')
+        result = file_service_connector.upload_file(issue_obj.file.path, ek.private_key.name)
         if result:
             issue_obj.task_id = result.task_id
             issue_obj.status = IssueStatus.UPLOADING.value
             issue_obj.save()
     except Exception as e:
-        print(f'Exception when create issue: {e}')
+        print(f'Exception when calling upload_pdf: {e}')
         issue_obj.status = IssueStatus.FAILURE.value
         issue_obj.save()
 

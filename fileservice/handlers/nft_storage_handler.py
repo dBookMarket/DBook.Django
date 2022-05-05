@@ -37,18 +37,20 @@ class NFTStorageHandler:
                 for file_name in sorted(files):
                     f_path = os.path.join(root, file_name)
                     fields.append(('file', (file_name, open(f_path, 'rb'), 'image/*')))
+            # the limit of upload size 31GB
             me = MultipartEncoder(fields=fields)
             headers = {
                 'Content-Type': me.content_type,
                 'authorization': f"Bearer {self.access_token}"
             }
+            print(f'Ready to upload, request body size: {me.len}')
             res = requests.post(f'{self.base_api}/upload', data=me, headers=headers)
             data = res.json()
             if not data['ok']:
                 raise RuntimeError(data['error']['message'])
             return data['value']['cid']
         except Exception as e:
-            print(f'Exception when calling NFTStorageAPI->bulk_store: {e}')
+            print(f'Exception when calling NFTStorageAPI->bulk_upload: {e}')
             raise
 
     def check(self, cid: str):

@@ -25,10 +25,12 @@ from rest_swagger.views import get_swagger_view
 schema_view = get_swagger_view(title='D-BOOK API')
 
 urlpatterns = [
-    path('grappelli/', include('grappelli.urls')),
-    path('d-book-admin/', admin.site.urls),
-    path(r'api/v1/', include(apis.urls)),
-    url(r'^api-doc$', schema_view),
-    url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework'))
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + static(settings.STATIC_URL,
-                                                                           document_root=settings.STATIC_ROOT)
+                  path('grappelli/', include('grappelli.urls')),
+                  path('d-book-admin/', admin.site.urls),
+                  path(r'api/v1/', include(apis.urls)),
+                  url(r'^api-doc$', schema_view),
+                  url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework'))
+              ] + static(settings.MEDIA_URL,
+                         document_root=settings.MEDIA_ROOT) + static(settings.STATIC_URL,
+                                                                     document_root=settings.STATIC_ROOT) + static(
+    settings.ENCRYPTION_URL, document_root=settings.ENCRYPTION_ROOT)

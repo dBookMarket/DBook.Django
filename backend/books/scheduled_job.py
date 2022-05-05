@@ -13,8 +13,8 @@ def watch_celery_task():
                 if res.status == CeleryTaskStatus.SUCCESS.value:
                     data = res.get()
                     issue.status = IssueStatus.UPLOADED.value
-                    issue.cid = data['cid']
-                    issue.nft_url = data['nft_url']
+                    issue.cids = data['cids']
+                    # issue.nft_url = data['nft_url']
                     issue.n_pages = data['n_pages']
                     issue.save()
                 elif res.status == CeleryTaskStatus.FAILURE.value:

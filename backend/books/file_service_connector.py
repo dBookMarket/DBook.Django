@@ -9,10 +9,10 @@ class FileServiceConnector(CeleryConnector):
         backend = f'redis://{os.getenv("REDIS_HOST")}:{os.getenv("REDIS_PORT")}/{os.getenv("REDIS_DB")}'
         super().__init__(FileServiceConfig.APP, broker=broker, backend=backend)
 
-    def upload_file(self, file_path: str):
-        result = self.send_async_task(FileServiceConfig.TASK_UPLOAD_FILE, (file_path,))
+    def upload_file(self, file_path: str, sk_file: str):
+        result = self.send_async_task(FileServiceConfig.TASK_UPLOAD_FILE, (file_path, sk_file))
         return result
 
-    def get_file_urls(self, cid):
-        urls = self.send_task(FileServiceConfig.TASK_GET_FILE_URLS, (cid,))
+    def get_file_urls(self, cids: list):
+        urls = self.send_task(FileServiceConfig.TASK_GET_FILE_URLS, (cids,))
         return urls

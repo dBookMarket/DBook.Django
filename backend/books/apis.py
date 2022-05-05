@@ -45,25 +45,9 @@ class IssueViewSet(BaseViewSet):
             raise ValidationError({'detail': 'You are issuing a book, please finish it firstly.'})
         return super().create(request, *args, **kwargs)
 
-    # def list(self, request, *args, **kwargs):
-    #     serializer_class = serializers.IssueListSerializer
-    #     queryset = self.filter_queryset(self.get_queryset())
-    #     queryset = queryset.filter(status=IssueStatus.SUCCESS.value)
-    #
-    #     page = self.paginate_queryset(queryset)
-    #     if page is not None:
-    #         serializer = self.get_serializer(page, many=True, serializer_class=serializer_class)
-    #         return self.get_paginated_response(serializer.data)
-    #
-    #     serializer = self.get_serializer(queryset, many=True, serializer_class=serializer_class)
-    #     return Response(serializer.data)
-    #
-    # def retrieve(self, request, *args, **kwargs):
-    #     instance = self.get_object()
-    #     if instance.status != IssueStatus.SUCCESS.value:
-    #         return Response(status=status.HTTP_404_NOT_FOUND)
-    #     serializer = self.get_serializer(instance, many=False)
-    #     return Response(serializer.data)
+    def list(self, request, *args, **kwargs):
+        kwargs['serializer_class'] = serializers.IssueListSerializer
+        return super().list(request, *args, **kwargs)
 
     def get_issuing_object(self):
         queryset = self.get_queryset()
@@ -72,10 +56,10 @@ class IssueViewSet(BaseViewSet):
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
 
         assert lookup_url_kwarg in self.kwargs, (
-            'Expected view %s to be called with a URL keyword argument '
-            'named "%s". Fix your URL conf, or set the `.lookup_field` '
-            'attribute on the view correctly.' %
-            (self.__class__.__name__, lookup_url_kwarg)
+                'Expected view %s to be called with a URL keyword argument '
+                'named "%s". Fix your URL conf, or set the `.lookup_field` '
+                'attribute on the view correctly.' %
+                (self.__class__.__name__, lookup_url_kwarg)
         )
 
         filter_kwargs = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
@@ -87,8 +71,6 @@ class IssueViewSet(BaseViewSet):
 
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
-        # instance = get_object_or_404(self.get_queryset(), **{'pk': kwargs.get('pk')})
-        # self.check_object_permissions(request, instance)
         instance = self.get_issuing_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
@@ -106,8 +88,6 @@ class IssueViewSet(BaseViewSet):
         """
         Call it when the file is uploaded.
         """
-        # obj_issue = get_object_or_404(self.get_queryset(), **{'pk': kwargs.get('pk')})
-        # self.check_object_permissions(request, obj_issue)
         obj_issue = self.get_issuing_object()
         if obj_issue.status == IssueStatus.SUCCESS.value:
             raise ValidationError(
@@ -178,9 +158,17 @@ class AssetViewSet(BaseViewSet):
     def read(self, request, *args, **kwargs):
         instance = self.get_object()
         urls = []
-        if instance.issue.cid:
-            urls = FileServiceConnector().get_file_urls(instance.issue.cid)
-        return Response({'files': urls})
+        sk = ''
+        dict_file = ''
+        if instance.issue.cids:
+            urls.extend(FileServiceConnector().get_file_urls(instance.issue.cids))
+        try:
+            enc_key = models.EncryptionKey.objects.get(issue=instance)
+            sk = request.build_absolute_uri(enc_key.private_key.url)
+            dict_file = request.build_absolute_uri(enc_key.key_dict.url)
+        except models.EncryptionKey.DoesNotExist:
+            pass
+        return Response({'files': urls, 'sk': sk, 'dict_file': dict_file})
 
 
 class ContractViewSet(BaseViewSet):

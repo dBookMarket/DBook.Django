@@ -28,6 +28,10 @@ services:
     image: dbook-server:${VERSION}
     restart: unless-stopped
     command: bash -c 'python checkdbconnection.py && ./startserver.sh'
+#    deploy:
+#      resources:
+#        limits:
+#          memory: 4096M
     environment:
       DEBUG: ${DEBUG}
       DB_HOST: ${DB_HOST}
@@ -58,6 +62,7 @@ services:
     volumes:
       - media_file:/code/media:rw
       - static_file:/code/static:rw
+      - enc_file:/code/file:rw  # encryption keys
       - ./logs/:/code/logs/:rw
 
   nginx:
@@ -72,6 +77,7 @@ services:
     volumes:
       - static_file:/uploads/static
       - media_file:/uploads/media
+      - enc_file:/uploads/file
     ports:
       - "80:80"
       - "443:443"
@@ -128,6 +134,7 @@ services:
       - NFT_STORAGE_ACCESS_TOKEN=${NFT_STORAGE_ACCESS_TOKEN}
     volumes:
       - media_file:/code/media
+      - enc_file:/code/file  # encryption keys
     depends_on:
       - rabbitmq
       - redis
@@ -141,4 +148,5 @@ volumes:
   static_file: { }
   redis_data: {}
   rabbitmq_data: {}
+  enc_file: {}
 

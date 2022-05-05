@@ -3,6 +3,10 @@ from utils.models import BaseModel
 from django.forms.models import model_to_dict
 from stores.models import Trade
 from utils.enums import IssueStatus
+from django.conf import settings
+from django.core.files.storage import FileSystemStorage
+
+encryption_storage = FileSystemStorage(location=settings.ENCRYPTION_ROOT)
 
 
 class Category(BaseModel):
@@ -45,8 +49,9 @@ class Issue(BaseModel):
     ratio = models.FloatField(blank=True, default=0.2, verbose_name='版税比例')
 
     # NFTStorage id
-    cid = models.CharField(max_length=150, blank=True, default='', verbose_name='NFT asset id')
-    nft_url = models.URLField(blank=True, default='', verbose_name='NFT asset url')
+    cids = models.JSONField(blank=True, default=list, verbose_name='NFT asset ids')
+    # cid = models.CharField(max_length=150, blank=True, default='', verbose_name='NFT asset id')
+    # nft_url = models.URLField(blank=True, default='', verbose_name='NFT asset url')
 
     status = models.CharField(max_length=50, choices=IssueStatus.choices(),
                               default=IssueStatus.UPLOADING.value, verbose_name='File upload status')
@@ -163,4 +168,26 @@ class Asset(BaseModel):
     def delete(self, using=None, keep_parents=False):
         if self.file:
             self.file.delete()
+        super().delete(using, keep_parents)
+
+
+class EncryptionKey(BaseModel):
+    issue = models.OneToOneField(to='books.Issue', to_field='id', related_name='encryption_key_issue',
+                                 on_delete=models.CASCADE, verbose_name='书籍')
+    public_key = models.FileField(upload_to=settings.PUBLIC_KEY_DIR, storage=encryption_storage, verbose_name='公钥文件')
+    private_key = models.FileField(upload_to=settings.PRIVATE_KEY_DIR, storage=encryption_storage, verbose_name='私钥文件')
+    key_dict = models.FileField(upload_to=settings.KEY_DICT_DIR, storage=encryption_storage, verbose_name='密钥字典')
+
+    class Meta:
+        ordering = ['id', 'issue']
+        verbose_name = '加密文件'
+        verbose_name_plural = verbose_name
+
+    def delete(self, using=None, keep_parents=False):
+        if self.public_key:
+            self.public_key.delete()
+        if self.private_key:
+            self.private_key.delete()
+        if self.key_dict:
+            self.key_dict.delete()
         super().delete(using, keep_parents)

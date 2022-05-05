@@ -19,3 +19,4 @@ django-guardian==2.4.0
 celery==5.2.6
 django-apscheduler==0.6.2
 django-grappelli==3.0.3
+django-cors-headers==3.11.0

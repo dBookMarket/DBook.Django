@@ -33,7 +33,7 @@ class NonceAPIView(APIView):
         print('nonce', new_nonce)
         user.nonce = new_nonce
         user.save()
-        return Response({'nonce': new_nonce})
+        return Response({'nonce': new_nonce}, status=status.HTTP_201_CREATED)
 
 
 class LoginAPIView(APIView):
@@ -55,7 +55,7 @@ class LoginAPIView(APIView):
                 # update nonce
                 user.nonce = Helper.rand_nonce()
                 user.save()
-                return Response({'token': token.key})
+                return Response({'token': token.key}, status=status.HTTP_201_CREATED)
             else:
                 raise ValidationError({'detail': 'Authentication fail'})
         except Exception:
@@ -76,7 +76,7 @@ class LogoutAPIView(APIView):
             pass
         # logout for django backend
         auth.logout(request)
-        return Response({"detail": "Logout success."}, status=status.HTTP_200_OK)
+        return Response({"detail": "Logout success."}, status=status.HTTP_201_CREATED)
 
 
 class UserViewSet(viewsets.ModelViewSet):

@@ -2,4 +2,6 @@
 media/
 static/
 pdf/
+file/
+logs/
 */migrations/000*.py

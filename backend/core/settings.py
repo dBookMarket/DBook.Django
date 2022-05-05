@@ -40,21 +40,23 @@ THIRD_APPS = [
     'django_filters',
     'rest_swagger',
     'guardian',
-    'django_apscheduler'
+    'django_apscheduler',
+    'corsheaders'
 ]
 INSTALLED_APPS = [
-    'grappelli',  # admin skin
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-] + D_BOOK_APPS + THIRD_APPS
+                     'grappelli',  # admin skin
+                     'django.contrib.admin',
+                     'django.contrib.auth',
+                     'django.contrib.contenttypes',
+                     'django.contrib.sessions',
+                     'django.contrib.messages',
+                     'django.contrib.staticfiles',
+                 ] + D_BOOK_APPS + THIRD_APPS
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # cors
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -147,6 +149,13 @@ TEMPORARY_ROOT = os.path.join(MEDIA_ROOT, TEMPORARY_DIR)
 PREVIEW_DIR = 'previews'
 PREVIEW_DOC_ROOT = os.path.join(MEDIA_ROOT, PREVIEW_DIR)
 
+ENCRYPTION_URL = 'file'
+ENCRYPTION_ROOT = os.path.join(BASE_DIR, 'file')
+
+PRIVATE_KEY_DIR = 'private_keys'
+PUBLIC_KEY_DIR = 'public_keys'
+KEY_DICT_DIR = 'key_dicts'
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
 
@@ -238,7 +247,7 @@ LOGGING = {
         },
         'gunicorn_error': {
             'class': 'logging.handlers.RotatingFileHandler',
-            'maxBytes': 1024*1024*600,
+            'maxBytes': 1024 * 1024 * 600,
             'backupCount': 1,
             'formatter': 'verbose',
             'filename': os.path.join(BASE_DIR, 'logs', 'gunicorn.error.log')
@@ -252,8 +261,8 @@ LOGGING = {
         }
     },
     'root': {
-      'handlers': ['console', 'file'],
-      'level': 'DEBUG'
+        'handlers': ['console', 'file'],
+        'level': 'DEBUG'
     },
     'loggers': {
         'django': {
@@ -287,11 +296,11 @@ SWAGGER_SETTINGS = {
 }
 
 # nft.storage
-NFT_STORAGE = {
-    'SUFFIX': 'ipfs.nftstorage.link',
-    'PREFIX': 'https://ipfs.io/ipfs',
-    'ACCESS_TOKEN': os.getenv('NFT_STORAGE_ACCESS_TOKEN', '')
-}
+# NFT_STORAGE = {
+#     'SUFFIX': 'ipfs.nftstorage.link',
+#     'PREFIX': 'https://ipfs.io/ipfs',
+#     'ACCESS_TOKEN': os.getenv('NFT_STORAGE_ACCESS_TOKEN', '')
+# }
 
 # contract
 CONTRACT_SETTINGS = {
@@ -741,3 +750,11 @@ CONTRACT_SETTINGS = {
   ]
     ''',
 }
+
+# cors
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https?://\w+\.ddid\.\w+$",
+    r"^https?://127\.0\.0\.1:?\d*$",
+    r"^https?://localhost:?\d*$"
+]
+CORS_URLS_REGEX = r"^/api/.*$"

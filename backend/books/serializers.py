@@ -1,3 +1,5 @@
+import os.path
+
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 from . import models, signals
@@ -5,6 +7,8 @@ from accounts.models import User
 from accounts.serializers import UserListingSerializer
 from utils.serializers import BaseSerializer, CurrentUserDefault
 from rest_framework.validators import UniqueValidator, UniqueTogetherValidator
+from secure.encryption_handler import EncryptionHandler
+from django.conf import settings
 
 
 class CategorySerializer(BaseSerializer):
@@ -17,12 +21,6 @@ class CategorySerializer(BaseSerializer):
     class Meta:
         model = models.Category
         fields = '__all__'
-
-
-class IssueListSerializer(BaseSerializer):
-    class Meta:
-        model = models.Issue
-        fields = ['id', 'name', 'author_name', 'cover', 'n_pages', 'status']
 
 
 class ContractSerializer(BaseSerializer):
@@ -70,8 +68,8 @@ class IssueSerializer(BaseSerializer):
 
     author_name = serializers.CharField(required=True, max_length=150)
     author_desc = serializers.CharField(required=True, max_length=1500)
-    # how about store into NFTStorge
-    cover = serializers.ImageField(required=True)
+
+    cover = serializers.ImageField(required=True, write_only=True)
     name = serializers.CharField(required=True, max_length=200)
     desc = serializers.CharField(required=True, max_length=1500)
     n_pages = serializers.IntegerField(read_only=True)
@@ -91,10 +89,12 @@ class IssueSerializer(BaseSerializer):
     n_owners = serializers.ReadOnlyField()
     n_circulations = serializers.ReadOnlyField()
 
-    is_owned = serializers.SerializerMethodField()
+    is_owned = serializers.SerializerMethodField(read_only=True)
 
     contract = ContractSerializer(read_only=True, many=False)
     preview = PreviewSerializer(read_only=True, many=False)
+
+    cover_url = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = models.Issue
@@ -107,6 +107,12 @@ class IssueSerializer(BaseSerializer):
             return models.Asset.objects.get(user=user, issue=obj).amount > 0
         except models.Asset.DoesNotExist:
             return False
+
+    def get_cover_url(self, obj):
+        request = self.context.get('request')
+        if request and obj.cover:
+            return request.build_absolute_uri(obj.cover.url)
+        return ''
 
     def validate(self, attrs):
         """
@@ -123,6 +129,19 @@ class IssueSerializer(BaseSerializer):
                 raise serializers.ValidationError({'file': 'The file size must be no more than 60Mb'})
         return attrs
 
+    def create_encryption_key(self, issue):
+        enc_handler = EncryptionHandler()
+        sk_file = os.path.join(settings.PRIVATE_KEY_DIR, f'issue-{issue.id}-sk.stk')
+        pk_file = os.path.join(settings.PUBLIC_KEY_DIR, f'issue-{issue.id}-pk.pck')
+        dict_file = os.path.join(settings.KEY_DICT_DIR, f'issue-{issue.id}-kd.dict')
+        enc_handler.generate_private_key(sk_file)
+        enc_handler.generate_public_key(pk_file, sk_file)
+        enc_handler.generate_key_dict(dict_file, sk_file)
+        models.EncryptionKey.objects.update_or_create(
+            defaults={'private_key': sk_file, 'public_key': pk_file, 'key_dict': dict_file},
+            issue=issue
+        )
+
     def create(self, validated_data):
         publisher_name = validated_data.pop('publisher_name')
         publisher_desc = validated_data.pop('publisher_desc')
@@ -133,16 +152,36 @@ class IssueSerializer(BaseSerializer):
         obj_issue.publisher.name = publisher_name
         obj_issue.publisher.desc = publisher_desc
         obj_issue.publisher.save()
+        # add encryption key
+        self.create_encryption_key(obj_issue)
         # send signal
         signals.post_create_issue.send(sender=self.Meta.model, instance=obj_issue)
         return obj_issue
 
     def update(self, instance, validated_data):
+        publisher_name = validated_data.pop('publisher_name', None)
+        publisher_desc = validated_data.pop('publisher_desc', None)
+
         obj = super().update(instance, validated_data)
+        # update publisher
+        if publisher_name:
+            obj.publisher.name = publisher_name
+        if publisher_desc:
+            obj.publisher.desc = publisher_desc
+        if publisher_name or publisher_desc:
+            obj.publisher.save()
+
         if len(self.context['request'].FILES) != 0:
+            self.create_encryption_key(obj)
             # send signal
             signals.post_create_issue.send(sender=self.Meta.model, instance=obj)
         return obj
+
+
+class IssueListSerializer(IssueSerializer):
+    class Meta:
+        model = models.Issue
+        fields = ['id', 'name', 'author_name', 'cover_url', 'n_pages', 'status']
 
 
 class BookmarkSerializer(BaseSerializer):

@@ -6,7 +6,7 @@ from accounts.serializers import UserListingSerializer
 from . import models
 
 
-# No need to call fileservice when create a trade
+# No need to call file service when create a trade
 class TradeSerializer(BaseSerializer):
     user = UserListingSerializer(required=False, default=CurrentUserDefault(), many=False)
     issue = serializers.PrimaryKeyRelatedField(queryset=Issue.objects.all(), many=False)
@@ -14,9 +14,14 @@ class TradeSerializer(BaseSerializer):
     price = serializers.FloatField(required=True)
     first_release = serializers.BooleanField(required=False)
 
+    issue_name = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = models.Trade
         fields = '__all__'
+
+    def get_issue_name(self, obj):
+        return obj.issue.name
 
     def validate(self, attrs):
         """
@@ -44,8 +49,14 @@ class TradeSerializer(BaseSerializer):
         return obj
 
 
+class TradeListingSerializer(TradeSerializer):
+    class Meta(TradeSerializer.Meta):
+        fields = ['user', 'issue_name']
+
+
 class TransactionSerializer(BaseSerializer):
     trade = serializers.PrimaryKeyRelatedField(queryset=models.Trade.objects.all(), many=False)
+
     time = serializers.DateTimeField(required=False, input_formats=['%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M', '%Y-%m-%d'],
                                      format='%Y-%m-%d %H:%M:%S')
     amount = serializers.IntegerField(required=True)
@@ -55,9 +66,25 @@ class TransactionSerializer(BaseSerializer):
     hash = serializers.CharField(required=True, max_length=150,
                                  validators=[UniqueValidator(queryset=models.Transaction.objects.all())])
 
+    type = serializers.SerializerMethodField(read_only=True)
+
+    trade_detail = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = models.Transaction
         fields = '__all__'
+
+    def get_trade_detail(self, obj):
+        return TradeListingSerializer(obj.trade, many=False).data
+
+    def get_type(self, obj):
+        _type = 'unknown'
+        user = self.context['request'].user
+        if user.id == obj.buyer.id:
+            _type = 'buy'
+        elif user.id == obj.trade.user.id:
+            _type = 'sale'
+        return _type
 
     def validate(self, attrs):
         """

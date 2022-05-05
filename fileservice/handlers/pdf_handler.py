@@ -3,13 +3,16 @@ import os
 import shutil
 from io import BytesIO
 from .nft_storage_handler import NFTStorageHandler
+from .encryption_handler import EncryptionHandler
 import zipfile
 from pathlib import Path
 import uuid
+import math
 
 
 class FileHandler:
-    TMP_ROOT = '../tmp'
+    BASE_DIR = Path(__file__).resolve().parent.parent
+    TMP_ROOT = os.path.join(BASE_DIR, 'workspace')
 
     @classmethod
     def compress(cls, path: str):
@@ -60,6 +63,7 @@ class FileHandler:
 
 
 class PDFHandler(FileHandler):
+    PAGES_PER_DIR = 150
 
     def __init__(self, file: [str, BytesIO] = None):
         if isinstance(file, str):
@@ -79,22 +83,34 @@ class PDFHandler(FileHandler):
     def get_file_name(self) -> str:
         return self.pdf.name.rsplit('/')[-1].rsplit('.')[0]
 
-    def to_img(self) -> str:
+    def get_img_dirs(self) -> list:
         """
-        1, 获取pdf，将pdf转换为image，image存储的文件夹为pdf文件名，每一张image的命名为页码
-        :return
-            images directory path
+        将图片分批存入多个文件夹中，以免上传时超出大小限制(<=31GiB)
+        :return:
         """
-        zoom = {'x': 3.0, 'y': 3.0}
-        # fragments = []
-        try:
-            file_name = self.get_file_name()
-            if not file_name:
-                file_name = uuid.uuid4().hex
-            img_dir_path = os.path.join(self.TMP_ROOT, file_name)
+        img_dirs = []
+        pages = self.get_pages()
+        n_batches = math.ceil(pages / self.PAGES_PER_DIR)  # number of dirs
+        file_name = self.get_file_name()
+        if not file_name:
+            file_name = uuid.uuid4().hex
+        for i in range(n_batches):
+            img_dir_path = os.path.join(self.TMP_ROOT, f"{file_name}-{i}")
 
             if not os.path.exists(img_dir_path):
                 os.makedirs(img_dir_path)
+            img_dirs.append(img_dir_path)
+        return img_dirs
+
+    def to_img(self, img_dirs: list):
+        """
+        1, 获取pdf，将pdf转换为image，image存储的文件夹为pdf文件名，每一张image的命名为页码
+        :return: self
+        """
+        # 图片缩放 {x*y} 倍
+        zoom = {'x': 2.0, 'y': 2.0}
+        try:
+            # img_dirs = self._get_img_dirs()
 
             matrix = fitz.Matrix(zoom['x'], zoom['y']).prerotate(0)
             n_digits = len(str(self.get_pages()))
@@ -104,31 +120,37 @@ class PDFHandler(FileHandler):
                 # 需要使用多位数做页码，不然后期排序会出现问题
                 current_page = str(i + 1)
                 p_num = '0' * (n_digits - len(current_page)) + current_page
-                img_path = os.path.join(img_dir_path, f'page-{p_num}.jpg')
+                img_path = os.path.join(img_dirs[i // self.PAGES_PER_DIR], f'page-{p_num}.png')
                 pixmap.pil_save(img_path, optimize=True)
-                # TODO 对图片进行加密
-                # 存储到filestorage
-                # cid = self.store_img(img_file_path)
-                # 存储url
-                # fragments.append({
-                #     'file_url': f'{self.PREFIX}/{cid}',
-                #     'token': cid,
-                #     'page': i + 1
-                # })
-            # 销毁本地文件
-            # self.remove(img_dir_path)
-            return img_dir_path
+                print(f'dir {img_dirs[i // self.PAGES_PER_DIR]}, page {p_num}, '
+                      f'image size: {pixmap.w}*{pixmap.h}*{pixmap.n}/8')
+            return self
         except Exception as e:
             print(f'Exception when calling PDFHandler->to_img: {e}')
             raise
 
-    def encrypt_img(self, file_path: str):
+    def encrypt_img(self, sk_file: str, img_dirs: list):
         """
         调用加密接口对图片进行加密，加密完后存储到filestorage
-        :param file_path:
-        :return:
+        :param sk_file: str, 私钥文件
+        :param img_dirs: list, 原图片文件目录
+        :return: self
         """
-        raise NotImplementedError
+        print("Encrypting images...")
+        enc_handler = EncryptionHandler()
+        for img_dir in img_dirs:
+            print(f"Image directory -> {img_dir}")
+            dir_name = img_dir.rsplit('/', 1)[-1]
+            for f in os.listdir(img_dir):
+                org_img = os.path.join(dir_name, f)
+                # add signature
+                enc_handler.add_sign(sk_file, org_img)
+                # encrypt image
+                enc_img = f"{org_img}.sse"
+                enc_handler.encrypt_img(sk_file, org_img, enc_img)
+                # remove original image
+                self.remove(os.path.join(img_dir, f))
+        return self
 
     def decrypt_img(self, file):
         """
@@ -138,23 +160,41 @@ class PDFHandler(FileHandler):
         """
         raise NotImplementedError
 
-    def upload(self) -> dict:
+    def upload(self, sk_file: str) -> dict:
         """
         convert pdf to images with encryption, and store these images into nft.storage
+        :param sk_file: str, private key file path
         :return: dict, format:
                     {
                         cid: 'aa',
                         nft_url: 'https://aa.xxx',
                         n_pages: 12
                     }
-
         """
-        img_dir_path = self.to_img()
-        # store compressed file into nft.storage
-        cid = NFTStorageHandler().bulk_upload(img_dir_path)
-        # delete temporary files
-        self.remove(img_dir_path)
-        return {'cid': cid, 'nft_url': NFTStorageHandler.get_nft_url(cid), 'n_pages': self.get_pages()}
+        print('Uploading files...')
+        print('Step 1, convert pdf to images')
+        img_dirs = self.get_img_dirs()
+        self.to_img(img_dirs)
+        print('Step 2, encrypt images')
+        self.encrypt_img(sk_file, img_dirs)
+        try:
+            print('Step 3, upload images to nft.storage')
+            # store compressed file into nft.storage
+            cids = [NFTStorageHandler().bulk_upload(img_dir) for img_dir in img_dirs]
+            return {'cids': cids, 'n_pages': self.get_pages()}
+        except Exception as e:
+            # todo tell server the job status
+            #  status 524 timeout
+            #  status 413 payload too large
+            #  status 502 bad gateway
+            print(f'Exception when calling PDFHandler->upload: {e}')
+            raise
+        finally:
+            # delete temporary files
+            print('Step 4, remove images')
+            for img_dir in img_dirs:
+                self.remove(img_dir)
+            print('Upload finished.')
 
     # def download_by_url(self, url: str, path=None, chunk_size=128) -> str:
     #     print(f'Downloading zip file from {url}...')
@@ -268,7 +308,7 @@ class PDFHandler(FileHandler):
     #     return pdf_file
 
     @classmethod
-    def get_file_urls(cls, cid: str) -> list:
+    def _get_file_urls(cls, cid: str) -> list:
         """
         get files from nft.storage
         :param cid: nft cid
@@ -284,6 +324,12 @@ class PDFHandler(FileHandler):
         data = NFTStorageHandler().retrieve(cid)
         # sort urls to ordering pages
         urls = sorted([NFTStorageHandler().get_file_url(cid, file['name']) for file in data['files']])
+        return urls
+
+    def get_file_urls(self, cids: list) -> list:
+        urls = []
+        for cid in cids:
+            urls.extend(self._get_file_urls(cid))
         return urls
 
     # def get_pdf(self, token_url: str, cid: str) -> str:
