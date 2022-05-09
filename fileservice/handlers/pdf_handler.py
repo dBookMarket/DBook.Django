@@ -15,6 +15,7 @@ from PIL import Image
 class FileHandler:
     BASE_DIR = Path(__file__).resolve().parent.parent
     TMP_ROOT = os.path.join(BASE_DIR, 'workspace')
+    KEY_ROOT = os.path.join(BASE_DIR, 'file')
 
     @classmethod
     def compress(cls, path: str):
@@ -66,6 +67,9 @@ class FileHandler:
 
 class PDFHandler(FileHandler):
     PAGES_PER_DIR = 50
+    PRIVATE_KEY_DIR = 'private_keys'
+    PUBLIC_KEY_DIR = 'public_keys'
+    KEY_DICT_DIR = 'key_dicts'
 
     def __init__(self, file: [str, BytesIO] = None):
         if isinstance(file, str):
@@ -176,10 +180,25 @@ class PDFHandler(FileHandler):
                 enc_handler.decrypt_img(sk_file, enc_img, dec_img)
         return self
 
-    def upload(self, sk_file: str) -> dict:
+    def generate_keys(self):
+        """
+        generate private/public keys and key dict file
+        :return: tuple, (private key file, public key file, key dict file)
+        """
+        print(f'Generating keys...')
+        base_name = uuid.uuid4().hex
+        sk_file = os.path.join(self.PRIVATE_KEY_DIR, f'{base_name}.stk')
+        pk_file = os.path.join(self.PUBLIC_KEY_DIR, f'{base_name}.pck')
+        dict_file = os.path.join(self.KEY_DICT_DIR, f'{base_name}.dict')
+        enc_handler = EncryptionHandler()
+        enc_handler.generate_private_key(sk_file)
+        enc_handler.generate_public_key(pk_file, sk_file)
+        enc_handler.generate_key_dict(dict_file, sk_file)
+        return sk_file, pk_file, dict_file
+
+    def upload(self) -> dict:
         """
         convert pdf to images with encryption, and store these images into nft.storage
-        :param sk_file: str, private key file path
         :return: dict, format:
                     {
                         cid: 'aa',
@@ -188,24 +207,31 @@ class PDFHandler(FileHandler):
                     }
         """
         print('Uploading files...')
+        print('Step 0, generate keys')
+        sk_file, pk_file, dict_file = self.generate_keys()
         print('Step 1, convert pdf to images')
         img_dirs = self.get_img_dirs()
         self.to_img(img_dirs)
         print('Step 2, encrypt images')
         self.encrypt_img(sk_file, img_dirs)
         # test decryption
-        # self.decrypt_img(sk_file, img_dirs)
+        self.decrypt_img(sk_file, img_dirs)
         try:
             print('Step 3, upload images to nft.storage')
             # store compressed file into nft.storage
             cids = [NFTStorageHandler().bulk_upload(img_dir) for img_dir in img_dirs]
-            return {'cids': cids, 'n_pages': self.get_pages()}
+            return {'cids': cids, 'n_pages': self.get_pages(),
+                    'private_key': sk_file, 'public_key': pk_file, 'key_dict': dict_file}
         except Exception as e:
             # todo tell server the job status
             #  status 524 timeout
             #  status 413 payload too large
             #  status 502 bad gateway
             print(f'Exception when calling PDFHandler->upload: {e}')
+            print(f'Remove key files...')
+            self.remove(os.path.join(self.KEY_ROOT, sk_file))
+            self.remove(os.path.join(self.KEY_ROOT, pk_file))
+            self.remove(os.path.join(self.KEY_ROOT, dict_file))
             raise
         finally:
             # delete temporary files

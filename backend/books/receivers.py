@@ -20,10 +20,10 @@ def upload_pdf(issue_obj):
             {'file': 'Update file failed because of the failure of revoking the old one.'}
         )
     try:
-        ek = EncryptionKey.objects.get(issue=issue_obj)
+        # ek = EncryptionKey.objects.get(issue=issue_obj)
         # start a new task
-        print(f'pdf path -> {issue_obj.file.path}, private key name -> {ek.private_key.name}')
-        result = file_service_connector.upload_file(issue_obj.file.path, ek.private_key.name)
+        print(f'pdf path -> {issue_obj.file.path}')
+        result = file_service_connector.upload_file(issue_obj.file.path)
         if result:
             issue_obj.task_id = result.task_id
             issue_obj.status = IssueStatus.UPLOADING.value

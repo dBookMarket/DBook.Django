@@ -31,9 +31,10 @@ class NFTStorageHandler:
     def bulk_upload(self, dir_path: str, retry: int = 3) -> str:
         """
         :param dir_path: str, file directory
-        :param retry: int, the number of retry to upload
+        :param retry: int, the number of retry to upload FOR TIMEOUT ERROR
         :return:
         """
+        print(f'Running bulk_upload, dir_path: {dir_path}, retry: {3 - retry}')
         if not os.path.isdir(dir_path):
             raise ValueError('dir_path must be a directory path')
         try:
@@ -42,7 +43,7 @@ class NFTStorageHandler:
                 for file_name in sorted(files):
                     f_path = os.path.join(root, file_name)
                     fields.append(('file', (file_name, open(f_path, 'rb'), 'application/octet-stream')))
-            # the limit of upload size 31GB
+            # the limit of upload size 100MB
             me = MultipartEncoder(fields=fields)
             headers = {
                 'Content-Type': me.content_type,
@@ -53,7 +54,12 @@ class NFTStorageHandler:
             data = res.json()
             if not data['ok']:
                 print(f"Error Response when calling NFTStorageAPI->bulk_upload -> {data['error']}")
-                raise RuntimeError(data['error']['message'])
+                # if 524 time out, then retry
+                # code is Error means response status is 500
+                if data['error'].get('code') == 'Error' and data['error'].get('message', '').find('524') != -1:
+                    if retry > 0:
+                        self.bulk_upload(dir_path, retry - 1)
+                raise RuntimeError(data['error'].get('message', ''))
             return data['value']['cid']
         except Exception as e:
             print(f'Exception when calling NFTStorageAPI->bulk_upload: {e}')

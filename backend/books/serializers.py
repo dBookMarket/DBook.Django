@@ -1,5 +1,5 @@
-import os.path
-from uuid import uuid4
+# import os.path
+# from uuid import uuid4
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 from . import models, signals
@@ -9,8 +9,8 @@ from stores.models import Trade
 from utils.serializers import BaseSerializer, CurrentUserDefault
 from utils.enums import IssueStatus
 from rest_framework.validators import UniqueValidator, UniqueTogetherValidator
-from secure.encryption_handler import EncryptionHandler
-from django.conf import settings
+# from secure.encryption_handler import EncryptionHandler
+# from django.conf import settings
 from django.db.models import Max, Min, Sum
 
 
@@ -172,19 +172,19 @@ class IssueSerializer(BaseSerializer):
                 raise serializers.ValidationError({'file': 'The file size must be no more than 60Mb'})
         return attrs
 
-    def create_encryption_key(self, issue):
-        enc_handler = EncryptionHandler()
-        base_name = uuid4().hex
-        sk_file = os.path.join(settings.PRIVATE_KEY_DIR, f'{base_name}.stk')
-        pk_file = os.path.join(settings.PUBLIC_KEY_DIR, f'{base_name}.pck')
-        dict_file = os.path.join(settings.KEY_DICT_DIR, f'{base_name}.dict')
-        enc_handler.generate_private_key(sk_file)
-        enc_handler.generate_public_key(pk_file, sk_file)
-        enc_handler.generate_key_dict(dict_file, sk_file)
-        models.EncryptionKey.objects.update_or_create(
-            defaults={'private_key': sk_file, 'public_key': pk_file, 'key_dict': dict_file},
-            issue=issue
-        )
+    # def create_encryption_key(self, issue):
+    #     enc_handler = EncryptionHandler()
+    #     base_name = uuid4().hex
+    #     sk_file = os.path.join(settings.PRIVATE_KEY_DIR, f'{base_name}.stk')
+    #     pk_file = os.path.join(settings.PUBLIC_KEY_DIR, f'{base_name}.pck')
+    #     dict_file = os.path.join(settings.KEY_DICT_DIR, f'{base_name}.dict')
+    #     enc_handler.generate_private_key(sk_file)
+    #     enc_handler.generate_public_key(pk_file, sk_file)
+    #     enc_handler.generate_key_dict(dict_file, sk_file)
+    #     models.EncryptionKey.objects.update_or_create(
+    #         defaults={'private_key': sk_file, 'public_key': pk_file, 'key_dict': dict_file},
+    #         issue=issue
+    #     )
 
     def create(self, validated_data):
         publisher_name = validated_data.pop('publisher_name')
@@ -197,7 +197,7 @@ class IssueSerializer(BaseSerializer):
         obj_issue.publisher.desc = publisher_desc
         obj_issue.publisher.save()
         # add encryption key
-        self.create_encryption_key(obj_issue)
+        # self.create_encryption_key(obj_issue)
         # send signal
         signals.post_create_issue.send(sender=self.Meta.model, instance=obj_issue)
         return obj_issue
@@ -218,7 +218,7 @@ class IssueSerializer(BaseSerializer):
         # if len(self.context['request'].FILES) != 0:
         # If failure, then re-upload file
         if obj.status != IssueStatus.SUCCESS.value:
-            self.create_encryption_key(obj)
+            # self.create_encryption_key(obj)
             # send signal
             signals.post_create_issue.send(sender=self.Meta.model, instance=obj)
         return obj

@@ -32,7 +32,7 @@ class EncryptionHandler:
         self.__check_file(abs_path)
 
     def get_watermark_img(self):
-        return 'bwm.png'
+        return 'bwm16x16.png'
 
     def to_go_string(self, file: str):
         b_file = file.encode('utf-8')
