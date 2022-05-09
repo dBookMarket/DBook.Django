@@ -1,14 +1,17 @@
 import os.path
-
+from uuid import uuid4
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 from . import models, signals
 from accounts.models import User
 from accounts.serializers import UserListingSerializer
+from stores.models import Trade
 from utils.serializers import BaseSerializer, CurrentUserDefault
+from utils.enums import IssueStatus
 from rest_framework.validators import UniqueValidator, UniqueTogetherValidator
 from secure.encryption_handler import EncryptionHandler
 from django.conf import settings
+from django.db.models import Max, Min, Sum
 
 
 class CategorySerializer(BaseSerializer):
@@ -26,8 +29,7 @@ class CategorySerializer(BaseSerializer):
 class ContractSerializer(BaseSerializer):
     issue = serializers.PrimaryKeyRelatedField(queryset=models.Issue.objects.all(), many=False,
                                                validators=[UniqueValidator(queryset=models.Contract.objects.all())])
-    address = serializers.CharField(required=True, max_length=150,
-                                    validators=[UniqueValidator(queryset=models.Contract.objects.all())])
+    address = serializers.CharField(required=True, max_length=150)
     token_amount = serializers.IntegerField(required=False)
     token_criteria = serializers.CharField(required=False, max_length=150, allow_blank=True)
     block_chain = serializers.CharField(required=False, max_length=150, allow_blank=True)
@@ -55,11 +57,19 @@ class PreviewSerializer(BaseSerializer):
     start_page = serializers.IntegerField(required=False)
     n_pages = serializers.IntegerField(required=False)
 
-    file = serializers.FileField(required=False)
+    file = serializers.FileField(required=False, write_only=True)
+
+    file_url = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = models.Preview
         fields = '__all__'
+
+    def get_file_url(self, obj):
+        request = self.context.get('request')
+        if request and obj.file:
+            return request.build_absolute_uri(obj.file.url)
+        return ''
 
 
 class IssueSerializer(BaseSerializer):
@@ -83,23 +93,40 @@ class IssueSerializer(BaseSerializer):
     publisher_desc = serializers.CharField(required=True, max_length=1500, write_only=True)
     file = serializers.FileField(required=True, write_only=True)
 
-    cid = serializers.ReadOnlyField()
-    nft_url = serializers.ReadOnlyField()
+    cids = serializers.ReadOnlyField()
     status = serializers.ReadOnlyField()
     n_owners = serializers.ReadOnlyField()
     n_circulations = serializers.ReadOnlyField()
 
     is_owned = serializers.SerializerMethodField(read_only=True)
-
-    contract = ContractSerializer(read_only=True, many=False)
-    preview = PreviewSerializer(read_only=True, many=False)
-
+    contract = serializers.SerializerMethodField(read_only=True)
+    preview = serializers.SerializerMethodField(read_only=True)
     cover_url = serializers.SerializerMethodField(read_only=True)
+    price_range = serializers.SerializerMethodField(read_only=True)
+    n_remains = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = models.Issue
-        # fields = '__all__'
         exclude = ['task_id']
+
+    def get_n_remains(self, obj):
+        user = self.context['request'].user
+        try:
+            obj_asset = models.Asset.objects.get(user=user, issue=obj)
+            n_sales = Trade.objects.filter(user=user, issue=obj).aggregate(t_amount=Sum('amount'))['t_amount']
+            if n_sales is None:
+                n_sales = 0
+            return obj_asset.amount - n_sales
+        except models.Asset.DoesNotExist:
+            return 0
+
+    def get_price_range(self, obj):
+        _range = Trade.objects.filter(issue=obj).aggregate(min_price=Min('price'), max_price=Max('price'))
+        if _range['min_price'] is None:
+            _range['min_price'] = 20
+        if _range['max_price'] is None or _range['max_price'] == _range['min_price']:
+            _range['max_price'] = _range['min_price'] * 2
+        return _range
 
     def get_is_owned(self, obj):
         user = self.context['request'].user
@@ -113,6 +140,22 @@ class IssueSerializer(BaseSerializer):
         if request and obj.cover:
             return request.build_absolute_uri(obj.cover.url)
         return ''
+
+    def get_contract(self, obj):
+        try:
+            instance = models.Contract.objects.get(issue=obj)
+            serializer = ContractSerializer(instance=instance, many=False, context=self.context)
+            return serializer.data
+        except models.Contract.DoesNotExist:
+            return {}
+
+    def get_preview(self, obj):
+        try:
+            instance = models.Preview.objects.get(issue=obj)
+            serializer = PreviewSerializer(instance=instance, many=False, context=self.context)
+            return serializer.data
+        except models.Preview.DoesNotExist:
+            return {}
 
     def validate(self, attrs):
         """
@@ -131,9 +174,10 @@ class IssueSerializer(BaseSerializer):
 
     def create_encryption_key(self, issue):
         enc_handler = EncryptionHandler()
-        sk_file = os.path.join(settings.PRIVATE_KEY_DIR, f'issue-{issue.id}-sk.stk')
-        pk_file = os.path.join(settings.PUBLIC_KEY_DIR, f'issue-{issue.id}-pk.pck')
-        dict_file = os.path.join(settings.KEY_DICT_DIR, f'issue-{issue.id}-kd.dict')
+        base_name = uuid4().hex
+        sk_file = os.path.join(settings.PRIVATE_KEY_DIR, f'{base_name}.stk')
+        pk_file = os.path.join(settings.PUBLIC_KEY_DIR, f'{base_name}.pck')
+        dict_file = os.path.join(settings.KEY_DICT_DIR, f'{base_name}.dict')
         enc_handler.generate_private_key(sk_file)
         enc_handler.generate_public_key(pk_file, sk_file)
         enc_handler.generate_key_dict(dict_file, sk_file)
@@ -147,7 +191,7 @@ class IssueSerializer(BaseSerializer):
         publisher_desc = validated_data.pop('publisher_desc')
         obj_issue = self.Meta.model.objects.create(**validated_data)
         # add perm
-        self.assign_perms(obj_issue.publisher, obj_issue)
+        # self.assign_perms(obj_issue.publisher, obj_issue)
         # update publisher
         obj_issue.publisher.name = publisher_name
         obj_issue.publisher.desc = publisher_desc
@@ -171,7 +215,9 @@ class IssueSerializer(BaseSerializer):
         if publisher_name or publisher_desc:
             obj.publisher.save()
 
-        if len(self.context['request'].FILES) != 0:
+        # if len(self.context['request'].FILES) != 0:
+        # If failure, then re-upload file
+        if obj.status != IssueStatus.SUCCESS.value:
             self.create_encryption_key(obj)
             # send signal
             signals.post_create_issue.send(sender=self.Meta.model, instance=obj)

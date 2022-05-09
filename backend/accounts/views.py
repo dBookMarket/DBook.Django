@@ -7,6 +7,7 @@ from .models import User
 import json
 from web3.auto import Web3
 from utils.helper import Helper
+from utils.enums import UserType
 
 
 class LoginWithMetaMaskView(generic.View):
@@ -57,6 +58,7 @@ class IssuePermView(generic.View):
             issue_perm = Permission.objects.get(codename='add_issue')
             for user in queryset:
                 user.user_permissions.add(issue_perm)
+            queryset.update(type=UserType.PUBLISHER.value)
             return JsonResponse({'detail': reverse('admin:accounts_user_changelist')}, status=200)
         except Permission.DoesNotExist:
             print('Permission not found when calling IssuePermView->post')
@@ -73,6 +75,7 @@ class IssuePermView(generic.View):
             issue_perm = Permission.objects.get(codename='add_issue')
             for user in queryset:
                 user.user_permissions.remove(issue_perm)
+            queryset.update(type=UserType.PUBLISHER.value)
             return JsonResponse({'detail': reverse('admin:accounts_user_changelist')}, status=200)
         except Permission.DoesNotExist:
             print('Permission not found when calling IssuePermView->post')

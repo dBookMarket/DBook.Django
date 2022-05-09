@@ -28,7 +28,12 @@ class NFTStorageHandler:
                 print(f'Exception when calling NFTStorageAPI->store: {e}')
                 raise e
 
-    def bulk_upload(self, dir_path: str) -> str:
+    def bulk_upload(self, dir_path: str, retry: int = 3) -> str:
+        """
+        :param dir_path: str, file directory
+        :param retry: int, the number of retry to upload
+        :return:
+        """
         if not os.path.isdir(dir_path):
             raise ValueError('dir_path must be a directory path')
         try:
@@ -36,7 +41,7 @@ class NFTStorageHandler:
             for root, dirs, files in os.walk(dir_path):
                 for file_name in sorted(files):
                     f_path = os.path.join(root, file_name)
-                    fields.append(('file', (file_name, open(f_path, 'rb'), 'image/*')))
+                    fields.append(('file', (file_name, open(f_path, 'rb'), 'application/octet-stream')))
             # the limit of upload size 31GB
             me = MultipartEncoder(fields=fields)
             headers = {
@@ -47,6 +52,7 @@ class NFTStorageHandler:
             res = requests.post(f'{self.base_api}/upload', data=me, headers=headers)
             data = res.json()
             if not data['ok']:
+                print(f"Error Response when calling NFTStorageAPI->bulk_upload -> {data['error']}")
                 raise RuntimeError(data['error']['message'])
             return data['value']['cid']
         except Exception as e:
@@ -110,4 +116,3 @@ class NFTStorageHandler:
         except Exception as e:
             print(f'Exception when calling NFTStorageAPI->retrieve: {e}')
             raise
-

@@ -5,6 +5,7 @@ from .signals import post_create_issue
 from utils.enums import IssueStatus
 from .file_service_connector import FileServiceConnector
 from rest_framework.exceptions import ValidationError
+from utils.helper import Helper
 
 
 def upload_pdf(issue_obj):
@@ -43,3 +44,8 @@ def post_save_asset(sender, instance, **kwargs):
 def post_create_issue(sender, instance, **kwargs):
     # send a celery task to upload file to nft.storage
     upload_pdf(instance)
+
+
+@receiver(post_save, sender=Issue)
+def post_save_issue(sender, instance, **kwargs):
+    Helper().assign_perms(Issue, instance.publisher, instance)

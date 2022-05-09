@@ -24,7 +24,12 @@ class Category(BaseModel):
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         if self.parent:
             self.level = self.parent.level + 1
+        else:
+            self.level = 1
         super().save(force_insert, force_update, using, update_fields)
+
+    def __str__(self):
+        return self.name
 
 
 class Issue(BaseModel):
@@ -64,14 +69,6 @@ class Issue(BaseModel):
         verbose_name_plural = verbose_name
 
     @property
-    def contract(self):
-        return Contract.objects.get(issue=self.id)
-
-    @property
-    def preview(self):
-        return Preview.objects.get(issue=self.id)
-
-    @property
     def n_owners(self):
         """the number of whom owns this book"""
         return Asset.objects.filter(issue_id=self.id).count()
@@ -85,11 +82,14 @@ class Issue(BaseModel):
             total_amount = queryset.aggregate(total_amount=models.Sum('amount'))['total_amount']
         return total_amount
 
+    def __str__(self):
+        return self.name
+
 
 class Contract(BaseModel):
     issue = models.OneToOneField(to='books.Issue', to_field='id', related_name='contract_issue',
                                  on_delete=models.CASCADE, verbose_name='书籍')
-    address = models.CharField(max_length=150, unique=True, db_index=True, verbose_name='合约地址')
+    address = models.CharField(max_length=150, verbose_name='合约地址')
 
     token_amount = models.IntegerField(blank=True, default=0, verbose_name='代币数量')
     token_criteria = models.CharField(max_length=150, blank=True, default='ERC-1155', verbose_name='代币标准')
@@ -101,6 +101,9 @@ class Contract(BaseModel):
         ordering = ['id', 'issue']
         verbose_name = '书籍合约'
         verbose_name_plural = verbose_name
+
+    def __str__(self):
+        return f'{self.issue.name}'
 
 
 class Bookmark(BaseModel):
@@ -114,6 +117,9 @@ class Bookmark(BaseModel):
         ordering = ['id', 'user', 'issue']
         verbose_name = '书签'
         verbose_name_plural = verbose_name
+
+    def __str__(self):
+        return f'{self.user.account_addr}-{self.issue.name}'
 
 
 class Banner(BaseModel):
@@ -132,6 +138,9 @@ class Banner(BaseModel):
             self.img.delete()
         super().delete(using, keep_parents)
 
+    def __str__(self):
+        return self.name
+
 
 class Preview(BaseModel):
     issue = models.OneToOneField(to='books.Issue', to_field='id', related_name='preview_issue',
@@ -145,6 +154,9 @@ class Preview(BaseModel):
         ordering = ['id', 'issue']
         verbose_name = '书籍预览'
         verbose_name_plural = verbose_name
+
+    def __str__(self):
+        return f'{self.issue.name}'
 
 
 class Asset(BaseModel):
@@ -170,6 +182,9 @@ class Asset(BaseModel):
             self.file.delete()
         super().delete(using, keep_parents)
 
+    def __str__(self):
+        return f'{self.user.account_addr}-{self.issue.name}'
+
 
 class EncryptionKey(BaseModel):
     issue = models.OneToOneField(to='books.Issue', to_field='id', related_name='encryption_key_issue',
@@ -182,6 +197,9 @@ class EncryptionKey(BaseModel):
         ordering = ['id', 'issue']
         verbose_name = '加密文件'
         verbose_name_plural = verbose_name
+
+    def __str__(self):
+        return self.issue.name
 
     def delete(self, using=None, keep_parents=False):
         if self.public_key:

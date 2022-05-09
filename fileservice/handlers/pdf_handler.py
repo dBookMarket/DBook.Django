@@ -9,6 +9,8 @@ from pathlib import Path
 import uuid
 import math
 
+from PIL import Image
+
 
 class FileHandler:
     BASE_DIR = Path(__file__).resolve().parent.parent
@@ -63,7 +65,7 @@ class FileHandler:
 
 
 class PDFHandler(FileHandler):
-    PAGES_PER_DIR = 150
+    PAGES_PER_DIR = 50
 
     def __init__(self, file: [str, BytesIO] = None):
         if isinstance(file, str):
@@ -110,8 +112,6 @@ class PDFHandler(FileHandler):
         # 图片缩放 {x*y} 倍
         zoom = {'x': 2.0, 'y': 2.0}
         try:
-            # img_dirs = self._get_img_dirs()
-
             matrix = fitz.Matrix(zoom['x'], zoom['y']).prerotate(0)
             n_digits = len(str(self.get_pages()))
             for i, page in enumerate(self.pdf):
@@ -121,7 +121,11 @@ class PDFHandler(FileHandler):
                 current_page = str(i + 1)
                 p_num = '0' * (n_digits - len(current_page)) + current_page
                 img_path = os.path.join(img_dirs[i // self.PAGES_PER_DIR], f'page-{p_num}.png')
-                pixmap.pil_save(img_path, optimize=True)
+                pixmap.pil_save(img_path, format='png', optimize=True)
+                # resize image 1024*1024
+                img = Image.open(img_path)
+                img = img.resize((1024, 1024), Image.ANTIALIAS)
+                img.save(img_path)
                 print(f'dir {img_dirs[i // self.PAGES_PER_DIR]}, page {p_num}, '
                       f'image size: {pixmap.w}*{pixmap.h}*{pixmap.n}/8')
             return self
@@ -143,6 +147,8 @@ class PDFHandler(FileHandler):
             dir_name = img_dir.rsplit('/', 1)[-1]
             for f in os.listdir(img_dir):
                 org_img = os.path.join(dir_name, f)
+                # add blind watermark
+                enc_handler.add_bwm(org_img, org_img)
                 # add signature
                 enc_handler.add_sign(sk_file, org_img)
                 # encrypt image
@@ -152,13 +158,23 @@ class PDFHandler(FileHandler):
                 self.remove(os.path.join(img_dir, f))
         return self
 
-    def decrypt_img(self, file):
+    def decrypt_img(self, sk_file: str, img_dirs: list):
         """
-        调用解密接口对图片进行解密，解密后的文件拼接成临时的pdf文件
-        :param file:
+        调用解密接口对图片进行解密
+        :param sk_file: str, private key file
+        :param img_dirs: list, encrypted images directory list
         :return: str
         """
-        raise NotImplementedError
+        print('Decrypting images...')
+        enc_handler = EncryptionHandler()
+        for img_dir in img_dirs:
+            print(f"Image directory -> {img_dir}")
+            dir_name = img_dir.rsplit('/', 1)[-1]
+            for f in os.listdir(img_dir):
+                enc_img = os.path.join(dir_name, f)
+                dec_img = enc_img.rstrip('.sse')
+                enc_handler.decrypt_img(sk_file, enc_img, dec_img)
+        return self
 
     def upload(self, sk_file: str) -> dict:
         """
@@ -177,6 +193,8 @@ class PDFHandler(FileHandler):
         self.to_img(img_dirs)
         print('Step 2, encrypt images')
         self.encrypt_img(sk_file, img_dirs)
+        # test decryption
+        # self.decrypt_img(sk_file, img_dirs)
         try:
             print('Step 3, upload images to nft.storage')
             # store compressed file into nft.storage

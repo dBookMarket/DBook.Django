@@ -83,7 +83,7 @@ class IssueViewSet(BaseViewSet):
 
         return Response(serializer.data)
 
-    @action(methods=['PATCH'], detail=True, url_path='trade')
+    @action(methods=['PUT', 'PATCH'], detail=True, url_path='trade')
     def trade(self, request, *args, **kwargs):
         """
         Call it when the file is uploaded.
@@ -97,11 +97,17 @@ class IssueViewSet(BaseViewSet):
         elif obj_issue.status != IssueStatus.UPLOADED.value:
             raise ValidationError({'detail': 'The file uploading is failure, or not finished.'})
         with atomic():
-            pdf_handler = PDFHandler(obj_issue.file.path)
+            # 0, create contract
+            request.data['issue'] = obj_issue.id
+            contract_serializer = serializers.ContractSerializer(data=request.data, many=False,
+                                                                 context=self.get_serializer_context())
+            contract_serializer.is_valid(raise_exception=True)
+            contract_serializer.save()
             # 1, update status
             obj_issue.status = IssueStatus.SUCCESS.value
             obj_issue.save()
             # 2, save preview
+            pdf_handler = PDFHandler(obj_issue.file.path)
             obj_preview = models.Preview.objects.create(issue=obj_issue)
             pre_file = pdf_handler.get_preview_doc(from_page=obj_preview.start_page - 1,
                                                    to_page=obj_preview.start_page + obj_preview.n_pages - 2)
@@ -130,6 +136,7 @@ class IssueViewSet(BaseViewSet):
 
 
 class BookmarkViewSet(BaseViewSet):
+    permission_classes = [IsOwner]
     queryset = models.Bookmark.objects.all()
     serializer_class = serializers.BookmarkSerializer
     http_method_names = ['patch']
@@ -159,16 +166,16 @@ class AssetViewSet(BaseViewSet):
         instance = self.get_object()
         urls = []
         sk = ''
-        dict_file = ''
+        # dict_file = ''
         if instance.issue.cids:
             urls.extend(FileServiceConnector().get_file_urls(instance.issue.cids))
         try:
-            enc_key = models.EncryptionKey.objects.get(issue=instance)
+            enc_key = models.EncryptionKey.objects.get(issue=instance.issue)
             sk = request.build_absolute_uri(enc_key.private_key.url)
-            dict_file = request.build_absolute_uri(enc_key.key_dict.url)
+            # dict_file = request.build_absolute_uri(enc_key.key_dict.url)
         except models.EncryptionKey.DoesNotExist:
             pass
-        return Response({'files': urls, 'sk': sk, 'dict_file': dict_file})
+        return Response({'files': urls, 'sk': sk})
 
 
 class ContractViewSet(BaseViewSet):

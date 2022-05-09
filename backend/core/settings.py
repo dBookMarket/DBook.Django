@@ -304,7 +304,7 @@ SWAGGER_SETTINGS = {
 
 # contract
 CONTRACT_SETTINGS = {
-    'PLATFORM_CONTRACT_ADDRESS': '0x4f2C793DB2163A7A081b984E6E8e2c504825668b',
+    'PLATFORM_CONTRACT_ADDRESS': '0x662E48096EA75f1F5CfF8cF286BAD19278368B6a',
     'PLATFORM_CONTRACT_ABI': '''
     [{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"to","type":"address"},
     {"indexed":false,"internalType":"uint256","name":"nftId","type":"uint256"},
@@ -753,8 +753,29 @@ CONTRACT_SETTINGS = {
 
 # cors
 CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^https?://\w+\.ddid\.\w+$",
-    r"^https?://127\.0\.0\.1:?\d*$",
-    r"^https?://localhost:?\d*$"
+    r"^https?://(.+\.)?ddid\.\w+$",
+    r"^https?://127\.0\.0\.1(:\d+)?$",
+    r"^https?://localhost(:\d+)?$"
 ]
-CORS_URLS_REGEX = r"^/api/.*$"
+# CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+# CORS_ALLOW_METHODS = [
+#     "DELETE",
+#     "GET",
+#     "OPTIONS",
+#     "PATCH",
+#     "POST",
+#     "PUT",
+# ]
+#
+# CORS_ALLOW_HEADERS = [
+#     "accept",
+#     "accept-encoding",
+#     "authorization",
+#     "content-type",
+#     "dnt",
+#     "origin",
+#     "user-agent",
+#     "x-csrftoken",
+#     "x-requested-with",
+# ]
