@@ -19,6 +19,7 @@ from rest_framework.routers import DefaultRouter
 import books.apis
 import stores.apis
 import accounts.apis
+import authorities.apis
 
 
 class OptionalRouter(DefaultRouter):
@@ -45,5 +46,6 @@ urlpatterns = [
     url(r'^', include(router.urls)),
     url(r'login', accounts.apis.LoginAPIView.as_view(), name='login'),
     url(r'logout', accounts.apis.LogoutAPIView.as_view(), name='logout'),
-    url(r'nonce', accounts.apis.NonceAPIView.as_view(), name='nonce')
+    url(r'nonce', accounts.apis.NonceAPIView.as_view(), name='nonce'),
+    url(r'permissions', authorities.apis.PermissionAPIView.as_view(), name='permission')
 ]

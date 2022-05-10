@@ -215,7 +215,7 @@ class PDFHandler(FileHandler):
         print('Step 2, encrypt images')
         self.encrypt_img(sk_file, img_dirs)
         # test decryption
-        self.decrypt_img(sk_file, img_dirs)
+        # self.decrypt_img(sk_file, img_dirs)
         try:
             print('Step 3, upload images to nft.storage')
             # store compressed file into nft.storage
