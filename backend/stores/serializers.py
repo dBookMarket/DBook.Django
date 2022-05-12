@@ -44,18 +44,18 @@ class TradeSerializer(BaseSerializer):
         user = self.context['request'].user
         issue = attrs.get('issue')
         amount = attrs.get('amount', 0)
-        price = attrs.get('price')
+        # price = attrs.get('price')
         if issue:
             try:
                 obj_asset = Asset.objects.get(user=user, issue=issue)
                 all_trades = models.Trade.objects.filter(issue=issue)
-                if price:
-                    min_price = all_trades.aggregate(min_price=Min('price'))['min_price']
-                    if min_price is None:
-                        min_price = 20
-                    if price < min_price:
-                        raise serializers.ValidationError(
-                            {'price': f'The price cannot below the minimum price({min_price}) of all trades'})
+                # if price:
+                #     min_price = all_trades.aggregate(min_price=Min('price'))['min_price']
+                #     if min_price is None:
+                #         min_price = 20
+                #     if price < min_price:
+                #         raise serializers.ValidationError(
+                #             {'price': f'The price cannot below the minimum price({min_price}) of all trades'})
                 n_sales = 0
                 queryset = all_trades.filter(user=user)
                 if self.instance:
