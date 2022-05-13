@@ -17,7 +17,7 @@ class Category(BaseModel):
     comment = models.CharField(max_length=200, blank=True, default='', verbose_name='备注')
 
     class Meta:
-        ordering = ['level']
+        ordering = ['id']
         verbose_name = '分类'
         verbose_name_plural = verbose_name
 
