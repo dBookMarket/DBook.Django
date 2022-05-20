@@ -40,7 +40,7 @@ class Issue(BaseModel):
 
     # meta data
     author_name = models.CharField(max_length=150, verbose_name='作者名称')
-    author_desc = models.TextField(max_length=1500, verbose_name='作者描述')
+    author_desc = models.TextField(max_length=1500,  blank=True, default='', verbose_name='作者描述')
 
     cover = models.ImageField(blank=True, default=None, verbose_name='书籍封面', upload_to='covers')
     name = models.CharField(max_length=150, verbose_name='书籍名称')

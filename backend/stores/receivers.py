@@ -6,4 +6,8 @@ from utils.helper import Helper
 
 @receiver(post_save, sender=Trade)
 def post_save_trade(sender, instance, **kwargs):
-    Helper().assign_perms(Trade, instance.user, instance)
+    # delete trade if amount = 0
+    if instance.amount == 0:
+        instance.delete()
+    else:
+        Helper().assign_perms(Trade, instance.user, instance)
