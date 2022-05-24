@@ -196,7 +196,7 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'utils.pagination.CustomPagination',
     # 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
-    'PAGE_SIZE': 10,
+    'PAGE_SIZE': 20,
 
     'DATETIME_FORMAT': "%Y-%m-%d %H:%M:%S",  # "Y-m-d G:i:s"
     'DATE_FORMAT': "%Y-%m-%d",
@@ -295,16 +295,9 @@ SWAGGER_SETTINGS = {
     'SECURITY_DEFINITIONS': None,
 }
 
-# nft.storage
-# NFT_STORAGE = {
-#     'SUFFIX': 'ipfs.nftstorage.link',
-#     'PREFIX': 'https://ipfs.io/ipfs',
-#     'ACCESS_TOKEN': os.getenv('NFT_STORAGE_ACCESS_TOKEN', '')
-# }
-
 # contract
 CONTRACT_SETTINGS = {
-    'PLATFORM_CONTRACT_ADDRESS': '0x662E48096EA75f1F5CfF8cF286BAD19278368B6a',
+    'PLATFORM_CONTRACT_ADDRESS': '0xa2EBc3CeF87654B20B8096C8e37C55515362c068',
     'PLATFORM_CONTRACT_ABI': '''
     [{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"to","type":"address"},
     {"indexed":false,"internalType":"uint256","name":"nftId","type":"uint256"},
@@ -378,7 +371,7 @@ CONTRACT_SETTINGS = {
     {"internalType":"uint256","name":"fee","type":"uint256"}],
     "name":"trade","outputs":[],"stateMutability":"nonpayable","type":"function"}]
     ''',
-    'NFT_CONTRACT_ADDRESS': '0xa18C1feF1F76a554cD716096f39a051cf4F94523',
+    'NFT_CONTRACT_ADDRESS': '0x7651Fa608c990Ed1294A8A9f63ba89179BC0455D',
     'NFT_CONTRACT_ABI': '''
     [{"inputs":[{"internalType":"string","name":"name","type":"string"},
     {"internalType":"string","name":"symbol","type":"string"},
@@ -448,7 +441,7 @@ CONTRACT_SETTINGS = {
     "name":"uri","outputs":[{"internalType":"string","name":"","type":"string"}],
     "stateMutability":"view","type":"function"}]
     ''',
-    'USDC_CONTRACT_ADDRESS': '0xB556b362EC02d2384F4645d7160562538fdf40c4',
+    'USDC_CONTRACT_ADDRESS': '0xeE4Fa11C6afd8002c539F653D3C75bB4C0467210',
     'USDC_CONTRACT_ABI': '''
     [
     {

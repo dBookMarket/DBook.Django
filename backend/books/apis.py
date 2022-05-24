@@ -166,13 +166,14 @@ class AssetViewSet(BaseViewSet):
         instance = self.get_object()
         urls = []
         sk = ''
-        # dict_file = ''
         if instance.issue.cids:
             urls.extend(FileServiceConnector().get_file_urls(instance.issue.cids))
         try:
             enc_key = models.EncryptionKey.objects.get(issue=instance.issue)
             sk = request.build_absolute_uri(enc_key.private_key.url)
-            # dict_file = request.build_absolute_uri(enc_key.key_dict.url)
+            # work round
+            if isinstance(sk, str):
+                sk = sk.replace('/media/', '/file/')
         except models.EncryptionKey.DoesNotExist:
             pass
         return Response({'files': urls, 'sk': sk})
