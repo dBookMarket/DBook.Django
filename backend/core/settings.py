@@ -746,9 +746,9 @@ CONTRACT_SETTINGS = {
 
 # cors
 CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^https?://(.+\.)?ddid\.\w+$",
+    r"^https?://(.+\.)?(ddid|dbookmarket)\.\w+$",
     r"^https?://127\.0\.0\.1(:\d+)?$",
-    r"^https?://localhost(:\d+)?$"
+    r"^https?://localhost(:\d+)?$",
 ]
 # CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
