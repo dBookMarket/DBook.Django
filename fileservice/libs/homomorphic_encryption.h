@@ -72,15 +72,15 @@ typedef struct { void *data; GoInt len; GoInt cap; } GoSlice;
 extern "C" {
 #endif
 
-extern void GenSK(GoString filename);
-extern void GenPK(GoString skfile, GoString filename);
-extern void GenDict(GoString skfile, GoString filename);
-extern void EncryptImage(GoString skfile, GoString imagefile, GoString encfile);
-extern void DecryptImage(GoString skfile, GoString encfile, GoString imagefile);
-extern void AddBWM(GoString imagefile, GoString logofile, GoString filename);
-extern void ViewBWM(GoString imagefile, GoString filename);
-extern void AddSign(GoString imagefile, GoString skfile);
-extern GoUint8 VerifySign(GoString imagefile, GoString dictfile);
+extern __declspec(dllexport) void GenSK(GoString filename);
+extern __declspec(dllexport) void GenPK(GoString skfile, GoString filename);
+extern __declspec(dllexport) void GenDict(GoString skfile, GoString filename);
+extern __declspec(dllexport) void EncryptImage(GoString skfile, GoString imagefile, GoString encfile);
+extern __declspec(dllexport) void DecryptImage(GoString skfile, GoString encfile, GoString imagefile);
+extern __declspec(dllexport) void AddBWM(GoString imagefile, GoString logofile, GoString filename);
+extern __declspec(dllexport) void ViewBWM(GoString imagefile, GoString filename);
+extern __declspec(dllexport) void AddSign(GoString imagefile, GoString skfile);
+extern __declspec(dllexport) GoUint8 VerifySign(GoString imagefile, GoString dictfile);
 
 #ifdef __cplusplus
 }

@@ -9,7 +9,7 @@ from pathlib import Path
 import uuid
 import math
 
-from PIL import Image
+# from PIL import Image
 
 
 class FileHandler:
@@ -126,10 +126,10 @@ class PDFHandler(FileHandler):
                 p_num = '0' * (n_digits - len(current_page)) + current_page
                 img_path = os.path.join(img_dirs[i // self.PAGES_PER_DIR], f'page-{p_num}.png')
                 pixmap.pil_save(img_path, format='png', optimize=True)
-                # resize image 1024*1024
-                img = Image.open(img_path)
-                img = img.resize((1024, 1024), Image.ANTIALIAS)
-                img.save(img_path)
+                # # resize image 1024*1024
+                # img = Image.open(img_path)
+                # img = img.resize((1024, 1024), Image.ANTIALIAS)
+                # img.save(img_path)
                 print(f'dir {img_dirs[i // self.PAGES_PER_DIR]}, page {p_num}, '
                       f'image size: {pixmap.w}*{pixmap.h}*{pixmap.n}/8')
             return self
