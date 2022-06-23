@@ -772,3 +772,6 @@ CORS_ALLOW_CREDENTIALS = True
 #     "x-csrftoken",
 #     "x-requested-with",
 # ]
+
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
