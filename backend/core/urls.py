@@ -14,7 +14,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.conf.urls import url
+from django.conf.urls import re_path
 from django.urls import path, include
 from django.conf.urls.static import static
 from django.conf import settings
@@ -28,8 +28,8 @@ urlpatterns = [
                   path('grappelli/', include('grappelli.urls')),
                   path('d-book-admin/', admin.site.urls),
                   path(r'api/v1/', include(apis.urls)),
-                  url(r'^api-doc$', schema_view),
-                  url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework'))
+                  re_path(r'^api-doc$', schema_view),
+                  re_path(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework'))
               ] + static(settings.MEDIA_URL,
                          document_root=settings.MEDIA_ROOT) + static(settings.STATIC_URL,
                                                                      document_root=settings.STATIC_ROOT) + static(

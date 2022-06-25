@@ -188,7 +188,7 @@ class IssueSerializer(BaseSerializer):
 
     def create(self, validated_data):
         publisher_name = validated_data.pop('publisher_name')
-        publisher_desc = validated_data.pop('publisher_desc')
+        publisher_desc = validated_data.pop('publisher_desc', '')
         obj_issue = self.Meta.model.objects.create(**validated_data)
         # add perm
         # self.assign_perms(obj_issue.publisher, obj_issue)

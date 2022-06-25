@@ -12,7 +12,7 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.conf.urls import url, include
+from django.conf.urls import include, re_path
 from rest_framework.routers import DefaultRouter
 
 
@@ -43,9 +43,9 @@ router.register(r"transactions", stores.apis.TransactionViewSet, basename="trans
 # router.register(r"users", accounts.apis.UserViewSet, basename='user')
 
 urlpatterns = [
-    url(r'^', include(router.urls)),
-    url(r'login', accounts.apis.LoginAPIView.as_view(), name='login'),
-    url(r'logout', accounts.apis.LogoutAPIView.as_view(), name='logout'),
-    url(r'nonce', accounts.apis.NonceAPIView.as_view(), name='nonce'),
-    url(r'permissions', authorities.apis.PermissionAPIView.as_view(), name='permission')
+    re_path(r'^', include(router.urls)),
+    re_path(r'login', accounts.apis.LoginAPIView.as_view(), name='login'),
+    re_path(r'logout', accounts.apis.LogoutAPIView.as_view(), name='logout'),
+    re_path(r'nonce', accounts.apis.NonceAPIView.as_view(), name='nonce'),
+    re_path(r'permissions', authorities.apis.PermissionAPIView.as_view(), name='permission')
 ]
