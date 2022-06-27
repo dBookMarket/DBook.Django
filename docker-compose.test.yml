@@ -1,0 +1,93 @@
+version: '3.3'
+
+services:
+
+  db:
+    image: mysql:${DB_VERSION}
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+#    volumes:
+#      - db_data:/var/lib/mysql:rw
+
+  server:
+    build:
+      context: backend
+      args:
+        PYTHON_VERSION: ${PYTHON_VERSION}
+    image: dbook-server:${VERSION}
+    command: bash -c 'python checkdbconnection.py && ./runtest.sh'
+#    deploy:
+#      resources:
+#        limits:
+#          memory: 4096M
+    environment:
+      DEBUG: ${DEBUG}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      ADMIN_NAME: ${ADMIN_NAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+#      NFT_STORAGE_ACCESS_TOKEN: ${NFT_STORAGE_ACCESS_TOKEN}
+#      RABBITMQ_USER: ${RABBITMQ_DEFAULT_USER}
+#      RABBITMQ_PASS: ${RABBITMQ_DEFAULT_PASS}
+#      RABBITMQ_VHOST: ${RABBITMQ_DEFAULT_VHOST}
+#      RABBITMQ_HOST: ${RABBITMQ_HOST}
+#      RABBITMQ_PORT: ${RABBITMQ_PORT}
+#      REDIS_HOST: ${REDIS_HOST}
+#      REDIS_PORT: ${REDIS_PORT}
+#      REDIS_DB: ${REDIS_DB}
+    depends_on:
+      - db
+    links:
+      - db
+#      - rabbitmq
+#      - redis
+#    volumes:
+#      - media_file:/code/media:rw
+#      - static_file:/code/static:rw
+#      - enc_file:/code/file:rw  # encryption keys
+#      - ./logs/:/code/logs/:rw
+
+#  redis:
+#    build:
+#      context: redis
+#      args:
+#        REDIS_VERSION: ${REDIS_VERSION}
+#    image: dbook-redis:${VERSION}
+#    restart: unless-stopped
+#    ports:
+#      - "6379:6379"
+#    privileged: true
+#    command: sh -c "./start.sh"
+#    volumes:
+#      - redis_data:/data
+#
+#  rabbitmq:
+#    build:
+#      context: rabbitmq
+#      args:
+#        RABBITMQ_VERSION: ${RABBITMQ_VERSION}
+#    image: dbook-rabbitmq:${VERSION}
+#    restart: unless-stopped
+#    environment:
+#      - RABBITMQ_CONFIG_FILE=/rabbit/rabbitmq.conf
+#    ports:
+#      - "5672:5672"
+#    volumes:
+#      - rabbitmq_data:/var/lib/rabbitmq/mnesia
+
+#volumes:
+#  db_data: { }
+#  media_file: { }
+#  static_file: { }
+#  redis_data: {}
+#  rabbitmq_data: {}
+#  enc_file: {}
+

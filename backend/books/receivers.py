@@ -1,6 +1,6 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from .models import Asset, Issue, EncryptionKey
+from .models import Asset, Issue
 from .signals import post_create_issue
 from utils.enums import IssueStatus
 from .file_service_connector import FileServiceConnector

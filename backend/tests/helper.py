@@ -45,9 +45,9 @@ def generate_photo_file():
 def generate_pdf_file():
     file = io.BytesIO()
     doc = fitz.open()
-    page = doc.newPage()
+    page = doc.new_page()
     where = fitz.Point(10, 100)
-    page.insertText(where, 'test pdf', fontsize=50)
+    page.insert_text(where, 'test pdf', fontsize=50)
     doc.save(file)
     file.name = 'test.pdf'
     file.seek(0)

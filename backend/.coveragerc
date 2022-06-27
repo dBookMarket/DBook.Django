@@ -1,0 +1,8 @@
+[run]
+omit = tests/*
+       checkdbconnection.py
+       core/*
+       utils/management/*
+       */migrations/*
+       */views.py
+       authens/*
