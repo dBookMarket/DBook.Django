@@ -775,3 +775,13 @@ CORS_ALLOW_CREDENTIALS = True
 
 USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+
+# twitter api settings
+TWITTER_CONF = {
+    'consumer_key': 'aJU6ezXXuulitBqN1CpPOM2gP',
+    'consumer_secret': '0He7QNiUVRthUGbeq8LdcTy620uNjGe06YMDzrLR6MUtcfmctK',
+    'access_token': '1391642292864249856-TFrpdLdJX6mmdQWKU2u7gnPimKv68C',
+    'access_token_secret': 'FRe5kkNR25V3ZY73nhYcOfrTsNMEImtXv8AetqKPCBAtj',
+    'bearer_token': 'AAAAAAAAAAAAAAAAAAAAAOu2fAEAAAAAiIAyhKgMggc3EG%2BMWkijcCPccY4%3DAl40Jj0XetJANnhNtCknYIftlqL8t1ybxdWSFvqI7ALrYt9XTc'
+}
