@@ -14,6 +14,8 @@ from rest_framework.permissions import IsAdminUser
 from rest_framework.decorators import action
 from django.contrib.auth.models import Permission
 from . import filters
+from .twitter_handler import SocialAccountFactory
+import pickle
 
 
 class NonceAPIView(APIView):
@@ -98,3 +100,64 @@ class UserViewSet(viewsets.ModelViewSet):
             user.user_permissions.remove(issue_perm)
         serializer = self.get_serializer(user, many=False)
         return Response(serializer.data)
+
+
+class AccountViewSet(APIView):
+    permissions = []
+    cache_key = 'social_media_instance'
+
+    @action(methods=['post'], detail=False, url_path='auth')
+    def authenticate(self, request, *args, **kwargs):
+        """
+        API for authenticating social media account.
+        args:
+            type: str, one of options {twitter, linkedin}
+
+        return:
+            auth_url: str
+        """
+        _type = request.data['type']
+        handler = SocialAccountFactory.get_instance(_type)
+        if handler:
+            auth_url = handler.auth_tweet()
+            # cache handler instance for posting
+            bytes_obj = pickle.dumps(handler)
+            request.session[self.cache_key] = bytes_obj.decode('utf-8')
+            return Response({'auth_url': auth_url})
+        return Response({'auth_url': ''})
+
+    @action(methods=['post'], detail=False, url_path='post')
+    def post_msg(self, request, *args, **kwargs):
+        """
+        API for creating a post with the user's social media account.
+        args:
+            oauth_verifier: str, which is a parameter of api of the social media account
+
+        return:
+            auth_url: str
+        """
+        _type = request.data['type']
+        _verifier = request.data['oauth_verifier']
+        str_obj = request.session[self.cache_key]
+        if not str_obj:
+            raise ValidationError({'Sorry, you should grant your social media account firstly.'})
+        handler = pickle.loads(str_obj.encode('utf-8'))
+        if handler:
+            data = handler.create_tweet(_verifier)
+            return Response({'status': bool(data)})
+        return Response({'status': False})
+
+    @action(methods=['post'], detail=False, url_path='verify')
+    def verify(self, request, *args, **kwargs):
+        """
+        API for verifying if the user create the post or not.
+        If the user did, then call the smart contract to grant the user with author permissions.
+
+        args:
+            type: str, one of options {twitter, linkedin}
+        """
+        # todo how to link the user's account with social media account?
+        #   step 1, need to check the user's identify with social media account
+        #   step 2, check if the user send a post about dbook recently or not
+        #   step 3, if the user did, call smart contract to add auth to the user
+        pass
