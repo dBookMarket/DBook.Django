@@ -1,7 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from utils.enums import UserType
+from utils.enums import UserType, SocialMediaAccountType
 from utils.helper import Helper
+from utils.models import BaseModel
 
 
 class User(AbstractUser):
@@ -19,3 +20,15 @@ class User(AbstractUser):
     @property
     def has_issue_perm(self):
         return self.has_perm('books.add_issue')
+
+
+class SocialMedia(BaseModel):
+    user = models.ForeignKey(to='User', to_field='account_addr', related_name='sma_user', on_delete=models.CASCADE,
+                             verbose_name='用户')
+    account_id = models.CharField(max_length=255, verbose_name='账户id')
+    username = models.CharField(max_length=255, default='', verbose_name='账户名称')
+    type = models.CharField(max_length=50, choices=SocialMediaAccountType.choices(),
+                            default=SocialMediaAccountType.TWITTER.value, verbose_name='账号类型')
+
+    def __str__(self):
+        return f'{self.user.account_addr}-{self.account_id}-{self.type}'

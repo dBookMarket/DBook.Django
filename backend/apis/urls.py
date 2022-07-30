@@ -41,11 +41,12 @@ router.register(r"trades", stores.apis.TradeViewSet, basename="trade")
 router.register(r"transactions", stores.apis.TransactionViewSet, basename="transaction")
 
 # router.register(r"users", accounts.apis.UserViewSet, basename='user')
+router.register(r"social-medias", accounts.apis.SocialMediaViewSet, basename="social-media")
 
 urlpatterns = [
     re_path(r'^', include(router.urls)),
     re_path(r'login', accounts.apis.LoginAPIView.as_view(), name='login'),
     re_path(r'logout', accounts.apis.LogoutAPIView.as_view(), name='logout'),
     re_path(r'nonce', accounts.apis.NonceAPIView.as_view(), name='nonce'),
-    re_path(r'permissions', authorities.apis.PermissionAPIView.as_view(), name='permission')
+    re_path(r'permissions', authorities.apis.PermissionAPIView.as_view(), name='permission'),
 ]

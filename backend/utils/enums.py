@@ -33,3 +33,8 @@ class IssueStatus(BaseEnum):
     UPLOADED = 'Uploaded'
     FAILURE = 'Failure'
     SUCCESS = 'Success'
+
+
+class SocialMediaAccountType(BaseEnum):
+    TWITTER = 'twitter'
+    LINKEDIN = 'linkedin'

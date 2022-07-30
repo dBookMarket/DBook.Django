@@ -4,7 +4,7 @@ services:
 
   db:
     image: mysql:${DB_VERSION}
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --default-authentication-plugin=mysql_native_password
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: ${DB_NAME}

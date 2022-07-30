@@ -14,8 +14,26 @@ from rest_framework.permissions import IsAdminUser
 from rest_framework.decorators import action
 from django.contrib.auth.models import Permission
 from . import filters
-from .twitter_handler import SocialAccountFactory
+from utils.social_media_handler import SocialMediaFactory, DuplicationError
 import pickle
+from utils.enums import UserType
+from utils.smart_contract_handler import PlatformContractHandler
+from utils.cache import Cache
+
+
+def get_user(addr: str) -> User:
+    """
+    Fetch user according to wallet address.
+    """
+    try:
+        valid_addr = Web3.toChecksumAddress(addr)
+    except ValueError:
+        raise ValidationError({'address': 'Invalid wallet address'})
+
+    user, _ = User.objects.get_or_create(account_addr=valid_addr, defaults={
+        'username': Helper.rand_username()
+    })
+    return user
 
 
 class NonceAPIView(APIView):
@@ -23,13 +41,14 @@ class NonceAPIView(APIView):
 
     def post(self, request, *args, **kwargs):
         address = request.data.get('address')
-        try:
-            address = Web3.toChecksumAddress(address)
-        except ValueError:
-            raise ValidationError({'address': 'Invalid address'})
-        user, _ = User.objects.get_or_create(account_addr=address, defaults={
-            'username': Helper.rand_username()
-        })
+        # try:
+        #     address = Web3.toChecksumAddress(address)
+        # except ValueError:
+        #     raise ValidationError({'address': 'Invalid address'})
+        # user, _ = User.objects.get_or_create(account_addr=address, defaults={
+        #     'username': Helper.rand_username()
+        # })
+        user = get_user(address)
         print('user', user)
         new_nonce = Helper.rand_nonce()
         print('nonce', new_nonce)
@@ -102,9 +121,10 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class AccountViewSet(APIView):
-    permissions = []
-    cache_key = 'social_media_instance'
+class SocialMediaViewSet(viewsets.ViewSet):
+    permission_classes = []
+    base_cache_key = 'social_media'
+    http_method_names = ['post', 'options']
 
     @action(methods=['post'], detail=False, url_path='auth')
     def authenticate(self, request, *args, **kwargs):
@@ -113,18 +133,26 @@ class AccountViewSet(APIView):
         args:
             type: str, one of options {twitter, linkedin}
 
+            address: str, the user's wallet address from metamask
+
         return:
             auth_url: str
         """
-        _type = request.data['type']
-        handler = SocialAccountFactory.get_instance(_type)
-        if handler:
-            auth_url = handler.auth_tweet()
-            # cache handler instance for posting
-            bytes_obj = pickle.dumps(handler)
-            request.session[self.cache_key] = bytes_obj.decode('utf-8')
-            return Response({'auth_url': auth_url})
-        return Response({'auth_url': ''})
+        _type = request.data.get('type', '')
+        if not _type:
+            raise ValidationError({'type': 'This field is required'})
+
+        address = request.data.get('address')
+        user = get_user(address)
+
+        handler = SocialMediaFactory.get_instance(_type)
+        if not handler:
+            return Response({'auth_url': ''})
+        auth_url = handler.authenticate()
+        # cache handler instance for posting
+        bytes_obj = pickle.dumps(handler)
+        Cache(request.session).set(f'{self.base_cache_key}-{_type}-{user.account_addr}', bytes_obj.decode())
+        return Response({'auth_url': auth_url})
 
     @action(methods=['post'], detail=False, url_path='post')
     def post_msg(self, request, *args, **kwargs):
@@ -133,19 +161,51 @@ class AccountViewSet(APIView):
         args:
             oauth_verifier: str, which is a parameter of api of the social media account
 
+            address: str, the user's wallet address from metamask
+
         return:
-            auth_url: str
+            status: str
         """
-        _type = request.data['type']
-        _verifier = request.data['oauth_verifier']
-        str_obj = request.session[self.cache_key]
+        address = request.data.get('address')
+        user = get_user(address)
+
+        _type = request.data.get('type', '')
+
+        _verifier = request.data.get('oauth_verifier', '')
+        str_obj = Cache(request.session).get(f'{self.base_cache_key}-{_type}-{user.account_addr}')
         if not str_obj:
             raise ValidationError({'Sorry, you should grant your social media account firstly.'})
-        handler = pickle.loads(str_obj.encode('utf-8'))
-        if handler:
-            data = handler.create_tweet(_verifier)
-            return Response({'status': bool(data)})
-        return Response({'status': False})
+
+        handler = pickle.loads(str_obj.encode())
+        if not handler:
+            return Response({'status': 'failure'})
+
+        try:
+            handler.create_msg(user.account_addr, oauth_verifier=_verifier)
+        except DuplicationError as e:
+            raise ValidationError(detail=str(e))
+
+        # add issue perm
+        self.add_author_perm(user)
+
+        return Response({'status': 'success'})
+
+    def add_author_perm(self, user):
+        added = PlatformContractHandler().add_author(user.account_addr)
+        if not added:
+            raise ValidationError(detail='Fail to become an author, please retry later.')
+
+        # add issue perm
+        try:
+            issue_perm = Permission.objects.get(codename='add_issue')
+        except Permission.DoesNotExist:
+            print('Exception when calling add_author_perm -> Permission add_issue not found')
+            raise ValidationError(detail='Fail to become an author, please ask system manager for help.')
+        user.user_permissions.add(issue_perm)
+
+        # change user type
+        user.type = UserType.AUTHOR.value
+        user.save()
 
     @action(methods=['post'], detail=False, url_path='verify')
     def verify(self, request, *args, **kwargs):
@@ -155,9 +215,29 @@ class AccountViewSet(APIView):
 
         args:
             type: str, one of options {twitter, linkedin}
+
+            address: str, the user's wallet address from metamask
+
         """
-        # todo how to link the user's account with social media account?
-        #   step 1, need to check the user's identify with social media account
-        #   step 2, check if the user send a post about dbook recently or not
-        #   step 3, if the user did, call smart contract to add auth to the user
-        pass
+        address = request.data.get('address')
+        user = get_user(address)
+
+        _type = request.data.get('type', '')
+        if not _type:
+            raise ValidationError({'type': 'This field is required'})
+
+        handler = SocialMediaFactory.get_instance(_type)
+        if not handler:
+            return Response({'status': 'failure'})
+
+        # check the post
+        success = handler.verify_msg(user.account_addr)
+        if not success:
+            raise ValidationError(detail='Please link to your social media account and post a message firstly.')
+
+        self.add_author_perm(user)
+
+        return Response({'status': 'success'})
+
+
+

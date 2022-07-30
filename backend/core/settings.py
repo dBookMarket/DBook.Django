@@ -297,6 +297,7 @@ SWAGGER_SETTINGS = {
 
 # contract
 CONTRACT_SETTINGS = {
+    'ADMIN_ADDRESS': '0x47460c8a9030930fa1814358909cad6758ac10451f1713f8b31190cbe64d9afd',
     'PLATFORM_CONTRACT_ADDRESS': '0xa2EBc3CeF87654B20B8096C8e37C55515362c068',
     'PLATFORM_CONTRACT_ABI': '''
     [{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"to","type":"address"},
@@ -778,10 +779,16 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 
 # twitter api settings
-TWITTER_CONF = {
+TWITTER_SETTINGS = {
     'consumer_key': 'aJU6ezXXuulitBqN1CpPOM2gP',
     'consumer_secret': '0He7QNiUVRthUGbeq8LdcTy620uNjGe06YMDzrLR6MUtcfmctK',
     'access_token': '1391642292864249856-TFrpdLdJX6mmdQWKU2u7gnPimKv68C',
     'access_token_secret': 'FRe5kkNR25V3ZY73nhYcOfrTsNMEImtXv8AetqKPCBAtj',
     'bearer_token': 'AAAAAAAAAAAAAAAAAAAAAOu2fAEAAAAAiIAyhKgMggc3EG%2BMWkijcCPccY4%3DAl40Jj0XetJANnhNtCknYIftlqL8t1ybxdWSFvqI7ALrYt9XTc'
+}
+
+# linkedIn api settings
+LINKEDIN_SETTINGS = {
+    'client_id': '86hnqq6zsng63k',
+    'client_secret': 'rEr3aFcABcyYi9hF'
 }
