@@ -297,7 +297,7 @@ SWAGGER_SETTINGS = {
 
 # contract
 CONTRACT_SETTINGS = {
-    'ADMIN_ADDRESS': '',
+    'ADMIN_ADDRESS': os.getenv('CONTRACT_ADMIN_ADDRESS', ''),
     'PLATFORM_CONTRACT_ADDRESS': '0xa2EBc3CeF87654B20B8096C8e37C55515362c068',
     'PLATFORM_CONTRACT_ABI': '''
     [{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"to","type":"address"},
@@ -780,14 +780,15 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # twitter api settings
 TWITTER_SETTINGS = {
-    'consumer_key': '',
-    'consumer_secret': '',
-    'access_token': '',
-    'access_token_secret': '',
-    'bearer_token': ''}
+    'consumer_key': os.getenv('TWITTER_CONSUMER_KEY', ''),
+    'consumer_secret': os.getenv('TWITTER_CONSUMER_SECRET', ''),
+    'access_token': os.getenv('TWITTER_ACCESS_TOKEN', ''),
+    'access_token_secret': os.getenv('TWITTER_ACCESS_TOKEN_SECRET', ''),
+    'bearer_token': os.getenv('TWITTER_BEARER_TOKEN', '')
+}
 
 # linkedIn api settings
 LINKEDIN_SETTINGS = {
-    'client_id': '',
-    'client_secret': ''
+    'client_id': os.getenv('LINKEDIN_CLIENT_ID', ''),
+    'client_secret': os.getenv('LINKEDIN_CLIENT_SECRET', '')
 }
