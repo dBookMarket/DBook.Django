@@ -9,7 +9,7 @@ redis==4.0.2
 requests>=2.27.0
 gunicorn==20.1.0
 gevent==21.12.0
-Pillow==9.0.0
+Pillow==9.0.1
 supervisor==4.2.4
 rest-swagger==1.0.0
 web3==5.28.0
