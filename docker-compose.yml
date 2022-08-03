@@ -1,5 +1,33 @@
 version: '3.3'
 
+
+x-common-environments-db: &db
+  DB_HOST: ${DB_HOST}
+  DB_PORT: ${DB_PORT}
+  DB_NAME: ${DB_NAME}
+  DB_USER: ${DB_USER}
+  DB_PASSWORD: ${DB_PASSWORD}
+x-common-environments-rabbit: &rabbitMQ
+  RABBITMQ_USER: ${RABBITMQ_DEFAULT_USER}
+  RABBITMQ_PASS: ${RABBITMQ_DEFAULT_PASS}
+  RABBITMQ_VHOST: ${RABBITMQ_DEFAULT_VHOST}
+  RABBITMQ_HOST: ${RABBITMQ_HOST}
+  RABBITMQ_PORT: ${RABBITMQ_PORT}
+x-common-environments-redi: &redis
+  REDIS_HOST: ${REDIS_HOST}
+  REDIS_PORT: ${REDIS_PORT}
+  REDIS_DB: ${REDIS_DB}
+x-common-environments-twitter: &twitter-api
+  TWITTER_CONSUMER_KEY: ${TWITTER_CONSUMER_KEY}
+  TWITTER_CONSUMER_SECRET: ${TWITTER_CONSUMER_SECRET}
+  TWITTER_ACCESS_TOKEN: ${TWITTER_ACCESS_TOKEN}
+  TWITTER_ACCESS_TOKEN_SECRET: ${TWITTER_ACCESS_TOKEN_SECRET}
+  TWITTER_BEARER_TOKEN: ${TWITTER_BEARER_TOKEN}
+x-common-environments-linkedin: &linkedin-api
+  LINKEDIN_CLIENT_ID: ${LINKEDIN_CLIENT_ID}
+  LINKEDIN_CLIENT_SECRET: ${LINKEDIN_CLIENT_SECRET}
+
+
 services:
 
   db:
@@ -28,37 +56,22 @@ services:
     image: dbook-server:${VERSION}
     restart: unless-stopped
     command: bash -c 'python checkdbconnection.py && ./startserver.sh'
-#    deploy:
-#      resources:
-#        limits:
-#          memory: 4096M
+    #    deploy:
+    #      resources:
+    #        limits:
+    #          memory: 4096M
     environment:
       DEBUG: ${DEBUG}
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT}
-      DB_NAME: ${DB_NAME}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
       ADMIN_NAME: ${ADMIN_NAME}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       NFT_STORAGE_ACCESS_TOKEN: ${NFT_STORAGE_ACCESS_TOKEN}
-      RABBITMQ_USER: ${RABBITMQ_DEFAULT_USER}
-      RABBITMQ_PASS: ${RABBITMQ_DEFAULT_PASS}
-      RABBITMQ_VHOST: ${RABBITMQ_DEFAULT_VHOST}
-      RABBITMQ_HOST: ${RABBITMQ_HOST}
-      RABBITMQ_PORT: ${RABBITMQ_PORT}
-      REDIS_HOST: ${REDIS_HOST}
-      REDIS_PORT: ${REDIS_PORT}
-      REDIS_DB: ${REDIS_DB}
-      TWITTER_CONSUMER_KEY: ${TWITTER_CONSUMER_KEY}
-      TWITTER_CONSUMER_SECRET: ${TWITTER_CONSUMER_SECRET}
-      TWITTER_ACCESS_TOKEN: ${TWITTER_ACCESS_TOKEN}
-      TWITTER_ACCESS_TOKEN_SECRET: ${TWITTER_ACCESS_TOKEN_SECRET}
-      TWITTER_BEARER_TOKEN: ${TWITTER_BEARER_TOKEN}
-      LINKEDIN_CLIENT_ID: ${LINKEDIN_CLIENT_ID}
-      LINKEDIN_CLIENT_SECRET: ${LINKEDIN_CLIENT_SECRET}
       CONTRACT_ADMIN_ADDRESS: ${CONTRACT_ADMIN_ADDRESS}
+      <<: *db
+      <<: *rabbitMQ
+      <<: *redis
+      <<: *twitter-api
+      <<: *linkedin-api
     ports:
       - "8000:8000"
     depends_on:
@@ -130,15 +143,9 @@ services:
     restart: unless-stopped
     command: celery -A tasks.main worker --loglevel=INFO
     environment:
-      - RABBITMQ_USER=${RABBITMQ_DEFAULT_USER}
-      - RABBITMQ_PASS=${RABBITMQ_DEFAULT_PASS}
-      - RABBITMQ_VHOST=${RABBITMQ_DEFAULT_VHOST}
-      - RABBITMQ_HOST=${RABBITMQ_HOST}
-      - RABBITMQ_PORT=${RABBITMQ_PORT}
-      - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=${REDIS_PORT}
-      - REDIS_DB=${REDIS_DB}
-      - NFT_STORAGE_ACCESS_TOKEN=${NFT_STORAGE_ACCESS_TOKEN}
+      <<: *rabbitMQ
+      <<: *redis
+      NFT_STORAGE_ACCESS_TOKEN: ${NFT_STORAGE_ACCESS_TOKEN}
     volumes:
       - media_file:/code/media
       - enc_file:/code/file  # encryption keys

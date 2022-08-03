@@ -22,5 +22,6 @@ COPY ./ ./
 
 RUN chmod +x checkdbconnection.py
 RUN chmod +x startserver.sh
+RUN chmod +x runtest.sh
 
 #COPY ./supervisord.conf /etc/supervisor/

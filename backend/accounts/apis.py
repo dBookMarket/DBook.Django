@@ -15,10 +15,8 @@ from rest_framework.decorators import action
 from django.contrib.auth.models import Permission
 from . import filters
 from utils.social_media_handler import SocialMediaFactory, DuplicationError
-import pickle
 from utils.enums import UserType
 from utils.smart_contract_handler import PlatformContractHandler
-from utils.cache import Cache
 
 
 def get_user(addr: str) -> User:
@@ -143,15 +141,12 @@ class SocialMediaViewSet(viewsets.ViewSet):
             raise ValidationError({'type': 'This field is required'})
 
         address = request.data.get('address')
-        user = get_user(address)
+        get_user(address)
 
         handler = SocialMediaFactory.get_instance(_type)
         if not handler:
             return Response({'auth_url': ''})
         auth_url = handler.authenticate()
-        # cache handler instance for posting
-        bytes_obj = pickle.dumps(handler)
-        Cache(request.session).set(f'{self.base_cache_key}-{_type}-{user.account_addr}', bytes_obj.decode())
         return Response({'auth_url': auth_url})
 
     @action(methods=['post'], detail=False, url_path='post')
@@ -170,15 +165,12 @@ class SocialMediaViewSet(viewsets.ViewSet):
         user = get_user(address)
 
         _type = request.data.get('type', '')
+        if not _type:
+            raise ValidationError({'type': 'This field is required'})
 
         _verifier = request.data.get('oauth_verifier', '')
-        str_obj = Cache(request.session).get(f'{self.base_cache_key}-{_type}-{user.account_addr}')
-        if not str_obj:
-            raise ValidationError({'Sorry, you should grant your social media account firstly.'})
 
-        handler = pickle.loads(str_obj.encode())
-        if not handler:
-            return Response({'status': 'failure'})
+        handler = SocialMediaFactory.get_instance(_type)
 
         try:
             handler.create_msg(user.account_addr, oauth_verifier=_verifier)

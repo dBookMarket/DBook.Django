@@ -2,6 +2,7 @@ from tests.base import config
 from http import HTTPStatus
 from unittest.mock import MagicMock, patch
 from utils.social_media_handler import DuplicationError
+from accounts.models import User
 
 BASE_URL = f'{config["api"]}/social-medias'
 
@@ -20,6 +21,7 @@ def test_auth(mock_smf, mock_pickle, mock_cache, db, client):
     }, content_type='application/json')
     assert resp.status_code == HTTPStatus.OK
     assert resp.data['auth_url'] == 'https://abc.dbook.com'
+    assert User.objects.filter(account_addr=config['wallet_addr']).count() == 1
 
     mock_smf.get_instance.return_value = None
 

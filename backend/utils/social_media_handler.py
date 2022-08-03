@@ -22,6 +22,7 @@ class SMAccountHandler(object):
     """
     Social Media Account base handler class.
     """
+    REDIRECT_URI = 'https://testnet.dbookmarket.com/sharing'
 
     def create_msg(self, **kwargs):
         pass
@@ -50,24 +51,43 @@ class TwitterHandler(SMAccountHandler):
                                     consumer_secret=self.TWITTER_CONF['consumer_secret'],
                                     access_token=self.TWITTER_CONF['access_token'],
                                     access_token_secret=self.TWITTER_CONF['access_token_secret'])
-        self.oauth_user_handler = tweepy.OAuth1UserHandler(self.TWITTER_CONF['consumer_key'],
-                                                           self.TWITTER_CONF['consumer_secret'])
 
-    def create_msg(self, account_addr: str, oauth_verifier: str) -> dict:
+    def get_access_token(self, oauth_token: str, oauth_verifier: str) -> (str, str):
         """
-        post a tweet about d-book to make sure the user is real if an user want to be an author of the d-book platform.
+        Get the user's oauth token, which is granted by him/her.
 
         args:
-            oauth_verifier: str, which is to get the user's access token and secret.
-
-            account_addr: str, the user's wallet address which is linked to the user's platform account.
+            oauth_token: str, which is from the redirect uri when the user granted.
+            oauth_verifier: str, which is from the redirect uri when the user granted.
 
         returns:
-            data: dict, the data from response.
+            access_token: str,
+            access_token_secret: str
         """
-        # get user's access token and secret
-        access_token, access_token_secret = self.oauth_user_handler.get_access_token(oauth_verifier)
-        print(access_token, access_token_secret)
+        data = {
+            'oauth_consumer_key': self.TWITTER_CONF['consumer_key'],
+            'oauth_token': oauth_token,  # or passed from frontend
+            'oauth_verifier': oauth_verifier
+        }
+
+        resp = requests.post('https://api.twitter.com/oauth/access_token', data=data)
+
+        if resp.status_code == 200:
+            return resp.json()['oauth_token'], resp.json()['oauth_token_secret']
+
+        return '', ''
+
+    def link_account(self, account_addr: str, access_token: str, access_token_secret: str):
+        """
+        Link the user's twitter account to the dbook platform account, which is to check the user's identity.
+
+        args:
+            account_addr: str, the user's wallet address which is linked to the user's platform account.
+
+            access_token: str, from get_access_token()
+
+            access_token_secret: str, from get_access_token()
+        """
         user_client = tweepy.Client(consumer_key=self.TWITTER_CONF['consumer_key'],
                                     consumer_secret=self.TWITTER_CONF['consumer_secret'],
                                     access_token=access_token,
@@ -77,6 +97,26 @@ class TwitterHandler(SMAccountHandler):
         user = User.objects.get(account_addr=account_addr)
         SocialMedia.objects.get_or_create(user=user, type=SocialMediaAccountType.TWITTER.value,
                                           account_id=resp.data['id'])
+
+    def create_msg(self, access_token: str, access_token_secret: str) -> dict:
+        """
+        post a tweet about d-book to make sure the user is real if an user want to be an author of the d-book platform.
+
+        args:
+            access_token: str, from get_access_token()
+
+            access_token_secret: str, from get_access_token()
+
+        returns:
+            data: dict, the data from response.
+        """
+        # get user's access token and secret
+        # access_token, access_token_secret = self.oauth_user_handler.get_access_token(oauth_verifier)
+        print(access_token, access_token_secret)
+        user_client = tweepy.Client(consumer_key=self.TWITTER_CONF['consumer_key'],
+                                    consumer_secret=self.TWITTER_CONF['consumer_secret'],
+                                    access_token=access_token,
+                                    access_token_secret=access_token_secret)
         # create a tweet
         try:
             response = user_client.create_tweet(text='This is a D-BOOK community.@ddid_io')
@@ -86,20 +126,20 @@ class TwitterHandler(SMAccountHandler):
             print(f'Exception when calling create_tweet -> {e}')
             raise DuplicationError('You already tweet one.')
 
-    def verify_msg(self, account_addr: str) -> bool:
-        """
-        check if the user post the tweet about d-book. Call search_recent_tweets() to get the recent tweets from the user.
-        If the
-
-        args:
-            account_addr: str, the user's wallet account address.
-
-        returns:
-            bool, if the user posted the tweet, return True, or return False
-        """
-        sma = SocialMedia.objects.get(user__account_addr=account_addr, type=SocialMediaAccountType.TWITTER.value)
-        resp = self.client.search_recent_tweets(query=f'@ddid_io from:{sma.account_id}')
-        return bool(resp.data)
+    # def verify_msg(self, account_addr: str) -> bool:
+    #     """
+    #     check if the user post the tweet about d-book. Call search_recent_tweets() to get the recent tweets from the user.
+    #     If the
+    #
+    #     args:
+    #         account_addr: str, the user's wallet account address.
+    #
+    #     returns:
+    #         bool, if the user posted the tweet, return True, or return False
+    #     """
+    #     sma = SocialMedia.objects.get(user__account_addr=account_addr, type=SocialMediaAccountType.TWITTER.value)
+    #     resp = self.client.search_recent_tweets(query=f'@ddid_io from:{sma.account_id}')
+    #     return bool(resp.data)
 
     def authenticate(self) -> str:
         """
@@ -109,7 +149,25 @@ class TwitterHandler(SMAccountHandler):
         returns:
             auth_url: str, the authority url from the user.
         """
-        auth_url = self.oauth_user_handler.get_authorization_url(signin_with_twitter=True)
+        # get oauth token
+        # data = {
+        #     'oauth_callback': self.REDIRECT_URI,
+        #     'oauth_consumer_key': self.TWITTER_CONF['consumer_key']
+        # }
+        # resp = requests.post('https://api.twitter.com/oauth/request_token', data=data)
+        #
+        # if resp.status_code != 200:
+        #     raise ValueError()
+        #
+        # resp_data = resp.json()
+        # if not resp_data['oauth_callback_confirmed']:
+        #     raise ValueError()
+        #
+        # oauth_token = resp_data['oauth_token']
+        # auth_url = f'https://api.twitter.com/oauth/authorize?oauth_token={oauth_token}'
+        oauth_user_handler = tweepy.OAuth1UserHandler(self.TWITTER_CONF['consumer_key'],
+                                                      self.TWITTER_CONF['consumer_secret'])
+        auth_url = oauth_user_handler.get_authorization_url(signin_with_twitter=True)
         print('auth url->', auth_url)
         return auth_url
 
@@ -188,19 +246,18 @@ class LinkedInHandler(SMAccountHandler):
         data = {
             'owner': 'urn',
             'subject': '',
-            'content': '', # or text
+            'content': '',  # or text
         }
         resp = requests.post('https://api.linkedin.com/v2/shares', data=data, headers=auth_headers)
 
         return resp.json()
 
 
-
 if __name__ == '__main__':
     f = './obj.txt'
-    # handler = TwitterHandler()
-    # # handler.list_tweets()
-    # handler.auth_tweet()
+    handler = TwitterHandler()
+    # handler.list_tweets()
+    handler.authenticate()
     # with open(f, 'wb') as _f:
     #     pickle.dump(handler, _f)
 
@@ -217,6 +274,6 @@ if __name__ == '__main__':
     # handler = TwitterHandler()
     # handler.get_me()
 
-    handler = LinkedInHandler()
-    handler.create_msg('aaa',
-                       'AQSdacRc2adCH623M5VCNCAgxQkMbiMBf__f67tsxfrly0EpY0UIrfXcwiUkrsGbRQr6c2o72VxJ-HVb9yszhtI95lFiyMxA0TRCUgUS7XeC9yfTzqMjwy6EHDLZPKeCVccfzU3zLeFdVQVbqyyMbDyV2dm5UW9A4c_adb5pedEAMG9QAQ8eGcw6k0LbtVNOoDKoX3edPGZBjeIWa4U')
+    # handler = LinkedInHandler()
+    # handler.create_msg('aaa',
+    #                    'AQSdacRc2adCH623M5VCNCAgxQkMbiMBf__f67tsxfrly0EpY0UIrfXcwiUkrsGbRQr6c2o72VxJ-HVb9yszhtI95lFiyMxA0TRCUgUS7XeC9yfTzqMjwy6EHDLZPKeCVccfzU3zLeFdVQVbqyyMbDyV2dm5UW9A4c_adb5pedEAMG9QAQ8eGcw6k0LbtVNOoDKoX3edPGZBjeIWa4U')
