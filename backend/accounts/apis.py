@@ -6,7 +6,7 @@ from rest_framework.authtoken.models import Token
 from django.contrib import auth
 from rest_framework.permissions import IsAuthenticated
 from django.core.exceptions import ObjectDoesNotExist
-from accounts.models import User
+from accounts.models import User, SocialMedia
 from accounts.serializers import UserSerializer
 from web3 import Web3
 from utils.helper import Helper
@@ -15,7 +15,7 @@ from rest_framework.decorators import action
 from django.contrib.auth.models import Permission
 from . import filters
 from utils.social_media_handler import SocialMediaFactory, DuplicationError
-from utils.enums import UserType
+from utils.enums import UserType, SocialMediaType
 from utils.smart_contract_handler import PlatformContractHandler
 
 
@@ -124,58 +124,60 @@ class SocialMediaViewSet(viewsets.ViewSet):
     base_cache_key = 'social_media'
     http_method_names = ['post', 'options']
 
+    def validate_type(self, value: str):
+        if not value:
+            raise ValidationError({'type': 'This field is required'})
+        sm_options = {member.value for member in SocialMediaType}
+        if value not in sm_options:
+            raise ValidationError({'type': f'This field must be one of {sm_options}'})
+
     @action(methods=['post'], detail=False, url_path='auth')
     def authenticate(self, request, *args, **kwargs):
         """
         API for authenticating social media account.
-        args:
-            type: str, one of options {twitter, linkedin}
-
-            address: str, the user's wallet address from metamask
-
-        return:
-            auth_url: str
         """
         _type = request.data.get('type', '')
-        if not _type:
-            raise ValidationError({'type': 'This field is required'})
+        self.validate_type(_type)
 
-        address = request.data.get('address')
+        address = request.data.get('address', '')
         get_user(address)
 
         handler = SocialMediaFactory.get_instance(_type)
         if not handler:
-            return Response({'auth_url': ''})
-        auth_url = handler.authenticate()
-        return Response({'auth_url': auth_url})
+            return Response({'auth_uri': ''})
+        auth_uri = handler.authenticate()
+        return Response({'auth_uri': auth_uri})
 
-    @action(methods=['post'], detail=False, url_path='post')
-    def post_msg(self, request, *args, **kwargs):
+    @action(methods=['post'], detail=False, url_path='share')
+    def share(self, request, *args, **kwargs):
         """
         API for creating a post with the user's social media account.
-        args:
-            oauth_verifier: str, which is a parameter of api of the social media account
-
-            address: str, the user's wallet address from metamask
-
-        return:
-            status: str
         """
-        address = request.data.get('address')
+        _type = request.data.get('type', '')
+        self.validate_type(_type)
+        
+        address = request.data.get('address', '')
         user = get_user(address)
 
-        _type = request.data.get('type', '')
-        if not _type:
-            raise ValidationError({'type': 'This field is required'})
+        verifier = request.data.get('oauth_verifier', '')
+        token = request.data.get('oauth_token', '')
 
-        _verifier = request.data.get('oauth_verifier', '')
+        if not token:
+            token = request.data.get('code', '')
+        if not verifier:
+            verifier = request.data.get('state', '')
 
         handler = SocialMediaFactory.get_instance(_type)
+        if not handler:
+            raise ValidationError(detail='Unknown error.')
 
         try:
-            handler.create_msg(user.account_addr, oauth_verifier=_verifier)
+            handler.link_user_and_share(user.account_addr, token, verifier)
         except DuplicationError as e:
             raise ValidationError(detail=str(e))
+        except Exception as e:
+            print(f'Fail to send share with {_type}, detail: {e}')
+            return Response({'status': 'failure'})
 
         # add issue perm
         self.add_author_perm(user)
@@ -198,38 +200,3 @@ class SocialMediaViewSet(viewsets.ViewSet):
         # change user type
         user.type = UserType.AUTHOR.value
         user.save()
-
-    @action(methods=['post'], detail=False, url_path='verify')
-    def verify(self, request, *args, **kwargs):
-        """
-        API for verifying if the user create the post or not.
-        If the user did, then call the smart contract to grant the user with author permissions.
-
-        args:
-            type: str, one of options {twitter, linkedin}
-
-            address: str, the user's wallet address from metamask
-
-        """
-        address = request.data.get('address')
-        user = get_user(address)
-
-        _type = request.data.get('type', '')
-        if not _type:
-            raise ValidationError({'type': 'This field is required'})
-
-        handler = SocialMediaFactory.get_instance(_type)
-        if not handler:
-            return Response({'status': 'failure'})
-
-        # check the post
-        success = handler.verify_msg(user.account_addr)
-        if not success:
-            raise ValidationError(detail='Please link to your social media account and post a message firstly.')
-
-        self.add_author_perm(user)
-
-        return Response({'status': 'success'})
-
-
-

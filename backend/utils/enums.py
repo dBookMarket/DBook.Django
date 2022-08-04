@@ -12,6 +12,7 @@ class UserType(BaseEnum):
     AUTHOR = 'author'
     PUBLISHER = 'publisher'
     NORMAL = 'normal'
+    READER = 'reader'
 
 
 class TransactionType(BaseEnum):
@@ -35,6 +36,6 @@ class IssueStatus(BaseEnum):
     SUCCESS = 'Success'
 
 
-class SocialMediaAccountType(BaseEnum):
+class SocialMediaType(BaseEnum):
     TWITTER = 'twitter'
     LINKEDIN = 'linkedin'

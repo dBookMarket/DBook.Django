@@ -1,5 +1,4 @@
-version: '3.3'
-
+version: '3.4'
 
 x-common-environments-db: &db
   DB_HOST: ${DB_HOST}
@@ -20,13 +19,9 @@ x-common-environments-redi: &redis
 x-common-environments-twitter: &twitter-api
   TWITTER_CONSUMER_KEY: ${TWITTER_CONSUMER_KEY}
   TWITTER_CONSUMER_SECRET: ${TWITTER_CONSUMER_SECRET}
-  TWITTER_ACCESS_TOKEN: ${TWITTER_ACCESS_TOKEN}
-  TWITTER_ACCESS_TOKEN_SECRET: ${TWITTER_ACCESS_TOKEN_SECRET}
-  TWITTER_BEARER_TOKEN: ${TWITTER_BEARER_TOKEN}
 x-common-environments-linkedin: &linkedin-api
   LINKEDIN_CLIENT_ID: ${LINKEDIN_CLIENT_ID}
   LINKEDIN_CLIENT_SECRET: ${LINKEDIN_CLIENT_SECRET}
-
 
 services:
 
