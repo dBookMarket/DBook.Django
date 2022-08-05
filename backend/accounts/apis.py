@@ -14,7 +14,7 @@ from rest_framework.permissions import IsAdminUser
 from rest_framework.decorators import action
 from django.contrib.auth.models import Permission
 from . import filters
-from utils.social_media_handler import SocialMediaFactory, DuplicationError
+from utils.social_media_handler import SocialMediaFactory, DuplicationError, RequestError
 from utils.enums import UserType, SocialMediaType
 from utils.smart_contract_handler import PlatformContractHandler
 
@@ -174,6 +174,8 @@ class SocialMediaViewSet(viewsets.ViewSet):
         try:
             handler.link_user_and_share(user.account_addr, token, verifier)
         except DuplicationError as e:
+            raise ValidationError(detail=str(e))
+        except RequestError as e:
             raise ValidationError(detail=str(e))
         except Exception as e:
             print(f'Fail to send share with {_type}, detail: {e}')
