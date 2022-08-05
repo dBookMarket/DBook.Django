@@ -19,16 +19,17 @@ from utils.enums import UserType, SocialMediaType
 from utils.smart_contract_handler import PlatformContractHandler
 
 
-def get_user(addr: str) -> User:
-    """
-    Fetch user according to wallet address.
-    """
+def validate_addr(addr: str):
+    if not addr:
+        raise ValidationError({'address': 'This field is required'})
     try:
         valid_addr = Web3.toChecksumAddress(addr)
     except ValueError:
         raise ValidationError({'address': 'Invalid wallet address'})
+    return valid_addr
 
-    user, _ = User.objects.get_or_create(account_addr=valid_addr, defaults={
+def create_user(addr: str) -> User:
+    user, _ = User.objects.get_or_create(account_addr=addr, defaults={
         'username': Helper.rand_username()
     })
     return user
@@ -38,15 +39,10 @@ class NonceAPIView(APIView):
     permission_classes = []
 
     def post(self, request, *args, **kwargs):
-        address = request.data.get('address')
-        # try:
-        #     address = Web3.toChecksumAddress(address)
-        # except ValueError:
-        #     raise ValidationError({'address': 'Invalid address'})
-        # user, _ = User.objects.get_or_create(account_addr=address, defaults={
-        #     'username': Helper.rand_username()
-        # })
-        user = get_user(address)
+        address = request.data.get('address', '')
+        valid_addr = validate_addr(address)
+        user = create_user(valid_addr)
+        # user = get_user(address)
         print('user', user)
         new_nonce = Helper.rand_nonce()
         print('nonce', new_nonce)
@@ -140,13 +136,19 @@ class SocialMediaViewSet(viewsets.ViewSet):
         self.validate_type(_type)
 
         address = request.data.get('address', '')
-        get_user(address)
+        address = validate_addr(address)
+        create_user(address)
 
         handler = SocialMediaFactory.get_instance(_type)
         if not handler:
-            return Response({'auth_uri': ''})
-        auth_uri = handler.authenticate()
-        return Response({'auth_uri': auth_uri})
+            raise ValidationError(detail='Unknown error.')
+
+        try:
+            auth_uri = handler.authenticate()
+        except RequestError as e:
+            raise ValidationError(detail=str(e))
+
+        return Response({'auth_uri': auth_uri}, status=status.HTTP_201_CREATED)
 
     @action(methods=['post'], detail=False, url_path='share')
     def share(self, request, *args, **kwargs):
@@ -157,7 +159,7 @@ class SocialMediaViewSet(viewsets.ViewSet):
         self.validate_type(_type)
         
         address = request.data.get('address', '')
-        user = get_user(address)
+        valid_addr = validate_addr(address)
 
         verifier = request.data.get('oauth_verifier', '')
         token = request.data.get('oauth_token', '')
@@ -172,31 +174,33 @@ class SocialMediaViewSet(viewsets.ViewSet):
             raise ValidationError(detail='Unknown error.')
 
         try:
-            handler.link_user_and_share(user.account_addr, token, verifier)
+            handler.link_user_and_share(valid_addr, token, verifier)
         except DuplicationError as e:
             raise ValidationError(detail=str(e))
         except RequestError as e:
             raise ValidationError(detail=str(e))
         except Exception as e:
             print(f'Fail to send share with {_type}, detail: {e}')
-            return Response({'status': 'failure'})
+            return Response({'status': 'failure'}, status=status.HTTP_400_BAD_REQUEST)
 
         # add issue perm
-        self.add_author_perm(user)
+        self.add_author_perm(valid_addr)
 
-        return Response({'status': 'success'})
+        return Response({'status': 'success'}, status=status.HTTP_201_CREATED)
 
-    def add_author_perm(self, user):
-        added = PlatformContractHandler().add_author(user.account_addr)
+    def add_author_perm(self, account_addr: str):
+        added = PlatformContractHandler().add_author(account_addr)
         if not added:
-            raise ValidationError(detail='Fail to become an author, please retry later.')
+            raise ValidationError(detail='Fail to become an author, please try later.')
 
         # add issue perm
         try:
             issue_perm = Permission.objects.get(codename='add_issue')
         except Permission.DoesNotExist:
-            print('Exception when calling add_author_perm -> Permission add_issue not found')
+            print('Exception when calling add_author_perm -> permission `add_issue` not found')
             raise ValidationError(detail='Fail to become an author, please ask system manager for help.')
+
+        user = User.objects.get(account_addr=account_addr)
         user.user_permissions.add(issue_perm)
 
         # change user type
