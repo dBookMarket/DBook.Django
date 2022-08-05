@@ -297,7 +297,8 @@ SWAGGER_SETTINGS = {
 
 # contract
 CONTRACT_SETTINGS = {
-    'ADMIN_ADDRESS': os.getenv('CONTRACT_ADMIN_ADDRESS', ''),
+    'HTTP_PROVIDER': 'https://rpc-mumbai.maticvigil.com',
+    'ADMIN_KEY': os.getenv('CONTRACT_ADMIN_KEY', ''),
     'PLATFORM_CONTRACT_ADDRESS': '0xa2EBc3CeF87654B20B8096C8e37C55515362c068',
     'PLATFORM_CONTRACT_ABI': '''
     [{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"to","type":"address"},
