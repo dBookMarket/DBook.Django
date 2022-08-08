@@ -1,0 +1,6 @@
+[run]
+omit = tests/*
+       libs/*
+       tasks/*
+       handlers/contract_handler.py
+       handlers/encryption_handler.py

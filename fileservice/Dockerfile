@@ -15,7 +15,10 @@ RUN python -m pip install --upgrade pip -i https://pypi.mirrors.ustc.edu.cn/simp
 # https://pypi.tuna.tsinghua.edu.cn/simple/
 RUN pip install -r requirements.txt -i https://pypi.mirrors.ustc.edu.cn/simple/
 
+COPY ./packages/ ./packages/
+
 # install nft.storage
-RUN pip install git+https://github.com/nftstorage/python-client.git
+#RUN pip install git+https://github.com/nftstorage/python-client.git
+RUN pip install ./packages/nft-storage.tar.gz
 
 COPY ./ ./

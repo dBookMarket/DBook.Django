@@ -1,0 +1,12 @@
+version: '3.4'
+
+services:
+
+  celery:
+    build:
+      context: fileservice
+      args:
+        PYTHON_VERSION: ${PYTHON_VERSION}
+    image: dbook-file-service:${VERSION}
+    command: python -m pytest tests
+
