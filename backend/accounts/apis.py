@@ -3,17 +3,21 @@ from rest_framework import status, viewsets
 from rest_framework.response import Response
 from rest_framework.validators import ValidationError
 from rest_framework.authtoken.models import Token
-from django.contrib import auth
-from rest_framework.permissions import IsAuthenticated
-from django.core.exceptions import ObjectDoesNotExist
-from accounts.models import User, SocialMedia
-from accounts.serializers import UserSerializer
-from web3 import Web3
-from utils.helper import Helper
 from rest_framework.permissions import IsAdminUser
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
+
+from django.core.exceptions import ObjectDoesNotExist
+from django.contrib import auth
 from django.contrib.auth.models import Permission
+
+from accounts.models import User
+from accounts.serializers import UserSerializer
+from web3 import Web3
+
 from . import filters
+
+from utils.helper import Helper
 from utils.social_media_handler import SocialMediaFactory, DuplicationError, RequestError
 from utils.enums import UserType, SocialMediaType
 from utils.smart_contract_handler import PlatformContractHandler
@@ -27,6 +31,7 @@ def validate_addr(addr: str):
     except ValueError:
         raise ValidationError({'address': 'Invalid wallet address'})
     return valid_addr
+
 
 def create_user(addr: str) -> User:
     user, _ = User.objects.get_or_create(account_addr=addr, defaults={
@@ -116,7 +121,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 class SocialMediaViewSet(viewsets.ViewSet):
-    permission_classes = []
+    permission_classes = [IsAuthenticated]
     base_cache_key = 'social_media'
     http_method_names = ['post', 'options']
 
@@ -135,9 +140,9 @@ class SocialMediaViewSet(viewsets.ViewSet):
         _type = request.data.get('type', '')
         self.validate_type(_type)
 
-        address = request.data.get('address', '')
-        address = validate_addr(address)
-        create_user(address)
+        # address = request.data.get('address', '')
+        # address = validate_addr(address)
+        # create_user(address)
 
         handler = SocialMediaFactory.get_instance(_type)
         if not handler:
@@ -155,11 +160,13 @@ class SocialMediaViewSet(viewsets.ViewSet):
         """
         API for creating a post with the user's social media account.
         """
+        _user = request.user
+
         _type = request.data.get('type', '')
         self.validate_type(_type)
-        
-        address = request.data.get('address', '')
-        valid_addr = validate_addr(address)
+
+        # address = request.data.get('address', '')
+        # valid_addr = validate_addr(address)
 
         verifier = request.data.get('oauth_verifier', '')
         token = request.data.get('oauth_token', '')
@@ -174,22 +181,25 @@ class SocialMediaViewSet(viewsets.ViewSet):
             raise ValidationError(detail='Unknown error.')
 
         try:
-            handler.link_user_and_share(valid_addr, token, verifier)
+            handler.link_user_and_share(_user.account_addr, token, verifier)
         except DuplicationError as e:
             raise ValidationError(detail=str(e))
         except RequestError as e:
             raise ValidationError(detail=str(e))
         except Exception as e:
             print(f'Fail to send share with {_type}, detail: {e}')
-            return Response({'status': 'failure'}, status=status.HTTP_400_BAD_REQUEST)
+            return ValidationError(detail='Unknown error.')
 
         # add issue perm
-        self.add_author_perm(valid_addr)
+        self.add_author_perm()
 
         return Response({'status': 'success'}, status=status.HTTP_201_CREATED)
 
-    def add_author_perm(self, account_addr: str):
-        added = PlatformContractHandler().add_author(account_addr)
+    def add_author_perm(self):
+        _user = self.request.user
+
+        # add author perm into smart contract
+        added = PlatformContractHandler().add_author(_user.account_addr)
         if not added:
             raise ValidationError(detail='Fail to become an author, please try later.')
 
@@ -200,9 +210,8 @@ class SocialMediaViewSet(viewsets.ViewSet):
             print('Exception when calling add_author_perm -> permission `add_issue` not found')
             raise ValidationError(detail='Fail to become an author, please ask system manager for help.')
 
-        user = User.objects.get(account_addr=account_addr)
-        user.user_permissions.add(issue_perm)
+        _user.user_permissions.add(issue_perm)
 
         # change user type
-        user.type = UserType.AUTHOR.value
-        user.save()
+        _user.type = UserType.AUTHOR.value
+        _user.save()
