@@ -3,6 +3,7 @@ from accounts.models import User, SocialMedia
 from utils.enums import SocialMediaType
 import requests
 import json
+from urllib.parse import quote
 
 from django.conf import settings
 
@@ -58,7 +59,7 @@ class TwitterHandler(SocialMediaHandler):
     """
     This class is for calling the twitter's api to read and write the tweets. The version of twitter api is v2.
     """
-    REDIRECT_URI = f'{settings.SOCIAL_MEDIA_REDIRECT_URI}?type=twitter&isAuth=true'
+    REDIRECT_URI = quote(f'{settings.SOCIAL_MEDIA_REDIRECT_URI}?type=twitter&isAuth=true')
     CONFIG = settings.TWITTER_SETTINGS
 
     def _get_oauth_uri(self, endpoint):
@@ -216,7 +217,7 @@ class TwitterHandler(SocialMediaHandler):
 
 
 class LinkedInHandler(SocialMediaHandler):
-    REDIRECT_URI = f'{settings.SOCIAL_MEDIA_REDIRECT_URI}?type=linkedin&isAuth=true'
+    REDIRECT_URI = quote(f'{settings.SOCIAL_MEDIA_REDIRECT_URI}?type=linkedin&isAuth=true')
     CONFIG = settings.LINKEDIN_SETTINGS
     STATE = 'rwer243fa2sfse'
 
@@ -371,31 +372,3 @@ class LinkedInHandler(SocialMediaHandler):
         # tag user
         social_media.shared = True
         social_media.save()
-
-
-if __name__ == '__main__':
-    f = './obj.txt'
-    # handler = TwitterHandler()
-    # handler.authenticate()
-
-    # handler.get_access_token(oauth_token='prco6AAAAAABfLbrAAABgmcYnyQ',
-    #                          oauth_verifier='cHfGmcLExtvOktghX9dBS9Cq6OtltNAE')
-
-    # access_token = '1391642292864249856-iLHQfjstAR8S1jz7LCXsSoRqQsh0qs'
-    # access_token_secret = 'g0Qriog6viYrwfybFyJSYAXWTuK5RI0lggCTlmoJVtzzr'
-    # # handler.link_account('abc', access_token, access_token_secret)
-    #
-    # handler.create_msg(access_token, access_token_secret)
-
-    # handler = LinkedInHandler()
-    # # handler.authenticate()
-    #
-    # code = 'AQShrRzFsAA50idAk-J9TD0f8nKyMpGGyfZwZp_mBOfCjtoqS8TXNl_GDDcqkvCRoQgtuR2ODWq7gkSuRoLgVtFpIDIYf182e31q7TzeXbsTO2LOuuXzp1Xy6eV476G0KWI-IP-IlkLShL5s3gjYthzvEv0GXr2Z4sBWGSTMpghkjJ9xY8zTFKI5XEddxftWwwzbPHimldkVRuLfinE'
-    # state = 'rwer243fa2sfse'
-    # # handler.create_msg('aaa',
-    # #                    'AQSdacRc2adCH623M5VCNCAgxQkMbiMBf__f67tsxfrly0EpY0UIrfXcwiUkrsGbRQr6c2o72VxJ-HVb9yszhtI95lFiyMxA0TRCUgUS7XeC9yfTzqMjwy6EHDLZPKeCVccfzU3zLeFdVQVbqyyMbDyV2dm5UW9A4c_adb5pedEAMG9QAQ8eGcw6k0LbtVNOoDKoX3edPGZBjeIWa4U')
-    # # handler.get_access_token(state, code)
-    #
-    # access_token = 'AQUBVnIaAdqTFlSLOKaPKgFi9JnJyTjZg25aPip00rAGI5vbPF93F_y20FRsiTf9XBvWJga6enxqTP3V4fSokv2VuP166bzIb8BcDZniufqNOeelwRoV79YGi9TJoVdSfQUGU1851it9CjNCPgDySGLcVaFWZZyWaL5w-CmOuKclW5efBL6PUBhy4ivpGInqnUFUO134iZIUzzI2Avj5XzZ68BFenX6m3NlyZpR0IkqmjChoduBMwK5w3DD3D930fLFSJUN6wWmLTRESN2ShGcSiDXbVR9j9Ow-dzlGR2Ddh83j_A21ec0Nyr_xmM0HPRsd5Bdx_2xpsfZyGZkyPtSxIO2-djg'
-    # # handler.get_user(access_token)
-    # handler.share(access_token)
