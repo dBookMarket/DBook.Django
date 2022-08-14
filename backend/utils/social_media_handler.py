@@ -30,7 +30,7 @@ class SocialMediaHandler(object):
     """
     Social Media Account base handler class.
     """
-    REDIRECT_URI = 'https://testnet.dbookmarket.com/sharing'
+    REDIRECT_URI = settings.SOCIAL_MEDIA_REDIRECT_URI
 
     def txt_to_json(self, text: str) -> dict:
         """
@@ -58,6 +58,7 @@ class TwitterHandler(SocialMediaHandler):
     """
     This class is for calling the twitter's api to read and write the tweets. The version of twitter api is v2.
     """
+    REDIRECT_URI = f'{settings.SOCIAL_MEDIA_REDIRECT_URI}?type=twitter&isAuth=true'
     CONFIG = settings.TWITTER_SETTINGS
 
     def _get_oauth_uri(self, endpoint):
@@ -131,7 +132,7 @@ class TwitterHandler(SocialMediaHandler):
             'username': resp.data['username']
         }
 
-    def share(self, access_token: str, access_token_secret: str) -> dict:
+    def share(self, access_token: str, access_token_secret: str, content: str) -> dict:
         """
         post a tweet about d-book to make sure the user is real if an user want to be an author of the d-book platform.
 
@@ -139,6 +140,8 @@ class TwitterHandler(SocialMediaHandler):
             access_token: str, from get_access_token()
 
             access_token_secret: str, from get_access_token()
+
+            content: str, the sharing content
 
         returns:
             data: dict, the data from response.
@@ -149,7 +152,7 @@ class TwitterHandler(SocialMediaHandler):
                                     access_token_secret=access_token_secret)
         # create a tweet
         try:
-            resp = user_client.create_tweet(text='This is a D-BOOK community.@ddid_io')
+            resp = user_client.create_tweet(text=content)
         except tweepy.errors.Forbidden as e:
             print(f'Exception when calling TwitterHandler.share -> {e}')
             raise DuplicationError('You already tweet one.')
@@ -171,7 +174,8 @@ class TwitterHandler(SocialMediaHandler):
             auth_url: str, the authority url from the user.
         """
         oauth_user_handler = tweepy.OAuth1UserHandler(self.CONFIG['consumer_key'],
-                                                      self.CONFIG['consumer_secret'])
+                                                      self.CONFIG['consumer_secret'],
+                                                      callback=self.REDIRECT_URI)
         try:
             auth_url = oauth_user_handler.get_authorization_url(signin_with_twitter=True)
         except Exception as e:
@@ -180,7 +184,7 @@ class TwitterHandler(SocialMediaHandler):
         print('auth url->', auth_url)
         return auth_url
 
-    def link_user_and_share(self, wallet_addr: str, token: str, verifier: str):
+    def link_user_and_share(self, wallet_addr: str, token: str, verifier: str, content: str):
         """
         Get user info to save into db and send share with the user's account.
 
@@ -190,6 +194,8 @@ class TwitterHandler(SocialMediaHandler):
             token: str, which is from the redirect uri when the user granted.
 
             verifier: str, which is from the redirect uri when the user granted.
+
+            content: str, the sharing content from user interface.
         """
         # get access token
         access_token, access_token_secret = self.get_access_token(token, verifier)
@@ -202,7 +208,7 @@ class TwitterHandler(SocialMediaHandler):
                                                             defaults={**sm_user, **{'shared': False}})
 
         # send share
-        self.share(access_token, access_token_secret)
+        self.share(access_token, access_token_secret, content)
 
         # tag user
         social_media.shared = True
@@ -210,6 +216,7 @@ class TwitterHandler(SocialMediaHandler):
 
 
 class LinkedInHandler(SocialMediaHandler):
+    REDIRECT_URI = f'{settings.SOCIAL_MEDIA_REDIRECT_URI}?type=linkedin&isAuth=true'
     CONFIG = settings.LINKEDIN_SETTINGS
     STATE = 'rwer243fa2sfse'
 
@@ -298,7 +305,7 @@ class LinkedInHandler(SocialMediaHandler):
             'account_id': resp_data['id']
         }
 
-    def share(self, access_token: str, owner: str) -> dict:
+    def share(self, access_token: str, owner: str, content: str) -> dict:
         """
         Post a piece of text about d-book to make sure the user is real
         if an user want to be an author of the d-book platform.
@@ -308,6 +315,8 @@ class LinkedInHandler(SocialMediaHandler):
 
             access_token: str.
 
+            content: str, the sharing content.
+
         returns:
             data: dict, the data from response.
         """
@@ -316,12 +325,11 @@ class LinkedInHandler(SocialMediaHandler):
             'Content-Type': 'application/json'
         }
         # send a share
-        # todo content is from frontend?
         _data = {
             'owner': owner,
-            'subject': 'DBOOK',
+            'subject': 'DBOOK Market',
             'text': {
-                'text': 'This is a D-BOOK community.@ddid_io',  # or text
+                'text': content,  # or text
             }
         }
         _uri = self._get_uri('shares')
@@ -334,7 +342,7 @@ class LinkedInHandler(SocialMediaHandler):
 
         return resp.json()
 
-    def link_user_and_share(self, wallet_addr: str, token: str, verifier: str):
+    def link_user_and_share(self, wallet_addr: str, token: str, verifier: str, content: str):
         """
         Get user info to save into db and send share with the user's account.
 
@@ -344,6 +352,8 @@ class LinkedInHandler(SocialMediaHandler):
             token: str, the OAuth 2.0 authorization code.
 
             verifier: str, A value used to test for possible CSRF attacks.
+
+            content: str, the sharing content.
         """
         # get access token
         access_token = self.get_access_token(token, verifier)
@@ -356,7 +366,7 @@ class LinkedInHandler(SocialMediaHandler):
                                                             defaults={**sm_user, **{'shared': False}})
 
         # send share
-        self.share(access_token, f'urn:li:person:{sm_user["account_id"]}')
+        self.share(access_token, f'urn:li:person:{sm_user["account_id"]}', content)
 
         # tag user
         social_media.shared = True

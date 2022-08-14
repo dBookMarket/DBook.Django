@@ -70,16 +70,17 @@ def test_share(mock_tweepy):
 
     access_token = 'abc'
     access_token_secret = 'bcd'
+    content = 'xxxx'
 
     mock_tweepy.Client.return_value.create_tweet.return_value.status_code = 200
     mock_tweepy.Client.return_value.create_tweet.return_value.data = {'text': 'abc'}
-    res = th.share(access_token, access_token_secret)
+    res = th.share(access_token, access_token_secret, content)
     assert res == {'text': 'abc'}
 
     # bad request
     mock_tweepy.Client.return_value.create_tweet.return_value.status_code = 400
     with pytest.raises(RequestError):
-        th.share(access_token, access_token_secret)
+        th.share(access_token, access_token_secret, content)
 
     # duplication
     # todo TypeError: catching classes that do not inherit from BaseException is not allowed
@@ -110,6 +111,7 @@ def test_link_user_and_share(db):
     wallet_addr = "0x123abc"
     token = 'abc'
     verifier = 'bcd'
+    content = 'xxxx'
 
     th = TwitterHandler()
 
@@ -123,7 +125,7 @@ def test_link_user_and_share(db):
     # create an user with wallet_addr
     user = User.objects.create_user(username='1q2w3e', account_addr=wallet_addr)
 
-    th.link_user_and_share(wallet_addr, token, verifier)
+    th.link_user_and_share(wallet_addr, token, verifier, content)
 
     social_media = SocialMedia.objects.get(user=user, type=SocialMediaType.TWITTER.value)
     assert social_media.account_id == '123123'

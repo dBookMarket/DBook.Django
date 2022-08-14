@@ -51,17 +51,18 @@ def test_get_user(mock_reqs):
 def test_share(mock_reqs):
     access_token = 'xxx'
     owner = 'urn:li:person:123123'
+    content = 'xxx'
     lh = LinkedInHandler()
 
     # not ok
     mock_reqs.post.return_value.status_code = 400
     with pytest.raises(RequestError):
-        lh.share(access_token, owner)
+        lh.share(access_token, owner, content)
 
     # good request
     mock_reqs.post.return_value.status_code = 200
     mock_reqs.post.return_value.json.return_value = {'text': 'shared'}
-    res = lh.share(access_token, owner)
+    res = lh.share(access_token, owner, content)
     assert res == {'text': 'shared'}
 
 
@@ -75,6 +76,7 @@ def test_link_user_and_share(db):
     wallet_addr = '0x123xyz'
     token = 'abc'
     verifier = LinkedInHandler.STATE
+    content = 'xxx'
 
     lh = LinkedInHandler()
 
@@ -88,7 +90,7 @@ def test_link_user_and_share(db):
     # create an user
     user = User.objects.create_user(username='xyz', account_addr=wallet_addr)
 
-    lh.link_user_and_share(wallet_addr, token, verifier)
+    lh.link_user_and_share(wallet_addr, token, verifier, content)
 
     social_media = SocialMedia.objects.get(user=user, type=SocialMediaType.LINKEDIN.value)
     assert social_media.account_id == '123123'

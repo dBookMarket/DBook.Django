@@ -5,13 +5,13 @@ from rest_framework.validators import ValidationError
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAdminUser
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib import auth
-from django.contrib.auth.models import Permission
+from django.contrib.auth.models import Permission, AnonymousUser
 
-from accounts.models import User
+from accounts.models import User, SocialMedia
 from accounts.serializers import UserSerializer
 from web3 import Web3
 
@@ -121,9 +121,9 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 class SocialMediaViewSet(viewsets.ViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedOrReadOnly]
     base_cache_key = 'social_media'
-    http_method_names = ['post', 'options']
+    http_method_names = ['get', 'post', 'options']
 
     def validate_type(self, value: str):
         if not value:
@@ -140,18 +140,14 @@ class SocialMediaViewSet(viewsets.ViewSet):
         _type = request.data.get('type', '')
         self.validate_type(_type)
 
-        # address = request.data.get('address', '')
-        # address = validate_addr(address)
-        # create_user(address)
-
         handler = SocialMediaFactory.get_instance(_type)
         if not handler:
-            raise ValidationError(detail='Unknown error.')
+            raise ValidationError({'detail': 'Unknown error.'})
 
         try:
             auth_uri = handler.authenticate()
         except RequestError as e:
-            raise ValidationError(detail=str(e))
+            raise ValidationError({'detail': str(e)})
 
         return Response({'auth_uri': auth_uri}, status=status.HTTP_201_CREATED)
 
@@ -165,33 +161,42 @@ class SocialMediaViewSet(viewsets.ViewSet):
         _type = request.data.get('type', '')
         self.validate_type(_type)
 
-        # address = request.data.get('address', '')
-        # valid_addr = validate_addr(address)
+        _content = request.data.get('content', '')
+        if not _content:
+            raise ValidationError({'content': 'The sharing content should not be empty'})
 
-        verifier = request.data.get('oauth_verifier', '')
-        token = request.data.get('oauth_token', '')
+        if _type == SocialMediaType.LINKEDIN.value:
+            try:
+                sm = SocialMedia.objects.get(user=_user, type=SocialMediaType.TWITTER.value)
+                if not sm.shared:
+                    raise ValidationError({'detail': 'Please verify twitter identification at first.'})
+            except SocialMedia.DoesNotExist:
+                raise ValidationError({'detail': 'Please verify twitter identification at first.'})
 
-        if not token:
+        if _type == SocialMediaType.TWITTER.value:
+            token = request.data.get('oauth_token', '')
+            verifier = request.data.get('oauth_verifier', '')
+        else:
             token = request.data.get('code', '')
-        if not verifier:
             verifier = request.data.get('state', '')
 
         handler = SocialMediaFactory.get_instance(_type)
         if not handler:
-            raise ValidationError(detail='Unknown error.')
+            raise ValidationError({'detail': 'Unknown error.'})
 
         try:
-            handler.link_user_and_share(_user.account_addr, token, verifier)
+            handler.link_user_and_share(_user.account_addr, token, verifier, _content)
         except DuplicationError as e:
-            raise ValidationError(detail=str(e))
+            raise ValidationError({'detail': str(e)})
         except RequestError as e:
-            raise ValidationError(detail=str(e))
+            raise ValidationError({'detail': str(e)})
         except Exception as e:
             print(f'Fail to send share with {_type}, detail: {e}')
-            return ValidationError(detail='Unknown error.')
+            return ValidationError({'detail': 'Unknown error.'})
 
-        # add issue perm
-        self.add_author_perm()
+        if _type == SocialMediaType.LINKEDIN.value:
+            # add issue perm
+            self.add_author_perm()
 
         return Response({'status': 'success'}, status=status.HTTP_201_CREATED)
 
@@ -201,17 +206,42 @@ class SocialMediaViewSet(viewsets.ViewSet):
         # add author perm into smart contract
         added = PlatformContractHandler().add_author(_user.account_addr)
         if not added:
-            raise ValidationError(detail='Fail to become an author, please try later.')
+            raise ValidationError({'detail': 'Fail to add perm from contract, please try later.'})
 
         # add issue perm
         try:
             issue_perm = Permission.objects.get(codename='add_issue')
         except Permission.DoesNotExist:
             print('Exception when calling add_author_perm -> permission `add_issue` not found')
-            raise ValidationError(detail='Fail to become an author, please ask system manager for help.')
+            raise ValidationError({'detail': 'Fail to become an author, please ask system manager for help.'})
 
         _user.user_permissions.add(issue_perm)
 
         # change user type
         _user.type = UserType.AUTHOR.value
         _user.save()
+
+    @action(methods=['get'], detail=False, url_path='verification-state')
+    def check_status(self, request, *args, **kwargs):
+        """
+        Check the verification status.
+        """
+        _user = request.user
+
+        res = {
+            'linkedin': False,
+            'twitter': False
+        }
+
+        if isinstance(_user, AnonymousUser):
+            return Response(res)
+
+        queryset = SocialMedia.objects.filter(user=_user)
+
+        for obj in queryset:
+            if obj.type == SocialMediaType.TWITTER.value:
+                res['twitter'] = obj.shared
+            if obj.type == SocialMediaType.LINKEDIN.value:
+                res['linkedin'] = obj.shared
+
+        return Response(res)

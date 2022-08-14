@@ -793,3 +793,5 @@ LINKEDIN_SETTINGS = {
     'client_id': os.getenv('LINKEDIN_CLIENT_ID', ''),
     'client_secret': os.getenv('LINKEDIN_CLIENT_SECRET', '')
 }
+
+SOCIAL_MEDIA_REDIRECT_URI = 'https://testnet.dbookmarket.com'
