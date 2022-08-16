@@ -59,7 +59,7 @@ class TwitterHandler(SocialMediaHandler):
     """
     This class is for calling the twitter's api to read and write the tweets. The version of twitter api is v2.
     """
-    REDIRECT_URI = quote(f'{settings.SOCIAL_MEDIA_REDIRECT_URI}?type=twitter&isAuth=true')
+    REDIRECT_URI = f'{settings.SOCIAL_MEDIA_REDIRECT_URI}?type=twitter&isAuth=true'
     CONFIG = settings.TWITTER_SETTINGS
 
     def _get_oauth_uri(self, endpoint):
