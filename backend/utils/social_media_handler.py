@@ -125,8 +125,8 @@ class TwitterHandler(SocialMediaHandler):
             print(f'Exception when calling TwitterHandler.get_user -> {e}')
             raise RequestError('Fail to get user profile, please ask manager for help.')
 
-        if resp.status_code < 200 or resp.status_code >= 300:
-            raise RequestError(f'Fail to get user profile, status code is {resp.status_code}')
+        if resp.errors:
+            raise RequestError(f'Fail to get user profile, errors: {resp.errors}')
 
         return {
             'account_id': resp.data['id'],
@@ -161,8 +161,8 @@ class TwitterHandler(SocialMediaHandler):
             print(f'Exception when calling TwitterHandler.share -> {e}')
             raise RequestError('Fail to send share, please try later...')
 
-        if resp.status_code < 200 or resp.status_code >= 300:
-            raise RequestError(f'Fail to send share, status code is {resp.status_code}')
+        if resp.errors:
+            raise RequestError(f'Fail to send share, errors: {resp.errors}')
 
         return resp.data
 

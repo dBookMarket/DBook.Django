@@ -192,7 +192,7 @@ class SocialMediaViewSet(viewsets.ViewSet):
             raise ValidationError({'detail': str(e)})
         except Exception as e:
             print(f'Fail to send share with {_type}, detail: {e}')
-            return ValidationError({'detail': 'Unknown error.'})
+            raise ValidationError({'detail': 'Unknown error.'})
 
         if _type == SocialMediaType.LINKEDIN.value:
             # add issue perm

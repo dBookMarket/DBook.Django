@@ -49,12 +49,12 @@ def test_get_user(mock_tweepy):
     access_token = 'abc'
     access_token_secret = 'bcd'
 
-    mock_tweepy.Client.return_value.get_me.return_value.status_code = 200
+    mock_tweepy.Client.return_value.get_me.return_value.errors = None
     res = th.get_user(access_token, access_token_secret)
     assert res['account_id'] == '123123'
     assert res['username'] == 'test'
 
-    mock_tweepy.Client.return_value.get_me.return_value.status_code = 400
+    mock_tweepy.Client.return_value.get_me.return_value.errors = ['invalid']
     with pytest.raises(RequestError):
         th.get_user(access_token, access_token_secret)
 
@@ -72,13 +72,13 @@ def test_share(mock_tweepy):
     access_token_secret = 'bcd'
     content = 'xxxx'
 
-    mock_tweepy.Client.return_value.create_tweet.return_value.status_code = 200
+    mock_tweepy.Client.return_value.create_tweet.return_value.errors = None
     mock_tweepy.Client.return_value.create_tweet.return_value.data = {'text': 'abc'}
     res = th.share(access_token, access_token_secret, content)
     assert res == {'text': 'abc'}
 
     # bad request
-    mock_tweepy.Client.return_value.create_tweet.return_value.status_code = 400
+    mock_tweepy.Client.return_value.create_tweet.return_value.errors = ['error code: 400']
     with pytest.raises(RequestError):
         th.share(access_token, access_token_secret, content)
 
