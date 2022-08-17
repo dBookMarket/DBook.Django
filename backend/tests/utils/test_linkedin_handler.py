@@ -19,12 +19,12 @@ def test_get_access_token(mock_reqs):
     verifier = LinkedInHandler.STATE
 
     # not ok
-    mock_reqs.post.return_value.status_code = 400
+    mock_reqs.post.return_value.ok = False
     with pytest.raises(RequestError):
         lh.get_access_token(token, verifier)
 
     # good request
-    mock_reqs.post.return_value.status_code = 200
+    mock_reqs.post.return_value.ok = True
     mock_reqs.post.return_value.json.return_value = {'access_token': 'xxx'}
     access_token = lh.get_access_token(token, verifier)
     assert access_token == 'xxx'
@@ -36,12 +36,12 @@ def test_get_user(mock_reqs):
     lh = LinkedInHandler()
 
     # not ok
-    mock_reqs.get.return_value.status_code = 400
+    mock_reqs.get.return_value.ok = False
     with pytest.raises(RequestError):
         lh.get_user(access_token)
 
     # good request
-    mock_reqs.get.return_value.status_code = 200
+    mock_reqs.get.return_value.ok = True
     mock_reqs.get.return_value.json.return_value = {'id': '123123'}
     res = lh.get_user(access_token)
     assert res['account_id'] == '123123'
@@ -55,12 +55,12 @@ def test_share(mock_reqs):
     lh = LinkedInHandler()
 
     # not ok
-    mock_reqs.post.return_value.status_code = 400
+    mock_reqs.post.return_value.ok = False
     with pytest.raises(RequestError):
         lh.share(access_token, owner, content)
 
     # good request
-    mock_reqs.post.return_value.status_code = 200
+    mock_reqs.post.return_value.ok = True
     mock_reqs.post.return_value.json.return_value = {'text': 'shared'}
     res = lh.share(access_token, owner, content)
     assert res == {'text': 'shared'}

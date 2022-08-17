@@ -18,12 +18,12 @@ def test_get_access_token(mock_reqs):
     verifier='bcd'
 
     # not ok
-    mock_reqs.post.return_value.status_code = 400
+    mock_reqs.post.return_value.ok = False
     with pytest.raises(RequestError):
         th.get_access_token(token, verifier)
 
     # good response
-    mock_reqs.post.return_value.status_code = 200
+    mock_reqs.post.return_value.ok = True
     mock_reqs.post.return_value.json.return_value = {'oauth_token': 'xxx', 'oauth_token_secret': 'xxx'}
     access_token, access_token_secret = th.get_access_token(token, verifier)
     assert access_token == 'xxx'

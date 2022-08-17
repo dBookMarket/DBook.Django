@@ -94,8 +94,8 @@ class TwitterHandler(SocialMediaHandler):
 
         print('response from access token api ->', resp, resp.text, resp.content)
 
-        if resp.status_code < 200 or resp.status_code >= 300:
-            raise RequestError('Fail to get access token, please try later...')
+        if not resp.ok:
+            raise RequestError(f'Fail to get access token, error is {resp.text}')
 
         try:
             resp_data = resp.json()
@@ -217,7 +217,7 @@ class TwitterHandler(SocialMediaHandler):
 
 
 class LinkedInHandler(SocialMediaHandler):
-    REDIRECT_URI = quote(f'{settings.SOCIAL_MEDIA_REDIRECT_URI}?type=linkedin&isAuth=true')
+    REDIRECT_URI = f'{settings.SOCIAL_MEDIA_REDIRECT_URI}?type=linkedin&isAuth=true'
     CONFIG = settings.LINKEDIN_SETTINGS
     STATE = 'rwer243fa2sfse'
 
@@ -258,8 +258,8 @@ class LinkedInHandler(SocialMediaHandler):
 
         resp = requests.post(_uri, data=_data, headers=_headers)
 
-        if resp.status_code < 200 or resp.status_code >= 300:
-            raise RequestError(f'Fail to get access token, status code is {resp.status_code}.')
+        if not resp.ok:
+            raise RequestError(f'Fail to get access token, error is {resp.text}.')
 
         # get access token
         # print(resp.json())
@@ -277,7 +277,7 @@ class LinkedInHandler(SocialMediaHandler):
         client_id = self.CONFIG['client_id']
         scope = 'r_liteprofile%20r_emailaddress%20w_member_social'
         auth_uri = f'https://www.linkedin.com/oauth/v2/authorization?response_type=code&' \
-                   f'client_id={client_id}&redirect_uri={self.REDIRECT_URI}&state={self.STATE}&scope={scope}'
+                   f'client_id={client_id}&redirect_uri={quote(self.REDIRECT_URI)}&state={self.STATE}&scope={scope}'
         print('auth linkedIn uri ->', auth_uri)
         return auth_uri
 
@@ -297,8 +297,8 @@ class LinkedInHandler(SocialMediaHandler):
 
         resp = requests.get(_uri, headers=_headers)
 
-        if resp.status_code < 200 or resp.status_code >= 300:
-            raise RequestError(f'Cannot get user profile, status code is {resp.status_code}')
+        if not resp.ok:
+            raise RequestError(f'Cannot get user profile, error is {resp.text}')
 
         print('linkedin user info -> ', resp.json())
         resp_data = resp.json()
@@ -338,8 +338,8 @@ class LinkedInHandler(SocialMediaHandler):
 
         print(resp, resp.json())
 
-        if resp.status_code < 200 or resp.status_code >= 300:
-            raise RequestError(f'Fail to send share, status code is {resp.status_code}')
+        if not resp.ok:
+            raise RequestError(f'Fail to send share, error is {resp.text}')
 
         return resp.json()
 
