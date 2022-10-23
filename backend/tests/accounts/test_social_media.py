@@ -135,26 +135,29 @@ def test_share(mock_pch, mock_smf, db, client, auth_client, default_user):
 def test_check_status(client, auth_client, default_user):
     resp = client.get(f'{BASE_URL}/verification-state')
     assert resp.status_code == HTTPStatus.OK
-    assert not resp.data['twitter']
-    assert not resp.data['linkedin']
+    assert not resp.data['twitter']['shared']
+    assert not resp.data['linkedin']['shared']
 
     resp = auth_client.get(f'{BASE_URL}/verification-state')
     assert resp.status_code == HTTPStatus.OK
-    assert not resp.data['twitter']
-    assert not resp.data['linkedin']
+    assert not resp.data['twitter']['shared']
+    assert not resp.data['linkedin']['shared']
 
     # add twitter
     SocialMedia.objects.create(user=default_user, type=SocialMediaType.TWITTER.value, shared=True,
                                account_id='abc', username='123')
     resp = auth_client.get(f'{BASE_URL}/verification-state')
     assert resp.status_code == HTTPStatus.OK
-    assert resp.data['twitter']
+    assert resp.data['twitter']['shared']
+    assert resp.data['twitter']['username'] == '123'
     assert not resp.data['linkedin']
 
     # add linkedin
     SocialMedia.objects.create(user=default_user, type=SocialMediaType.LINKEDIN.value, shared=True,
-                               account_id='abc', username='123')
+                               account_id='abc', username='456')
     resp = auth_client.get(f'{BASE_URL}/verification-state')
     assert resp.status_code == HTTPStatus.OK
-    assert resp.data['twitter']
-    assert resp.data['linkedin']
+    assert resp.data['twitter']['shared']
+    assert resp.data['twitter']['username'] == '123'
+    assert resp.data['linkedin']['shared']
+    assert resp.data['linkedin']['username'] == '456'

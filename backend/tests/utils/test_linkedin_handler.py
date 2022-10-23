@@ -42,9 +42,10 @@ def test_get_user(mock_reqs):
 
     # good request
     mock_reqs.get.return_value.ok = True
-    mock_reqs.get.return_value.json.return_value = {'id': '123123'}
+    mock_reqs.get.return_value.json.return_value = {'id': '123123', 'localizedLastName': 'a', 'localizedFirstName': 'b'}
     res = lh.get_user(access_token)
     assert res['account_id'] == '123123'
+    assert res['username'] == 'b a'
 
 
 @patch('utils.social_media_handler.requests')

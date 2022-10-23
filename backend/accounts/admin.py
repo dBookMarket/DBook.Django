@@ -1,7 +1,7 @@
 from django.contrib import admin
 from . import models
 
-from django.urls import path, include
+from django.urls import path
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
@@ -44,11 +44,18 @@ class UserAdmin(BaseUserAdmin, ModelBackend):
     def get_urls(self):
         info = self.model._meta.app_label, self.model._meta.model_name
         return [
-            path('login-with-metamask/', accounts.views.LoginWithMetaMaskView.as_view(), name='%s_%s_metamask' % info),
-            path('issue-perm/', accounts.views.IssuePermView.as_view(), name='%s_%s_issue_perm' % info)
-        ] + super().get_urls()
+                   path('login-with-metamask/', accounts.views.LoginWithMetaMaskView.as_view(),
+                        name='%s_%s_metamask' % info),
+                   path('issue-perm/', accounts.views.IssuePermView.as_view(), name='%s_%s_issue_perm' % info)
+               ] + super().get_urls()
+
+
+class SocialMediaAdmin(admin.ModelAdmin):
+    list_display = ['user', 'account_id', 'username', 'type', 'shared']
+    search_fields = ['user__account_addr', 'account_id', 'username', 'type']
 
 
 admin.site.register(models.User, UserAdmin)
+admin.site.register(models.SocialMedia)
 
 admin.site.site_header = "D-BOOK Admin"

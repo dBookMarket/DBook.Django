@@ -84,13 +84,9 @@ class TwitterHandler(SocialMediaHandler):
             'oauth_verifier': verifier
         }
 
-        _headers = {
-            'Content_Type': 'application/x-www-form-urlencoded'
-        }
-
         _uri = self._get_oauth_uri('access_token')
 
-        resp = requests.post(_uri, data=_data, headers=_headers)
+        resp = requests.post(_uri, data=_data)
 
         print('response from access token api ->', resp, resp.text, resp.content)
 
@@ -100,7 +96,7 @@ class TwitterHandler(SocialMediaHandler):
         try:
             resp_data = resp.json()
         except requests.exceptions.JSONDecodeError as e:
-            print(f'Exception when calling TwitterHandler.get_access_token -> {e}')
+            print(f'Warning: Exception when calling TwitterHandler.get_access_token -> {e}')
             resp_data = self.txt_to_json(resp.text)
 
         return resp_data['oauth_token'], resp_data['oauth_token_secret']
@@ -205,8 +201,8 @@ class TwitterHandler(SocialMediaHandler):
         sm_user = self.get_user(access_token, access_token_secret)
         # save user
         user = User.objects.get(account_addr=wallet_addr)
-        social_media, _ = SocialMedia.objects.get_or_create(user=user, type=SocialMediaType.TWITTER.value,
-                                                            defaults={**sm_user, **{'shared': False}})
+        social_media, _ = SocialMedia.objects.update_or_create(user=user, type=SocialMediaType.TWITTER.value,
+                                                               defaults={**sm_user, **{'shared': False}})
 
         # send share
         self.share(access_token, access_token_secret, content)
@@ -303,7 +299,8 @@ class LinkedInHandler(SocialMediaHandler):
         print('linkedin user info -> ', resp.json())
         resp_data = resp.json()
         return {
-            'account_id': resp_data['id']
+            'account_id': resp_data['id'],
+            'username': f'{resp_data.get("localizedFirstName", "")} {resp_data.get("localizedLastName", "")}'
         }
 
     def share(self, access_token: str, owner: str, content: str) -> dict:
@@ -363,8 +360,8 @@ class LinkedInHandler(SocialMediaHandler):
         sm_user = self.get_user(access_token)
         # save user
         user = User.objects.get(account_addr=wallet_addr)
-        social_media, _ = SocialMedia.objects.get_or_create(user=user, type=SocialMediaType.LINKEDIN.value,
-                                                            defaults={**sm_user, **{'shared': False}})
+        social_media, _ = SocialMedia.objects.update_or_create(user=user, type=SocialMediaType.LINKEDIN.value,
+                                                               defaults={**sm_user, **{'shared': False}})
 
         # send share
         self.share(access_token, f'urn:li:person:{sm_user["account_id"]}', content)

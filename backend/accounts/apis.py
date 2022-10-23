@@ -229,8 +229,8 @@ class SocialMediaViewSet(viewsets.ViewSet):
         _user = request.user
 
         res = {
-            'linkedin': False,
-            'twitter': False
+            'linkedin': {'shared': False, 'username': ''},
+            'twitter': {'shared': False, 'username': ''}
         }
 
         if isinstance(_user, AnonymousUser):
@@ -240,8 +240,8 @@ class SocialMediaViewSet(viewsets.ViewSet):
 
         for obj in queryset:
             if obj.type == SocialMediaType.TWITTER.value:
-                res['twitter'] = obj.shared
+                res['twitter'] = {'shared': obj.shared, 'username': obj.username}
             if obj.type == SocialMediaType.LINKEDIN.value:
-                res['linkedin'] = obj.shared
+                res['linkedin'] = {'shared': obj.shared, 'username': obj.username}
 
         return Response(res)
