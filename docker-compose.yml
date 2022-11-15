@@ -45,7 +45,7 @@ services:
 
   server:
     build:
-      context: backend
+      context: server 
       args:
         PYTHON_VERSION: ${PYTHON_VERSION}
     image: dbook-server:${VERSION}

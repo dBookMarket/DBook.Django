@@ -1,0 +1,82 @@
+{% extends "admin/login.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static "css/login-extra.css" %}">
+{% endblock %}
+{% block extrahead %}
+    {{ block.super }}
+    <script src="{% static "js/libs/jquery-3.6.0.min.js" %}"></script>
+    <script src="{% static "js/libs/web3.min.js" %}"></script>
+    <script src="{% static "js/libs/require.js" %}"></script>
+    <script type="text/javascript">
+        const loginWithMetamask = () => {
+            requirejs(['/static/js/libs/web3.min.js'], function (Web3) {
+                const ethereum = window.ethereum;
+                // check if install metamask
+                if (typeof ethereum === 'undefined' || !ethereum.isMetaMask) {
+                    alert('Metamask is not installed');
+                    return;
+                }
+                // connect to metamask
+                ethereum.request({method: 'eth_requestAccounts'}).then(accounts => {
+                    const address = accounts[0];
+                    $.ajax({
+                        contentType: "application/json",
+                        type: "PUT",
+                        url: "{% url 'admin:users_user_metamask' %}",
+                        data: JSON.stringify({'address': address}),
+                        beforeSend: (xhr, settings) => {
+                            xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}");
+                        },
+                        success: data => {
+                            const {nonce} = data;
+                            let web3 = new Web3(ethereum);
+                            web3.eth.personal.sign(nonce, address).then(signature => {
+                                $.ajax({
+                                    type: "POST",
+                                    url: "{% url 'admin:users_user_metamask' %}",
+                                    data: {
+                                        'address': address,
+                                        'signature': signature
+                                    },
+                                    beforeSend: (xhr, settings) => {
+                                        xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}");
+                                    },
+                                    success: res => {
+                                        {#console.log('success', res);#}
+                                        window.location.href = "{% url 'admin:index' %}";
+                                    },
+                                    error: res => {
+                                        {#console.log('failure', res);#}
+                                        alert(res.responseJSON['detail']);
+                                    }
+                                })
+                            })
+                        },
+                        error: response => {
+                            alert('Fetch nonce failed');
+                        }
+                    })
+                }).catch(err => {
+                    alert('Connect to MetaMask failed');
+                });
+            })
+        }
+    </script>
+{% endblock %}
+
+{% block content %}
+    {{ block.super }}
+    <div class="other-login-main g-d-c g-d-10 g-centered">
+        <div class="other-login-title">Log in With</div>
+        <div class="other-login-content">
+            <div class="metamask-icon">
+                <img src="{% static 'images/metamask.svg' %}" alt="metamask"
+                     onclick="loginWithMetamask()">
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
