@@ -13,11 +13,6 @@ def django_db_setup():
 
 
 @pytest.fixture
-def default_category(db):
-    return books.models.Category.objects.create(parent=None, name='novel', comment='novel')
-
-
-@pytest.fixture
 def default_user(db):
     obj = users.models.User.objects.create_user(username='seller', address="abcd")
     issue_perm = Permission.objects.get(codename='add_issue')
@@ -47,9 +42,8 @@ def auth_client_with_normal_user(db, normal_user):
 
 
 @pytest.fixture
-def default_issue(db, default_user, default_category):
+def default_issue(db, default_user):
     return books.models.Issue.objects.create(**{
-        'category': default_category,
         'author_name': 'aaa',
         'name': 'issue1',
         'desc': 'issue1',
@@ -61,9 +55,8 @@ def default_issue(db, default_user, default_category):
 
 
 @pytest.fixture
-def uploaded_issue(db, default_user, default_category):
+def uploaded_issue(db, default_user):
     instance = books.models.Issue.objects.create(**{
-        'category': default_category,
         'author_name': 'aaa',
         'name': 'issue1',
         'desc': 'issue1',

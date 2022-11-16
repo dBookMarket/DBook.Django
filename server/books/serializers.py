@@ -1,4 +1,4 @@
-import os
+# import os
 # from uuid import uuid4
 from rest_framework import serializers
 # from rest_framework.exceptions import PermissionDenied
@@ -14,6 +14,7 @@ from rest_framework.validators import UniqueValidator, UniqueTogetherValidator
 # from django.conf import settings
 from django.db.models import Max, Min, Sum
 from books.file_service_connector import FileServiceConnector
+from books.issue_handler import IssueHandler
 from django.contrib.auth.models import AnonymousUser
 from django.forms.models import model_to_dict
 import copy
@@ -239,6 +240,18 @@ class IssueSerializer(BaseSerializer):
             return model_to_dict(obj_trade, fields=['id', 'quantity', 'price'])
         except Trade.DoesNotExist:
             return {}
+
+    def create(self, validated_data):
+        obj = super().create(validated_data)
+        IssueHandler(obj).handle()
+        return obj
+
+    def update(self, instance, validated_data):
+        old_obj = copy.deepcopy(instance)
+        obj = super().update(instance, validated_data)
+        if old_obj.status != obj.status:
+            IssueHandler(obj).handle()
+        return obj
 
 
 class IssueListingSerializer(IssueSerializer):

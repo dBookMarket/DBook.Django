@@ -2,11 +2,9 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from books.models import Asset, Issue, Book, Draft, Bookmark, Wishlist, Contract
 from django.db.transaction import atomic
-from utils.enums import IssueStatus
 from .file_service_connector import FileServiceConnector
 from rest_framework.exceptions import ValidationError
 from utils.helpers import ObjectPermHelper
-from stores.models import Trade
 from weasyprint import HTML
 from django.conf import settings
 import os
@@ -26,8 +24,8 @@ def upload_pdf(obj_book):
         raise ValidationError(
             {'file': 'Update file failed because of the failure of revoking the old one.'}
         )
+    # start a new task
     try:
-        # start a new task
         print(f'pdf path -> {obj_book.file.path}')
         result = file_service_connector.upload_file(obj_book.file.path)
         if result:
@@ -70,30 +68,6 @@ def issue_new_book(sender, instance, **kwargs):
 def post_save_issue(sender, instance, **kwargs):
     if kwargs['created']:
         ObjectPermHelper.assign_perms(Issue, instance.book.author, instance)
-        # todo set a timer to listen the issue tasks
-    # add trade for first release
-    if instance.status == IssueStatus.ON_SALE.value:
-        Trade.objects.update_or_create(user=instance.book.author, book=instance.book, defaults={
-            'first_release': True,
-            'quantity': instance.quantity,
-            'price': instance.price
-        })
-    elif instance.status == IssueStatus.OFF_SALE.value:
-        # todo destroy unsold books by calling smart contract
-        obj_trade = Trade.objects.get(user=instance.book.author, book=instance.book, first_release=True)
-        # todo risk!!! update number of circulations
-        # disconnect signal
-        post_save.disconnect(post_save_issue)
-        # update issue
-        instance.n_circulations = instance.quantity - obj_trade.quantity
-        instance.save()
-        # reconnect signal
-        post_save.connect(post_save_issue)
-        # remove first release
-        obj_trade.delete()
-    elif instance.status == IssueStatus.UNSOLD.value:
-        # todo destroy unsold books by calling smart contract
-        Trade.objects.filter(user=instance.book.author, book=instance.book, first_release=True).delete()
 
 
 @receiver(post_save, sender=Asset)

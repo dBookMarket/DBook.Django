@@ -120,7 +120,7 @@ class Preview(BaseModel):
     book = models.OneToOneField(to='Book', to_field='id', related_name='preview_book',
                                 on_delete=models.CASCADE, verbose_name='书籍')
     start_page = models.IntegerField(blank=True, default=1, verbose_name='起始页')
-    n_pages = models.IntegerField(blank=True, default=5, verbose_name='预览页数')
+    n_pages = models.IntegerField(blank=True, default=10, verbose_name='预览页数')
 
     file = models.FileField(blank=True, default='', upload_to='previews')
 
