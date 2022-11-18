@@ -68,7 +68,7 @@ def issue_new_book(sender, instance, **kwargs):
     # add preview
     pdf_handler = PDFHandler(instance.file.path)
     obj_preview, created = Preview.objects.get_or_create(book=instance)
-    if not created:
+    if not created and obj_preview.file:
         obj_preview.file.delete()
     pre_file = pdf_handler.get_preview_doc(from_page=obj_preview.start_page - 1,
                                            to_page=obj_preview.start_page + obj_preview.n_pages - 2)
