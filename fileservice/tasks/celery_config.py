@@ -4,7 +4,7 @@ import os
 
 class CeleryConfig:
     # timezone = 'Asia/Shanghai'
-    broker_url = f'pyamqp://{os.getenv("RABBITMQ_USER")}:{os.getenv("RABBITMQ_PASS")}@{os.getenv("RABBITMQ_HOST")}:{os.getenv("RABBITMQ_PORT")}/{os.getenv("RABBITMQ_VHOST")}'
+    broker_url = f'redis://{os.getenv("REDIS_HOST")}:{os.getenv("REDIS_PORT")}/{os.getenv("REDIS_DB")}'
     result_backend = f'redis://{os.getenv("REDIS_HOST")}:{os.getenv("REDIS_PORT")}/{os.getenv("REDIS_DB")}'
     include = ['tasks.main']
     task_time_limit = 60 * 60 * 2  # hard time limit 1 hour

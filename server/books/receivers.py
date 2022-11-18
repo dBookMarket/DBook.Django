@@ -9,9 +9,11 @@ from weasyprint import HTML
 from django.conf import settings
 import os
 import uuid
-from django.core.files import File
+# from django.core.files import File
+from books.models import Preview
 from books.signals import sig_issue_new_book
 from books.issue_handler import IssueHandler
+from books.pdf_handler import PDFHandler
 
 
 def upload_pdf(obj_book):
@@ -51,17 +53,28 @@ def post_save_book(sender, instance, **kwargs):
 @receiver(sig_issue_new_book, sender=Book)
 @atomic
 def issue_new_book(sender, instance, **kwargs):
-    # upload file to filecoin
     # convert draft to pdf if using draft
     if instance.draft:
         filename = f'{uuid.uuid4().hex}.pdf'
         filepath = os.path.join(settings.TEMPORARY_ROOT, filename)
         HTML(string=instance.draft.content).write_pdf(filepath)
-        try:
-            with open(filepath, 'rb') as f:
-                instance.file.save(f'{instance.draft.title}.pdf', File(f))
-        finally:
-            os.remove(filepath)
+        # try:
+        #     with open(filepath, 'rb') as f:
+        #         instance.file.save(f'{instance.draft.title}.pdf', File(f))
+        # finally:
+        #     os.remove(filepath)
+        instance.file = f'{settings.TEMPORARY_DIR}/{filename}'
+        instance.save()
+    # add preview
+    pdf_handler = PDFHandler(instance.file.path)
+    obj_preview, created = Preview.objects.get_or_create(book=instance)
+    if not created:
+        obj_preview.file.delete()
+    pre_file = pdf_handler.get_preview_doc(from_page=obj_preview.start_page - 1,
+                                           to_page=obj_preview.start_page + obj_preview.n_pages - 2)
+    obj_preview.file = pre_file
+    obj_preview.save()
+    # upload file to filecoin
     upload_pdf(instance)
 
 

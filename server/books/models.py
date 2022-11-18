@@ -132,6 +132,11 @@ class Preview(BaseModel):
     def __str__(self):
         return f'{self.book.title}'
 
+    def delete(self, using=None, keep_parents=False):
+        if self.file:
+            self.file.delete()
+        super().delete(using, keep_parents)
+
 
 class Asset(BaseModel):
     user = models.ForeignKey(to='users.User', to_field='id', related_name='asset_user',
