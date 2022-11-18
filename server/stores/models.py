@@ -14,7 +14,7 @@ class Trade(BaseModel):
     first_release = models.BooleanField(blank=True, default=False, verbose_name='首发')
 
     class Meta:
-        verbose_name = '书籍转卖'
+        verbose_name = '书籍上市'
         verbose_name_plural = verbose_name
 
     def __str__(self):
@@ -34,7 +34,7 @@ class Transaction(BaseModel):
     buyer = models.ForeignKey(to='users.User', to_field='id', related_name='transaction_buyer',
                               on_delete=models.RESTRICT, verbose_name='买家')
     status = models.CharField(max_length=50, blank=True, default='pending', verbose_name='交易状态')
-    hash = models.CharField(max_length=150, verbose_name='交易哈希值', unique=True, db_index=True)
+    hash = models.CharField(max_length=150, verbose_name='链上哈希', unique=True, db_index=True)
     source = models.IntegerField(choices=Market.choices())
 
     class Meta:
@@ -47,10 +47,13 @@ class Transaction(BaseModel):
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         if force_insert:
             self.seller = self.trade.user
+            self.book = self.trade.book
             if self.trade.first_release:
                 self.source = Market.FIRST_CLASS.value
             else:
                 self.source = Market.SECOND_CLASS.value
+            if self.price == 0:
+                self.price = self.trade.price
         super().save(force_insert, force_update, using, update_fields)
 
 

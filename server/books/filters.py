@@ -56,6 +56,12 @@ class AssetFilter(django_filters.FilterSet):
         return parent.filter(user=user, quantity__gt=0)
 
 
+class WishlistFilter(django_filters.FilterSet):
+    class Meta:
+        model = models.Wishlist
+        fields = ['issue', 'user']
+
+
 class AdvertisementFilter(django_filters.FilterSet):
     class Meta:
         model = models.Advertisement

@@ -10,6 +10,7 @@ from django_apscheduler.models import DjangoJobExecution
 from django_apscheduler import util
 
 from books.scheduled_job import watch_celery_task
+from books.issue_handler import issue_timer
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +46,15 @@ class Command(BaseCommand):
             replace_existing=True,
         )
         logger.info("Added job 'watch_celery_task'.")
+
+        scheduler.add_job(
+            issue_timer,
+            trigger=CronTrigger(second='*/5'),  # Every 5 seconds
+            id='issue_timer',
+            max_instances=3,
+            replace_existing=True,
+        )
+        logger.info('Added job "issue_timer"')
 
         scheduler.add_job(
             delete_old_job_executions,

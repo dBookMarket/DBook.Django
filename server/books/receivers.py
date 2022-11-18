@@ -11,6 +11,7 @@ import os
 import uuid
 from django.core.files import File
 from books.signals import sig_issue_new_book
+from books.issue_handler import IssueHandler
 
 
 def upload_pdf(obj_book):
@@ -48,6 +49,7 @@ def post_save_book(sender, instance, **kwargs):
 
 
 @receiver(sig_issue_new_book, sender=Book)
+@atomic
 def issue_new_book(sender, instance, **kwargs):
     # upload file to filecoin
     # convert draft to pdf if using draft
@@ -64,10 +66,12 @@ def issue_new_book(sender, instance, **kwargs):
 
 
 @receiver(post_save, sender=Issue)
-@atomic
 def post_save_issue(sender, instance, **kwargs):
     if kwargs['created']:
         ObjectPermHelper.assign_perms(Issue, instance.book.author, instance)
+
+        # set timer
+        IssueHandler(instance).handle()
 
 
 @receiver(post_save, sender=Asset)

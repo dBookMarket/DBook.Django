@@ -2,6 +2,10 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueValidator, UniqueTogetherValidator
 from rest_framework.exceptions import PermissionDenied
 from .models import User, Fans
+from utils.serializers import CustomPKRelatedField
+from django.contrib.auth.models import AnonymousUser
+from django.db.models import Min, Max, Sum
+from books.models import Issue, Asset
 
 
 class UserRegistrySerializer(serializers.ModelSerializer):
@@ -38,10 +42,12 @@ class UserSerializer(serializers.ModelSerializer):
     avatar_url = serializers.SerializerMethodField(read_only=True)
     banner_url = serializers.SerializerMethodField(read_only=True)
 
+    statistic = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = User
         fields = ['id', 'address', 'name', 'desc', 'website_url', 'discord_url', 'avatar', 'banner', 'is_verified',
-                  'avatar_url', 'banner_url']
+                  'avatar_url', 'banner_url', 'statistic']
 
     def get_absolute_uri(self, f_obj):
         request = self.context.get('request')
@@ -56,6 +62,32 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_banner_url(self, obj):
         return self.get_absolute_uri(obj.banner)
+
+    def get_statistic(self, obj):
+        try:
+            if obj.is_verified:
+                queryset = Issue.objects.filter(book__author=obj)
+                t_books = queryset.count()
+                t_volume = 0
+                sales = 0
+                books = []
+                for obj_issue in queryset:
+                    t_volume += obj_issue.price * obj.quantity
+                    sales += obj_issue.price * obj.n_circulations
+                    books.append(obj_issue.book_id)
+                tmp = queryset.annotate(lowest_price=Min('price'), highest_price=Max('price'))
+                n_owners = Asset.objects.filter(book__in=books).count()
+                return {
+                    'total_volume': t_volume,
+                    'lowest_price': tmp.lowest_price,
+                    'highest_price': tmp.highest_price,
+                    'total_books': t_books,
+                    'sales': sales,
+                    'n_owners': n_owners
+                }
+            return {}
+        except AttributeError:
+            return {}
 
     def validate(self, attrs):
         super().validate(attrs)
@@ -72,10 +104,21 @@ class UserListingSerializer(UserSerializer):
         fields = ['id', 'address', 'name', 'desc', 'avatar_url']
 
 
+class UserRelatedField(CustomPKRelatedField):
+
+    def to_representation(self, value):
+        try:
+            obj = User.objects.get(id=value.pk)
+            return UserListingSerializer(instance=obj, context=self.context).data
+        except User.DoesNotExist:
+            return {}
+
+
 class FansSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), many=False, required=False,
                                               default=serializers.CurrentUserDefault())
-    author = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), many=False)
+    # author = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), many=False)
+    author = UserRelatedField(queryset=User.objects.all(), many=False)
 
     class Meta:
         model = Fans

@@ -1,7 +1,7 @@
 from django.db import models
 from utils.models import BaseModel
 from stores.models import Trade
-from utils.enums import IssueStatus, BlockChainType
+from utils.enums import IssueStatus, BlockChainType, CeleryTaskStatus
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 import uuid
@@ -40,8 +40,8 @@ class Book(BaseModel):
     # cid = models.CharField(max_length=150, blank=True, default='', verbose_name='NFT asset id')
     # nft_url = models.URLField(blank=True, default='', verbose_name='NFT asset url')
 
-    # status = models.CharField(max_length=50, choices=IssueStatus.choices(),
-    #                           default=IssueStatus.UPLOADING.value, verbose_name='File upload status')
+    status = models.CharField(max_length=50, choices=CeleryTaskStatus.choices(),
+                              default=CeleryTaskStatus.PENDING.value, verbose_name='File upload status')
     # celery task status
     task_id = models.CharField(max_length=50, blank=True, default='', verbose_name='Celery task id')
 

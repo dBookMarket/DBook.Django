@@ -22,11 +22,11 @@ class TransactionType(BaseEnum):
 
 
 class CeleryTaskStatus(BaseEnum):
-    PENDING = 'PENDING'
-    STARTED = 'STARTED'
-    RETRY = 'RETRY'
-    FAILURE = 'FAILURE'
-    SUCCESS = 'SUCCESS'
+    PENDING = 'pending'
+    STARTED = 'started'
+    RETRY = 'retry'
+    FAILURE = 'failure'
+    SUCCESS = 'success'
 
 
 class IssueStatus(BaseEnum):

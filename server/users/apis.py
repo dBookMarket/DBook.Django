@@ -8,7 +8,7 @@ from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnl
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib import auth
-from django.contrib.auth.models import Permission, AnonymousUser
+from django.contrib.auth.models import Permission, AnonymousUser, Group
 
 from users.models import User, Account, Fans
 from users.serializers import UserSerializer, FansSerializer
@@ -17,9 +17,10 @@ from web3 import Web3
 from . import filters
 
 from utils.helpers import Helper
-from utils.social_media_handler import SocialMediaFactory, DuplicationError, RequestError
+from utils.social_media_handler import SocialMediaFactory, DuplicationError, RequestError, TwitterHandler
 from utils.enums import UserType, SocialMediaType
 from utils.smart_contract_handler import PlatformContractHandler
+from utils.views import BaseViewSet
 
 
 def validate_addr(addr: str):
@@ -98,7 +99,7 @@ class LogoutAPIView(APIView):
         return Response({"detail": "Logout success."}, status=status.HTTP_201_CREATED)
 
 
-class UserViewSet(viewsets.ModelViewSet):
+class UserViewSet(BaseViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly]
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -118,6 +119,75 @@ class UserViewSet(viewsets.ModelViewSet):
     #         user.user_permissions.remove(issue_perm)
     #     serializer = self.get_serializer(user, many=False)
     #     return Response(serializer.data)
+
+    @action(methods=['put', 'patch'], detail=False, url_path='auth')
+    def authenticate(self, request, *args, **kwargs):
+        """
+        API for authenticating social media account.
+        """
+        handler = TwitterHandler()
+        try:
+            auth_uri = handler.authenticate()
+        except RequestError as e:
+            raise ValidationError({'detail': str(e)})
+
+        return Response({'auth_uri': auth_uri})
+
+    def add_author_perm(self):
+        _user = self.request.user
+
+        # add author perm into smart contract
+        added = PlatformContractHandler().add_author(_user.address)
+        if not added:
+            raise ValidationError({'detail': 'Fail to add perm from contract, please try later.'})
+
+        # add issue perm
+        # role author
+        group, created = Group.objects.get_or_create(name='author')
+        try:
+            draft_perm = Permission.objects.get(codename='add_draft')
+            book_perm = Permission.objects.get(codename='add_book')
+            issue_perm = Permission.objects.get(codename='add_issue')
+        except Permission.DoesNotExist:
+            print('Exception when calling add_author_perm -> permission `add_issue` not found')
+            raise ValidationError({'detail': 'Fail to become an author, please ask system manager for help.'})
+
+        if created:
+            group.permissions.set([draft_perm, book_perm, issue_perm])
+
+        _user.groups.add(group)
+        _user.is_verified = True
+        _user.save()
+
+    @action(methods=['put', 'patch'], detail=False, url_path='share')
+    def share(self, request, *args, **kwargs):
+        """
+        Verify the user's twitter account, if passed, assign the author permissions to him/her.
+        """
+        _user = request.user
+
+        _content = request.data.get('content', '')
+        if not _content:
+            raise ValidationError({'content': 'This field is required'})
+
+        token = request.data.get('oauth_token', '')
+        verifier = request.data.get('oauth_verifier', '')
+
+        handler = TwitterHandler()
+        try:
+            handler.link_user_and_share(_user.address, token, verifier, _content)
+        except DuplicationError as e:
+            raise ValidationError({'detail': str(e)})
+        except RequestError as e:
+            raise ValidationError({'detail': str(e)})
+        except Exception as e:
+            print(f'Fail to send share, detail: {e}')
+            raise ValidationError({'detail': 'Unknown error.'})
+
+        # add issue perm
+        self.add_author_perm()
+
+        return Response({'detail': 'success'})
 
 
 class AccountViewSet(viewsets.ViewSet):
@@ -247,7 +317,7 @@ class AccountViewSet(viewsets.ViewSet):
         return Response(res)
 
 
-class FansViewSet(viewsets.ModelViewSet):
+class FansViewSet(BaseViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly]
     queryset = Fans.objects.all()
     serializer_class = FansSerializer
@@ -264,3 +334,8 @@ class FansViewSet(viewsets.ModelViewSet):
         request.GET['user'] = request.user
         return super().list(request, *args, **kwargs)
 
+    @action(methods=['post'], detail=False, url_path='remove')
+    def remove(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        queryset.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
