@@ -63,8 +63,7 @@ class BookSerializer(BaseSerializer):
     def get_preview(self, obj):
         try:
             instance = models.Preview.objects.get(book=obj)
-            serializer = PreviewSerializer(instance=instance, many=False, context=self.context)
-            return serializer.data
+            return PreviewListingSerializer(instance=instance, many=False, context=self.context).data
         except models.Preview.DoesNotExist:
             return {}
 
@@ -164,6 +163,11 @@ class PreviewSerializer(BaseSerializer):
 
     def get_file_url(self, obj):
         return self.get_absolute_uri(obj.file)
+
+
+class PreviewListingSerializer(PreviewSerializer):
+    class Meta(PreviewSerializer.Meta):
+        fields = ['file_url']
 
 
 class BookRelatedField(CustomPKRelatedField):
