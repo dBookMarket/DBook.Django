@@ -12,6 +12,10 @@ class IssueAdmin(admin.ModelAdmin):
     search_fields = ['book__title', 'status']
 
 
+class EncryptionKeyAdmin(admin.ModelAdmin):
+    list_display = ['id', 'user', 'public_key', 'private_key', 'key_dict']
+
+
 admin.site.register(models.Draft)
 admin.site.register(models.Book, BookAdmin)
 admin.site.register(models.Issue, IssueAdmin)
@@ -21,3 +25,4 @@ admin.site.register(models.Contract)
 admin.site.register(models.Preview)
 admin.site.register(models.Wishlist)
 admin.site.register(models.Advertisement)
+admin.site.register(models.EncryptionKey, EncryptionKeyAdmin)

@@ -1,9 +1,7 @@
-from django.shortcuts import get_object_or_404
 from django.http.response import HttpResponseForbidden
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.exceptions import ValidationError
 from utils.views import BaseViewSet
 from . import models, serializers, filters
 from stores.models import Trade
@@ -63,6 +61,8 @@ class AssetViewSet(BaseViewSet):
             3, merge files into pdf
         """
         obj = self.get_object()
+        fs_con = FileServiceConnector()
+
         if obj.user != request.user:
             return HttpResponseForbidden('You cannot access this book.')
         return Response({'detail': 'Developing...'})

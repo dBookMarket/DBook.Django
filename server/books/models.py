@@ -165,6 +165,8 @@ class Asset(BaseModel):
 class EncryptionKey(BaseModel):
     user = models.OneToOneField(to='users.User', to_field='id', related_name='encryption_key_user',
                                 on_delete=models.CASCADE, verbose_name='用户')
+    book = models.ForeignKey(to='Book', to_field='id', related_name='encryption_key_book', on_delete=models.CASCADE,
+                             verbose_name='书籍')
     public_key = models.FileField(upload_to=settings.PUBLIC_KEY_DIR, storage=encryption_storage, verbose_name='公钥文件')
     private_key = models.FileField(upload_to=settings.PRIVATE_KEY_DIR, storage=encryption_storage, verbose_name='私钥文件')
     key_dict = models.FileField(upload_to=settings.KEY_DICT_DIR, storage=encryption_storage, verbose_name='密钥字典')

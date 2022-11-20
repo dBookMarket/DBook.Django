@@ -273,3 +273,13 @@ class PDFHandler(FileHandler):
         for cid in cids:
             urls.extend(self._get_file_urls(cid))
         return urls
+
+    def download(self, cids: list, pk_file: str) -> str:
+        """
+        download file from file coin and decrypt it
+        """
+        # 1, get encrypted file url
+        _urls = self.get_file_urls(cids)
+        # 2, download encrypted file
+        # 3, decrypted file
+        # 4, merge files into pdf

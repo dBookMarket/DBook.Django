@@ -28,6 +28,7 @@ def watch_celery_task():
                     EncryptionKey.objects.update_or_create(
                         defaults={'private_key': data['private_key'], 'public_key': data['public_key'],
                                   'key_dict': data['key_dict']},
+                        book=book,
                         user=book.author
                     )
             else:
