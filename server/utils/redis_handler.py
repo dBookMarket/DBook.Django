@@ -1,6 +1,6 @@
 import redis
 import os
-from django.utils.datetime_safe import datetime
+from django.utils import timezone
 import numpy as np
 
 
@@ -26,18 +26,21 @@ class IssueQueue(RedisHandler):
 
             score: a score for the key
         """
+        print(f'Put {key}-{score} into {self.name}')
         try:
             self.redis.zadd(self.name, {key: score})
         except Exception as e:
             print(f'Exception when adding a new item: {e}')
-            pass
+            raise
 
-    def check_out(self, key):
+    def check_out(self):
         """
         pop a key
         """
+        print(f'Remove min value from queue {self.name}')
         try:
-            self.redis.zmpop(1, key)
+            # self.redis.zmpop(1, [key])
+            self.redis.zpopmin(self.name, 1)
         except Exception as e:
             print(f'Exception when removing an item: {e}')
             pass
@@ -46,9 +49,10 @@ class IssueQueue(RedisHandler):
         """
         return the items whose score is less than or equal to the current timestamp
         """
-        current_time = datetime.now().timestamp()
+        current_time = timezone.now().timestamp()
         try:
-            return self.redis.zrangebyscore(self.name, -np.inf, current_time)
+            top_list = self.redis.zrangebyscore(self.name, -np.inf, current_time)
+            return list(map(lambda x: x.decode(), top_list))
         except Exception as e:
             print(f'Exception when getting top items: {e}')
             return []

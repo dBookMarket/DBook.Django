@@ -52,7 +52,7 @@ class NFTStorageHandler(object):
                 'Content-Type': me.content_type,
                 'authorization': f"Bearer {self.access_token}"
             }
-            print(f'Ready to upload, request body size: {me.len}')
+            print(f'Ready to upload, request body size: {me.len/1024/1024}Mb')
             res = requests.post(f'{self.base_api}/upload', data=me, headers=headers)
         except Exception as e:
             print(f'Exception when calling NFTStorageAPI->bulk_upload: {e}')

@@ -164,8 +164,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'users.User'
 
-ATOMIC_REQUESTS = True
-
 APPEND_SLASH = False
 
 AUTHENTICATION_BACKENDS = [

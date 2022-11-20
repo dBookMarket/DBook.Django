@@ -5,6 +5,7 @@ from django.db.transaction import atomic
 from .file_service_connector import FileServiceConnector
 from rest_framework.exceptions import ValidationError
 from utils.helpers import ObjectPermHelper
+from utils.enums import IssueStatus
 from weasyprint import HTML
 from django.conf import settings
 import os
@@ -83,7 +84,9 @@ def post_save_issue(sender, instance, **kwargs):
     if kwargs['created']:
         ObjectPermHelper.assign_perms(Issue, instance.book.author, instance)
 
+    if instance.status == IssueStatus.PRE_SALE.value:
         # set timer
+        print(f'Put issue {instance.id} into the queue')
         IssueHandler(instance).handle()
 
 
