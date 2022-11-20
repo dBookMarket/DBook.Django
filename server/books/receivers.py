@@ -1,4 +1,4 @@
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 from books.models import Asset, Issue, Book, Draft, Bookmark, Wishlist, Contract
 from django.db.transaction import atomic
@@ -88,6 +88,12 @@ def post_save_issue(sender, instance, **kwargs):
         # set timer
         print(f'Put issue {instance.id} into the queue')
         IssueHandler(instance).handle()
+
+
+@receiver(pre_delete, sender=Issue)
+def pre_delete_issue(sender, instance, **kwargs):
+    if instance.status not in {IssueStatus.PRE_SALE.value, IssueStatus.UNSOLD.value}:
+        raise ValidationError(f"It is not allowed to remove this issue because of the current status{instance.status}")
 
 
 @receiver(post_save, sender=Asset)
