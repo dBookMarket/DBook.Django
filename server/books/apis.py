@@ -36,7 +36,7 @@ class IssueViewSet(BaseViewSet):
     queryset = models.Issue.objects.all()
     serializer_class = serializers.IssueSerializer
     filterset_class = filters.IssueFilter
-    search_fields = ['book__name', 'book__desc', 'book__author__name']
+    search_fields = ['book__title', 'book__desc', 'book__author__name']
 
 
 class BookmarkViewSet(BaseViewSet):
