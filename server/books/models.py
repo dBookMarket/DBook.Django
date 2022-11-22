@@ -1,7 +1,7 @@
 from django.db import models
 from utils.models import BaseModel
 from stores.models import Trade
-from utils.enums import IssueStatus, BlockChainType
+from utils.enums import IssueStatus, BlockChainType, CeleryTaskStatus
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 import uuid
@@ -40,8 +40,8 @@ class Book(BaseModel):
     # cid = models.CharField(max_length=150, blank=True, default='', verbose_name='NFT asset id')
     # nft_url = models.URLField(blank=True, default='', verbose_name='NFT asset url')
 
-    # status = models.CharField(max_length=50, choices=IssueStatus.choices(),
-    #                           default=IssueStatus.UPLOADING.value, verbose_name='File upload status')
+    status = models.CharField(max_length=50, choices=CeleryTaskStatus.choices(),
+                              default=CeleryTaskStatus.PENDING.value, verbose_name='File upload status')
     # celery task status
     task_id = models.CharField(max_length=50, blank=True, default='', verbose_name='Celery task id')
 
@@ -120,7 +120,7 @@ class Preview(BaseModel):
     book = models.OneToOneField(to='Book', to_field='id', related_name='preview_book',
                                 on_delete=models.CASCADE, verbose_name='书籍')
     start_page = models.IntegerField(blank=True, default=1, verbose_name='起始页')
-    n_pages = models.IntegerField(blank=True, default=5, verbose_name='预览页数')
+    n_pages = models.IntegerField(blank=True, default=10, verbose_name='预览页数')
 
     file = models.FileField(blank=True, default='', upload_to='previews')
 
@@ -131,6 +131,11 @@ class Preview(BaseModel):
 
     def __str__(self):
         return f'{self.book.title}'
+
+    def delete(self, using=None, keep_parents=False):
+        if self.file:
+            self.file.delete()
+        super().delete(using, keep_parents)
 
 
 class Asset(BaseModel):
@@ -160,6 +165,8 @@ class Asset(BaseModel):
 class EncryptionKey(BaseModel):
     user = models.OneToOneField(to='users.User', to_field='id', related_name='encryption_key_user',
                                 on_delete=models.CASCADE, verbose_name='用户')
+    book = models.ForeignKey(to='Book', to_field='id', related_name='encryption_key_book', on_delete=models.CASCADE,
+                             verbose_name='书籍')
     public_key = models.FileField(upload_to=settings.PUBLIC_KEY_DIR, storage=encryption_storage, verbose_name='公钥文件')
     private_key = models.FileField(upload_to=settings.PRIVATE_KEY_DIR, storage=encryption_storage, verbose_name='私钥文件')
     key_dict = models.FileField(upload_to=settings.KEY_DICT_DIR, storage=encryption_storage, verbose_name='密钥字典')

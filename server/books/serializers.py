@@ -1,32 +1,23 @@
-import os
+# import os
 # from uuid import uuid4
 from rest_framework import serializers
 # from rest_framework.exceptions import PermissionDenied
 from . import models, signals
 from users.models import User
-from users.serializers import UserListingSerializer
+from users.serializers import UserRelatedField
 # from accounts.serializers import UserListingSerializer
 from stores.models import Trade
 from utils.serializers import BaseSerializer, CustomPKRelatedField
-# from utils.enums import IssueStatus
+from utils.enums import CeleryTaskStatus
 from rest_framework.validators import UniqueValidator, UniqueTogetherValidator
 # from secure.encryption_handler import EncryptionHandler
 # from django.conf import settings
 from django.db.models import Max, Min, Sum
-from books.file_service_connector import FileServiceConnector
+# from books.file_service_connector import FileServiceConnector
+# from books.issue_handler import IssueHandler
 from django.contrib.auth.models import AnonymousUser
 from django.forms.models import model_to_dict
 import copy
-
-
-class UserRelatedField(CustomPKRelatedField):
-
-    def to_representation(self, value):
-        try:
-            obj = User.objects.get(id=value.pk)
-            return UserListingSerializer(instance=obj).data
-        except User.DoesNotExist:
-            return {}
 
 
 class DraftSerializer(BaseSerializer):
@@ -54,9 +45,8 @@ class BookSerializer(BaseSerializer):
 
     cover_url = serializers.SerializerMethodField(read_only=True)
 
-    status = serializers.SerializerMethodField(read_only=True)
+    status = serializers.ReadOnlyField()
     bookmark = serializers.SerializerMethodField(read_only=True)
-
     contract = serializers.SerializerMethodField(read_only=True)
     preview = serializers.SerializerMethodField(read_only=True)
     n_pages = serializers.ReadOnlyField()
@@ -73,22 +63,21 @@ class BookSerializer(BaseSerializer):
     def get_preview(self, obj):
         try:
             instance = models.Preview.objects.get(book=obj)
-            serializer = PreviewSerializer(instance=instance, many=False, context=self.context)
-            return serializer.data
+            return PreviewListingSerializer(instance=instance, many=False, context=self.context).data
         except models.Preview.DoesNotExist:
             return {}
 
     def get_cover_url(self, obj):
         return self.get_absolute_uri(obj.cover)
 
-    def get_status(self, obj):
-        if not obj.task_id:
-            return 'pending'
-        fsc = FileServiceConnector()
-        result = fsc.get_async_result(obj.task_id)
-        if result is None:
-            return 'failure'
-        return result.status.lower()
+    # def get_status(self, obj):
+    #     if not obj.task_id:
+    #         return 'pending'
+    #     fsc = FileServiceConnector()
+    #     result = fsc.get_async_result(obj.task_id)
+    #     if result is None:
+    #         return 'failure'
+    #     return result.status.lower()
 
     def get_bookmark(self, obj):
         _user = self.context['request'].user
@@ -141,7 +130,7 @@ class BookSerializer(BaseSerializer):
 class BookListingSerializer(BookSerializer):
     class Meta:
         model = models.Book
-        fields = ['id', 'title', 'desc', 'cover_url', 'author']
+        fields = ['id', 'title', 'desc', 'cover_url', 'author', 'bookmark']
 
 
 class ContractSerializer(BaseSerializer):
@@ -176,8 +165,24 @@ class PreviewSerializer(BaseSerializer):
         return self.get_absolute_uri(obj.file)
 
 
+class PreviewListingSerializer(PreviewSerializer):
+    class Meta(PreviewSerializer.Meta):
+        fields = ['file_url']
+
+
+class BookRelatedField(CustomPKRelatedField):
+
+    def to_representation(self, value):
+        try:
+            obj = models.Book.objects.get(id=value.pk)
+            return BookSerializer(obj, context=self.context).data
+        except models.Book.DoesNotExist:
+            return {}
+
+
 class IssueSerializer(BaseSerializer):
-    book = serializers.PrimaryKeyRelatedField(queryset=models.Book.objects.all(), many=False)
+    # book = serializers.PrimaryKeyRelatedField(queryset=models.Book.objects.all(), many=False)
+    book = BookRelatedField(required=True, queryset=models.Book.objects.all(), many=False)
     quantity = serializers.IntegerField()
     price = serializers.FloatField()
     royalty = serializers.FloatField(required=False)
@@ -185,22 +190,25 @@ class IssueSerializer(BaseSerializer):
     published_at = serializers.DateTimeField()
     duration = serializers.IntegerField()
 
-    # file = serializers.FileField(required=True, write_only=True)
-
     status = serializers.ReadOnlyField()
-    # n_owners = serializers.ReadOnlyField()
+
     n_circulations = serializers.ReadOnlyField()
 
     # is_owned = serializers.SerializerMethodField(read_only=True)
     price_range = serializers.SerializerMethodField(read_only=True)
     # n_remains = serializers.SerializerMethodField(read_only=True)
     trade = serializers.SerializerMethodField(read_only=True)
+    is_wished = serializers.SerializerMethodField(read_only=True)
+    n_owners = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = models.Issue
         fields = '__all__'
 
     def validate_book(self, value):
+        if value.status != CeleryTaskStatus.SUCCESS.value:
+            raise serializers.ValidationError(
+                "It is not allowed to issue this book which has not been uploaded successfully.")
         user = self.context['request'].user
         queryset = models.Book.objects.filter(author=user).filter(id=value.id)
         if queryset.count() == 0:
@@ -233,6 +241,19 @@ class IssueSerializer(BaseSerializer):
         except models.Asset.DoesNotExist:
             return False
 
+    def get_n_owners(self, obj):
+        return models.Asset.objects.filter(book=obj.book).count()
+
+    def get_is_wished(self, obj):
+        user = self.context['request'].user
+        if isinstance(user, AnonymousUser):
+            return False
+        try:
+            models.Wishlist.objects.get(user=user, issue=obj)
+            return True
+        except models.Wishlist.DoesNotExist:
+            return False
+
     def get_trade(self, obj):
         try:
             obj_trade = Trade.objects.get(book=obj.book, first_release=True)
@@ -243,7 +264,7 @@ class IssueSerializer(BaseSerializer):
 
 class IssueListingSerializer(IssueSerializer):
     class Meta(IssueSerializer.Meta):
-        fields = ['id', 'book', 'price', 'quantity', 'n_circulations']
+        fields = ['id', 'book', 'price', 'quantity', 'n_circulations', 'published_at']
 
 
 class BookmarkSerializer(BaseSerializer):
@@ -296,7 +317,7 @@ class AssetSerializer(BaseSerializer):
     # secret key
     file = serializers.HiddenField(default='')
 
-    bookmark = serializers.DictField(read_only=True)
+    issue = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = models.Asset
@@ -309,16 +330,30 @@ class AssetSerializer(BaseSerializer):
             )
         ]
 
+    def get_issue(self, obj):
+        return IssueListingSerializer(obj.book.issue_book, context=self.context).data
+
+
+class IssueRelatedField(CustomPKRelatedField):
+
+    def to_representation(self, value):
+        try:
+            obj = models.Issue.objects.get(id=value.pk)
+            return IssueListingSerializer(instance=obj, context=self.context).data
+        except models.Issue.DoesNotExist:
+            return {}
+
 
 class WishlistSerializer(BaseSerializer):
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), many=False, required=False,
                                               default=serializers.CurrentUserDefault())
-    issue = serializers.PrimaryKeyRelatedField(queryset=models.Issue.objects.all(), many=False)
+    # issue = serializers.PrimaryKeyRelatedField(queryset=models.Issue.objects.all(), many=False)
+    issue = IssueRelatedField(queryset=models.Issue.objects.all(), many=False)
 
     class Meta:
         model = models.Wishlist
         fields = '__all__'
-        validator = [
+        validators = [
             UniqueTogetherValidator(
                 queryset=models.Wishlist.objects.all(),
                 fields=['user', 'issue'],
@@ -328,8 +363,10 @@ class WishlistSerializer(BaseSerializer):
 
 
 class AdvertiseSerializer(BaseSerializer):
-    issue = serializers.PrimaryKeyRelatedField(queryset=models.Issue.objects.all(), many=False)
-    show = serializers.BooleanField(required=False, default=True, write_only=True)
+    # issue = serializers.PrimaryKeyRelatedField(queryset=models.Issue.objects.all(), many=False)
+    # show = serializers.BooleanField(required=False, default=True, write_only=True)
+
+    issue = IssueSerializer(read_only=True)
 
     class Meta:
         model = models.Advertisement

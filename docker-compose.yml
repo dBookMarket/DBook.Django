@@ -63,7 +63,7 @@ services:
       NFT_STORAGE_ACCESS_TOKEN: ${NFT_STORAGE_ACCESS_TOKEN}
       CONTRACT_ADMIN_KEY: ${CONTRACT_ADMIN_KEY}
       <<: *db
-      <<: *rabbitMQ
+      # <<: *rabbitMQ
       <<: *redis
       <<: *twitter-api
       <<: *linkedin-api
@@ -73,7 +73,7 @@ services:
       - db
     links:
       - db
-      - rabbitmq
+      # - rabbitmq
       - redis
     volumes:
       - media_file:/code/media:rw
@@ -115,19 +115,19 @@ services:
     volumes:
       - redis_data:/data
 
-  rabbitmq:
-    build:
-      context: rabbitmq
-      args:
-        RABBITMQ_VERSION: ${RABBITMQ_VERSION}
-    image: dbook-rabbitmq:${VERSION}
-    restart: unless-stopped
-    environment:
-      - RABBITMQ_CONFIG_FILE=/rabbit/rabbitmq.conf
-    ports:
-      - "5672:5672"
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq/mnesia
+  # rabbitmq:
+  #   build:
+  #     context: rabbitmq
+  #     args:
+  #       RABBITMQ_VERSION: ${RABBITMQ_VERSION}
+  #   image: dbook-rabbitmq:${VERSION}
+  #   restart: unless-stopped
+  #   environment:
+  #     - RABBITMQ_CONFIG_FILE=/rabbit/rabbitmq.conf
+  #   ports:
+  #     - "5672:5672"
+  #   volumes:
+  #     - rabbitmq_data:/var/lib/rabbitmq/mnesia
 
   celery:
     build:
@@ -138,17 +138,17 @@ services:
     restart: unless-stopped
     command: celery -A tasks.main worker --loglevel=INFO
     environment:
-      <<: *rabbitMQ
+      # <<: *rabbitMQ
       <<: *redis
       NFT_STORAGE_ACCESS_TOKEN: ${NFT_STORAGE_ACCESS_TOKEN}
     volumes:
       - media_file:/code/media
       - enc_file:/code/file  # encryption keys
     depends_on:
-      - rabbitmq
+      # - rabbitmq
       - redis
     links:
-      - rabbitmq
+      # - rabbitmq
       - redis
 
 volumes:
@@ -156,6 +156,6 @@ volumes:
   media_file: { }
   static_file: { }
   redis_data: {}
-  rabbitmq_data: {}
+  # rabbitmq_data: {}
   enc_file: {}
 

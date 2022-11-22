@@ -23,7 +23,7 @@ class UserAdmin(BaseUserAdmin, ModelBackend):
         }),
         (_('Important dates'), {'fields': ('last_login', 'date_joined')}),
     )
-    list_display = ('address', 'name', 'email', 'is_verified')
+    list_display = ('id', 'address', 'name', 'email', 'is_verified')
     search_fields = ('name', 'address', 'email')
     actions = ['assign_issue_perm', 'remove_issue_perm']
 

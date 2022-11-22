@@ -29,7 +29,7 @@ urlpatterns = [
     path('grappelli/', include('grappelli.urls')),
     path('d-book-admin/', admin.site.urls),
     path(r'api/v1/', include(apis.urls)),
-    path('api-docs/', include_docs_urls(title='api文档')),
+    path('api-doc/', include_docs_urls(title='api文档')),
     # re_path(r'^api-doc$', schema_view),
     re_path(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework'))
 ] + static(settings.MEDIA_URL,

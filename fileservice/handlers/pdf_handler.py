@@ -9,6 +9,7 @@ from pathlib import Path
 import uuid
 import math
 
+
 # from PIL import Image
 
 
@@ -89,17 +90,24 @@ class PDFHandler(FileHandler):
     def get_file_name(self) -> str:
         return self.pdf.name.rsplit('/')[-1].rsplit('.')[0]
 
-    def get_img_dirs(self) -> list:
+    def get_img_dirs(self, paging: bool = True) -> list:
         """
         将图片分批存入多个文件夹中，以免上传时超出大小限制(<=31GiB)
+        :paging: bool, if true, need to paginate
         :return:
         """
         img_dirs = []
+
         pages = self.get_pages()
-        n_batches = math.ceil(pages / self.PAGES_PER_DIR)  # number of dirs
+        if paging:
+            n_batches = math.ceil(pages / self.PAGES_PER_DIR)  # number of dirs
+        else:
+            n_batches = 1
+
         file_name = self.get_file_name()
         if not file_name:
             file_name = uuid.uuid4().hex
+
         for i in range(n_batches):
             img_dir_path = os.path.join(self.TMP_ROOT, f"{file_name}-{i}")
 
@@ -211,7 +219,7 @@ class PDFHandler(FileHandler):
         print('Step 0, generate keys')
         sk_file, pk_file, dict_file = self.generate_keys()
         print('Step 1, convert pdf to images')
-        img_dirs = self.get_img_dirs()
+        img_dirs = self.get_img_dirs(paging=False)
         self.to_img(img_dirs)
         print('Step 2, encrypt images')
         self.encrypt_img(sk_file, img_dirs)
@@ -265,3 +273,13 @@ class PDFHandler(FileHandler):
         for cid in cids:
             urls.extend(self._get_file_urls(cid))
         return urls
+
+    def download(self, cids: list, pk_file: str) -> str:
+        """
+        download file from file coin and decrypt it
+        """
+        # 1, get encrypted file url
+        _urls = self.get_file_urls(cids)
+        # 2, download encrypted file
+        # 3, decrypted file
+        # 4, merge files into pdf

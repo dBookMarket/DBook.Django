@@ -99,7 +99,8 @@ DATABASES = {
         'PASSWORD': os.getenv('DB_PASSWORD', ''),
         'HOST': os.getenv('DB_HOST', '127.0.0.1'),
         'PORT': os.getenv('DB_PORT', '3306'),
-        'OPTIONS': {'charset': 'utf8mb4'}
+        'OPTIONS': {'charset': 'utf8mb4'},
+        'ATOMIC_REQUESTS': True
     }
 }
 
@@ -162,8 +163,6 @@ KEY_DICT_DIR = 'key_dicts'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'users.User'
-
-ATOMIC_REQUESTS = True
 
 APPEND_SLASH = False
 

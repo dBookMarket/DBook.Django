@@ -11,8 +11,8 @@ from django.db.transaction import atomic
 def post_save_trade(sender, instance, **kwargs):
     if kwargs['created']:
         ObjectPermHelper.assign_perms(Trade, instance.user, instance)
-    # delete trade if amount = 0
-    if instance.amount == 0:
+    # delete trade if quantity = 0
+    if instance.quantity == 0:
         instance.delete()
 
 
@@ -27,6 +27,10 @@ def post_save_benefit(sender, instance, **kwargs):
 def post_save_transaction(sender, instance, **kwargs):
     # todo need to call smart contract to send a transaction
     if instance.status == 'success':
+        # 0, update issue
+        if instance.trade.first_release:
+            instance.book.issue_book.n_circulations += instance.quantity
+            instance.book.issue_book.save()
         # 1, update trade
         instance.trade.quantity -= instance.quantity
         instance.trade.save()

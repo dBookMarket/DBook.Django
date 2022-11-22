@@ -31,7 +31,7 @@ class OptionalRouter(DefaultRouter):
 router = OptionalRouter()
 router.register(r"users", users.apis.UserViewSet, basename="user")
 router.register(r"fans", users.apis.FansViewSet, basename="fans")
-router.register(r"accounts", users.apis.AccountViewSet, basename="account")
+# router.register(r"accounts", users.apis.AccountViewSet, basename="account")
 
 router.register(r"drafts", books.apis.DraftViewSet, basename="draft")
 router.register(r"books", books.apis.BookViewSet, basename="book")
@@ -51,5 +51,5 @@ urlpatterns = [
     re_path(r'login', users.apis.LoginAPIView.as_view(), name='login'),
     re_path(r'logout', users.apis.LogoutAPIView.as_view(), name='logout'),
     re_path(r'nonce', users.apis.NonceAPIView.as_view(), name='nonce'),
-    re_path(r'permissions', authorities.apis.PermissionAPIView.as_view(), name='permission'),
+    # re_path(r'permissions', authorities.apis.PermissionAPIView.as_view(), name='permission'),
 ]

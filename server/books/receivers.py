@@ -1,18 +1,20 @@
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 from books.models import Asset, Issue, Book, Draft, Bookmark, Wishlist, Contract
 from django.db.transaction import atomic
-from utils.enums import IssueStatus
 from .file_service_connector import FileServiceConnector
 from rest_framework.exceptions import ValidationError
 from utils.helpers import ObjectPermHelper
-from stores.models import Trade
+from utils.enums import IssueStatus
 from weasyprint import HTML
 from django.conf import settings
 import os
 import uuid
-from django.core.files import File
+# from django.core.files import File
+from books.models import Preview
 from books.signals import sig_issue_new_book
+from books.issue_handler import IssueHandler
+from books.pdf_handler import PDFHandler
 
 
 def upload_pdf(obj_book):
@@ -26,8 +28,8 @@ def upload_pdf(obj_book):
         raise ValidationError(
             {'file': 'Update file failed because of the failure of revoking the old one.'}
         )
+    # start a new task
     try:
-        # start a new task
         print(f'pdf path -> {obj_book.file.path}')
         result = file_service_connector.upload_file(obj_book.file.path)
         if result:
@@ -50,50 +52,48 @@ def post_save_book(sender, instance, **kwargs):
 
 
 @receiver(sig_issue_new_book, sender=Book)
+@atomic
 def issue_new_book(sender, instance, **kwargs):
-    # upload file to filecoin
     # convert draft to pdf if using draft
     if instance.draft:
         filename = f'{uuid.uuid4().hex}.pdf'
         filepath = os.path.join(settings.TEMPORARY_ROOT, filename)
         HTML(string=instance.draft.content).write_pdf(filepath)
-        try:
-            with open(filepath, 'rb') as f:
-                instance.file.save(f'{instance.draft.title}.pdf', File(f))
-        finally:
-            os.remove(filepath)
+        # try:
+        #     with open(filepath, 'rb') as f:
+        #         instance.file.save(f'{instance.draft.title}.pdf', File(f))
+        # finally:
+        #     os.remove(filepath)
+        instance.file = f'{settings.TEMPORARY_DIR}/{filename}'
+        instance.save()
+    # add preview
+    pdf_handler = PDFHandler(instance.file.path)
+    obj_preview, created = Preview.objects.get_or_create(book=instance)
+    if not created and obj_preview.file:
+        obj_preview.file.delete()
+    pre_file = pdf_handler.get_preview_doc(from_page=obj_preview.start_page - 1,
+                                           to_page=obj_preview.start_page + obj_preview.n_pages - 2)
+    obj_preview.file = pre_file
+    obj_preview.save()
+    # upload file to filecoin
     upload_pdf(instance)
 
 
 @receiver(post_save, sender=Issue)
-@atomic
 def post_save_issue(sender, instance, **kwargs):
     if kwargs['created']:
         ObjectPermHelper.assign_perms(Issue, instance.book.author, instance)
-        # todo set a timer to listen the issue tasks
-    # add trade for first release
-    if instance.status == IssueStatus.ON_SALE.value:
-        Trade.objects.update_or_create(user=instance.book.author, book=instance.book, defaults={
-            'first_release': True,
-            'quantity': instance.quantity,
-            'price': instance.price
-        })
-    elif instance.status == IssueStatus.OFF_SALE.value:
-        # todo destroy unsold books by calling smart contract
-        obj_trade = Trade.objects.get(user=instance.book.author, book=instance.book, first_release=True)
-        # todo risk!!! update number of circulations
-        # disconnect signal
-        post_save.disconnect(post_save_issue)
-        # update issue
-        instance.n_circulations = instance.quantity - obj_trade.quantity
-        instance.save()
-        # reconnect signal
-        post_save.connect(post_save_issue)
-        # remove first release
-        obj_trade.delete()
-    elif instance.status == IssueStatus.UNSOLD.value:
-        # todo destroy unsold books by calling smart contract
-        Trade.objects.filter(user=instance.book.author, book=instance.book, first_release=True).delete()
+
+    if instance.status == IssueStatus.PRE_SALE.value:
+        # set timer
+        print(f'Put issue {instance.id} into the queue')
+        IssueHandler(instance).handle()
+
+
+@receiver(pre_delete, sender=Issue)
+def pre_delete_issue(sender, instance, **kwargs):
+    if instance.status not in {IssueStatus.PRE_SALE.value, IssueStatus.UNSOLD.value}:
+        raise ValidationError(f"It is not allowed to remove this issue because of the current status{instance.status}")
 
 
 @receiver(post_save, sender=Asset)
