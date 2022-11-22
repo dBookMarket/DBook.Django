@@ -21,16 +21,20 @@ def watch_celery_task():
             if current_status == CeleryTaskStatus.SUCCESS.value:
                 data = res.get()
                 with atomic():
+                    # update book
                     book.status = current_status
-                    book.cids = data['cids']
-                    book.n_pages = data['n_pages']
+                    book.cid = data['cid']
+                    # book.n_pages = data['n_pages']
                     book.save()
+                    # add key
                     EncryptionKey.objects.update_or_create(
-                        defaults={'private_key': data['private_key'], 'public_key': data['public_key'],
-                                  'key_dict': data['key_dict']},
+                        defaults={'key': data['key']},
                         book=book,
                         user=book.author
                     )
+                    # remove original file
+                    if book.file:
+                        book.file.delete()
             else:
                 if book.status != current_status:
                     book.status = current_status

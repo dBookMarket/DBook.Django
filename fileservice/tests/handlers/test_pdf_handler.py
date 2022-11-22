@@ -48,7 +48,7 @@ def test_generate_keys(mock_eh):
 @patch('handlers.pdf_handler.EncryptionHandler')
 def test_encrypt_img(mock_eh):
     img_dirs = [os.path.join(pdf_handler.TMP_ROOT, 'test-0')]
-    pdf_handler.encrypt_img('xxx.stk', img_dirs)
+    pdf_handler.encrypt('xxx.stk', img_dirs)
 
 
 @patch('handlers.pdf_handler.NFTStorageHandler')
@@ -58,7 +58,7 @@ def test_upload(mock_eh, mock_nsh):
     pdf_handler.get_img_dirs = Mock()
 
     pdf_handler.to_img = Mock()
-    pdf_handler.encrypt_img = Mock()
+    pdf_handler.encrypt = Mock()
 
     pdf_handler.remove = Mock()
 

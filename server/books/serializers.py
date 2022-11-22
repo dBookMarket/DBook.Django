@@ -50,7 +50,7 @@ class BookSerializer(BaseSerializer):
     contract = serializers.SerializerMethodField(read_only=True)
     preview = serializers.SerializerMethodField(read_only=True)
     n_pages = serializers.ReadOnlyField()
-    cids = serializers.ReadOnlyField()
+    cid = serializers.ReadOnlyField()
 
     def get_contract(self, obj):
         try:
@@ -315,7 +315,7 @@ class AssetSerializer(BaseSerializer):
     book = BookListingSerializer(read_only=True, many=False)
     quantity = serializers.IntegerField(required=False)
     # secret key
-    file = serializers.HiddenField(default='')
+    # file = serializers.HiddenField(default='')
 
     issue = serializers.SerializerMethodField(read_only=True)
 

@@ -1,5 +1,7 @@
 from utils.celery_connector import CeleryConnector
 import os
+import uuid
+from django.conf import settings
 from .file_service_config import FileServiceConfig
 
 
@@ -17,3 +19,11 @@ class FileServiceConnector(CeleryConnector):
     def get_file_urls(self, cids: list):
         urls = self.send_task(FileServiceConfig.TASK_GET_FILE_URLS, (cids,))
         return urls
+
+    def download_file(self, cid: str, key: str):
+        filename = f'{uuid.uuid4().hex}.bin'
+        file_path = os.path.join(settings.TEMPORARY_ROOT, filename)
+        res = self.send_task(FileServiceConfig.TASK_DOWNLOAD_FILE, (file_path, cid, key))
+        # remove encrypted file
+        os.remove(file_path)
+        return res
