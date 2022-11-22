@@ -13,7 +13,7 @@ from .file_service_connector import FileServiceConnector
 # from django.conf import settings
 from authorities.permissions import ObjectPermissionsOrReadOnly
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
-from utils.cache import Cache
+from utils.redis_accessor import RedisLock, RedisAccessor
 
 
 class DraftViewSet(BaseViewSet):
@@ -64,14 +64,17 @@ class AssetViewSet(BaseViewSet):
         """
         obj = self.get_object()
 
-        session_key = f'asset_{obj.book.id}'
-        expire_time = 7 * 24 * 3600  # 1 week
-        cache = Cache(request.session)
-        path = cache.get(session_key)
+        cache_key = f'asset-{obj.book.id}'
+        # expire_time = 7 * 24 * 3600  # 1 week
+        cache = RedisAccessor()
+        path = cache.get_value(cache_key)
         if path is None:
-            encryption_key = models.EncryptionKey.objects.get(user=obj.book.author, book=obj.book)
-            path = FileServiceConnector().download_file(obj.book.cid, encryption_key.key)
-            cache.set(session_key, path, expire_time)
+            with RedisLock(f'{cache_key}-lock'):
+                path = cache.get_value(cache_key)
+                if path is None:
+                    encryption_key = models.EncryptionKey.objects.get(user=obj.book.author, book=obj.book)
+                    path = FileServiceConnector().download_file(obj.book.cid, encryption_key.key)
+                    cache.set_value(cache_key, path)
 
         url = request.build_absolute_uri(path)
         return Response({'url': url})
