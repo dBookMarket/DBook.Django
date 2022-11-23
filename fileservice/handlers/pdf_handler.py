@@ -90,8 +90,9 @@ class FileHandler(object):
         decrypted_key = aes_handler.decrypt(self.KEY, ciphertext, nonce, tag)
         # download file
         nft_storage_handler = NFTStorageHandler()
-        data = nft_storage_handler.retrieve(cid)
-        url = nft_storage_handler.get_file_url(cid, data['files'][0]['name'])
+        # data = nft_storage_handler.retrieve(cid)
+        # url = nft_storage_handler.get_file_url(cid, data['files'][0]['name'])
+        url = nft_storage_handler.get_nft_url(cid)
         response = requests.get(url)
         # save content into a file
         with open(path, 'wb') as f:
@@ -310,13 +311,3 @@ class PDFHandler(FileHandler):
         for cid in cids:
             urls.extend(self._get_file_urls(cid))
         return urls
-
-    def download(self, cids: list, pk_file: str) -> str:
-        """
-        download file from file coin and decrypt it
-        """
-        # 1, get encrypted file url
-        _urls = self.get_file_urls(cids)
-        # 2, download encrypted file
-        # 3, decrypted file
-        # 4, merge files into pdf

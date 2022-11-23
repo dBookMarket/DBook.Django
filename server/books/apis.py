@@ -1,4 +1,4 @@
-# from django.http.response import HttpResponseForbidden
+import os
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -14,6 +14,7 @@ from .file_service_connector import FileServiceConnector
 from authorities.permissions import ObjectPermissionsOrReadOnly
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
 from utils.redis_accessor import RedisLock, RedisAccessor
+from django.conf import settings
 
 
 class DraftViewSet(BaseViewSet):
@@ -75,8 +76,8 @@ class AssetViewSet(BaseViewSet):
                     encryption_key = models.EncryptionKey.objects.get(user=obj.book.author, book=obj.book)
                     path = FileServiceConnector().download_file(obj.book.cid, encryption_key.key)
                     cache.set_value(cache_key, path)
-
-        url = request.build_absolute_uri(path)
+        file_url = os.path.join('/', path.lstrip(str(settings.BASE_DIR.absolute())))
+        url = request.build_absolute_uri(file_url)
         return Response({'url': url})
 
 

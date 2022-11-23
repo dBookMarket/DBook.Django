@@ -311,8 +311,8 @@ class BookmarkSerializer(BaseSerializer):
 
 
 class AssetSerializer(BaseSerializer):
-    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), many=False)
-    book = BookListingSerializer(read_only=True, many=False)
+    # user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), many=False)
+    # book = serializers.PrimaryKeyRelatedField(queryset=models.Book.objects.all(), write_only=True, many=False)
     quantity = serializers.IntegerField(required=False)
     # secret key
     # file = serializers.HiddenField(default='')
@@ -321,7 +321,7 @@ class AssetSerializer(BaseSerializer):
 
     class Meta:
         model = models.Asset
-        fields = '__all__'
+        fields = ['id', 'issue', 'quantity']
         validators = [
             UniqueTogetherValidator(
                 queryset=models.Asset.objects.all(),
