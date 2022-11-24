@@ -91,10 +91,10 @@ class BookSerializer(BaseSerializer):
 
     class Meta:
         model = models.Book
-        exclude = ['task_id']
+        exclude = ['task_id', 'type']
 
     def validate_file(self, value):
-        self._validate_file(value, ['pdf', 'epub', 'txt'], 200 * 1024 * 10124)
+        self._validate_file(value, ['pdf', 'epub', 'txt'], 200 * 1024 * 1024)
         return value
 
     def validate_cover(self, value):

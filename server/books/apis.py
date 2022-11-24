@@ -74,7 +74,7 @@ class AssetViewSet(BaseViewSet):
                 path = cache.get_value(cache_key)
                 if path is None:
                     encryption_key = models.EncryptionKey.objects.get(user=obj.book.author, book=obj.book)
-                    path = FileServiceConnector().download_file(obj.book.cid, encryption_key.key)
+                    path = FileServiceConnector().download_file(obj.book.cid, encryption_key.key, obj.book.type)
                     cache.set_value(cache_key, path)
         file_url = os.path.join('/', path.lstrip(str(settings.BASE_DIR.absolute())))
         url = request.build_absolute_uri(file_url)

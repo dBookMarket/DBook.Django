@@ -208,7 +208,7 @@ class AESHandler(EncryptionHandler):
         return cipher_file
 
     def decrypt_file(self, key: bytes, file: str):
-        decrypted_file = f'{file}.pdf'
+        decrypted_file = file.rsplit('.', 1)[0]
         with open(decrypted_file, 'wb') as f_out:
             with open(file, 'rb') as f_in:
                 nonce, tag, ciphertext = [f_in.read(x) for x in (16, 16, self.chunk_size)]
