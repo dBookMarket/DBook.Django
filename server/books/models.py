@@ -32,7 +32,7 @@ class Book(BaseModel):
     cover = models.ImageField(verbose_name='书籍封面', upload_to='covers')
     draft = models.ForeignKey(blank=True, to='Draft', to_field='id', related_name='book_draft',
                               on_delete=models.SET_NULL, null=True, verbose_name='草稿')
-    file = models.FileField(upload_to='tmp', blank=True, null=True, default=None, verbose_name='文档')
+    file = models.FileField(upload_to='media/tmp', blank=True, null=True, default=None, verbose_name='文档')
     type = models.CharField(max_length=15, blank=True, default='pdf', verbose_name='文档类型')
     n_pages = models.IntegerField(blank=True, default=0, verbose_name='书籍总页数')
     # NFTStorage id

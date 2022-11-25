@@ -14,6 +14,7 @@ class Trade(BaseModel):
     first_release = models.BooleanField(blank=True, default=False, verbose_name='首发')
 
     class Meta:
+        ordering = ['id']
         verbose_name = '书籍上市'
         verbose_name_plural = verbose_name
 
@@ -33,11 +34,12 @@ class Transaction(BaseModel):
                                on_delete=models.RESTRICT, verbose_name='卖家')
     buyer = models.ForeignKey(to='users.User', to_field='id', related_name='transaction_buyer',
                               on_delete=models.RESTRICT, verbose_name='买家')
-    status = models.CharField(max_length=50, blank=True, default='pending', verbose_name='交易状态')
+    status = models.CharField(max_length=50, blank=True, default='success', verbose_name='交易状态')
     hash = models.CharField(max_length=150, verbose_name='链上哈希', unique=True, db_index=True)
     source = models.IntegerField(choices=Market.choices())
 
     class Meta:
+        ordering = ['id']
         verbose_name = '交易记录'
         verbose_name_plural = verbose_name
 
@@ -66,6 +68,7 @@ class Benefit(BaseModel):
     currency = models.CharField(max_length=50, verbose_name='币种')
 
     class Meta:
+        ordering = ['id']
         verbose_name = '个人收益'
         verbose_name_plural = verbose_name
 
