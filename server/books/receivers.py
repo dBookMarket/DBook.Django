@@ -75,6 +75,9 @@ def issue_new_book(sender, instance, **kwargs):
                                            to_page=obj_preview.start_page + obj_preview.n_pages - 2)
     obj_preview.file = pre_file
     obj_preview.save()
+    # update number of pages
+    instance.n_pages = pdf_handler.get_pages()
+    instance.save()
     # upload file to filecoin
     upload_pdf(instance)
 

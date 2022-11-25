@@ -50,7 +50,7 @@ class BookSerializer(BaseSerializer):
     contract = serializers.SerializerMethodField(read_only=True)
     preview = serializers.SerializerMethodField(read_only=True)
     n_pages = serializers.ReadOnlyField()
-    cids = serializers.ReadOnlyField()
+    cid = serializers.ReadOnlyField()
 
     def get_contract(self, obj):
         try:
@@ -91,10 +91,10 @@ class BookSerializer(BaseSerializer):
 
     class Meta:
         model = models.Book
-        exclude = ['task_id']
+        exclude = ['task_id', 'type']
 
     def validate_file(self, value):
-        self._validate_file(value, ['pdf', 'epub', 'txt'], 200 * 1024 * 10124)
+        self._validate_file(value, ['pdf', 'epub', 'txt'], 200 * 1024 * 1024)
         return value
 
     def validate_cover(self, value):
@@ -311,17 +311,17 @@ class BookmarkSerializer(BaseSerializer):
 
 
 class AssetSerializer(BaseSerializer):
-    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), many=False)
-    book = BookListingSerializer(read_only=True, many=False)
+    # user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), many=False)
+    # book = serializers.PrimaryKeyRelatedField(queryset=models.Book.objects.all(), write_only=True, many=False)
     quantity = serializers.IntegerField(required=False)
     # secret key
-    file = serializers.HiddenField(default='')
+    # file = serializers.HiddenField(default='')
 
     issue = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = models.Asset
-        fields = '__all__'
+        fields = ['id', 'issue', 'quantity']
         validators = [
             UniqueTogetherValidator(
                 queryset=models.Asset.objects.all(),

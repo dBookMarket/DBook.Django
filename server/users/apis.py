@@ -104,6 +104,7 @@ class UserViewSet(BaseViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     http_method_names = ['get', 'put', 'patch']
+
     # filterset_class = filters.UserFilter
 
     # @action(methods=['POST', 'DELETE'], detail=True, url_path='issue-perm')
@@ -119,6 +120,11 @@ class UserViewSet(BaseViewSet):
     #         user.user_permissions.remove(issue_perm)
     #     serializer = self.get_serializer(user, many=False)
     #     return Response(serializer.data)
+
+    @action(methods=['get'], detail=False, url_path='current', permission_classes=[IsAuthenticated])
+    def get_current(self, request, *args, **kwargs):
+        serializer = self.get_serializer(request.user, many=False)
+        return Response(serializer.data)
 
     @action(methods=['put', 'patch'], detail=False, url_path='auth')
     def authenticate(self, request, *args, **kwargs):

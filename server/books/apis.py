@@ -1,16 +1,20 @@
-from django.http.response import HttpResponseForbidden
+import os
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from utils.views import BaseViewSet
 from . import models, serializers, filters
-from stores.models import Trade
-from .pdf_handler import PDFHandler
-from django.db.transaction import atomic
+# from stores.models import Trade
+# from .pdf_handler import PDFHandler
+# from django.db.transaction import atomic
 from .file_service_connector import FileServiceConnector
-from utils.enums import IssueStatus
+# from books.file_service_config import FileServiceConfig
+# from utils.enums import IssueStatus
+# from django.conf import settings
 from authorities.permissions import ObjectPermissionsOrReadOnly
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
+from utils.redis_accessor import RedisLock, RedisAccessor
+from django.conf import settings
 
 
 class DraftViewSet(BaseViewSet):
@@ -54,18 +58,27 @@ class AssetViewSet(BaseViewSet):
     @action(methods=['get'], detail=True, url_path='read')
     def read(self, request, *args, **kwargs):
         """
-        todo
-            0, check if the user has this book or not?
-            1, fetch files from filecoin
-            2, decrypt files
-            3, merge files into pdf
+        0, check if the user has this book or not?
+        1, fetch files from filecoin
+        2, decrypt files
+        3, merge files into pdf
         """
         obj = self.get_object()
-        fs_con = FileServiceConnector()
 
-        if obj.user != request.user:
-            return HttpResponseForbidden('You cannot access this book.')
-        return Response({'detail': 'Developing...'})
+        cache_key = f'asset-{obj.book.id}'
+        # expire_time = 7 * 24 * 3600  # 1 week
+        cache = RedisAccessor()
+        path = cache.get_value(cache_key)
+        if path is None:
+            with RedisLock(f'{cache_key}-lock'):
+                path = cache.get_value(cache_key)
+                if path is None:
+                    encryption_key = models.EncryptionKey.objects.get(user=obj.book.author, book=obj.book)
+                    path = FileServiceConnector().download_file(obj.book.cid, encryption_key.key, obj.book.type)
+                    cache.set_value(cache_key, path)
+        file_url = os.path.join('/', path.lstrip(str(settings.BASE_DIR.absolute())))
+        url = request.build_absolute_uri(file_url)
+        return Response({'url': url})
 
 
 class WishlistViewSet(BaseViewSet):

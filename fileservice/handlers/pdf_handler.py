@@ -3,11 +3,13 @@ import os
 import shutil
 from io import BytesIO
 from .nft_storage_handler import NFTStorageHandler
-from .encryption_handler import EncryptionHandler
+from .encryption_handler import HomomorphicEncryptionHandler, AESHandler
 import zipfile
 from pathlib import Path
 import uuid
 import math
+import requests
+from Crypto.Random import get_random_bytes
 
 
 # from PIL import Image
@@ -17,6 +19,7 @@ class FileHandler(object):
     BASE_DIR = Path(__file__).resolve().parent.parent
     TMP_ROOT = os.path.join(BASE_DIR, 'workspace')
     KEY_ROOT = os.path.join(BASE_DIR, 'file')
+    KEY = b'\xebB\xa8\xbb\xe8\xae\xff\xc7&J\xe3h7\x81\x1f\xd7\xc9\xee\n(\xf8\xe16\xc2\xb3M$\x00I:De'
 
     @classmethod
     def compress(cls, path: str):
@@ -64,6 +67,41 @@ class FileHandler(object):
         else:
             if os.path.exists(path):
                 os.remove(path)
+
+    def upload(self, path: str) -> dict:
+        aes_handler = AESHandler()
+        key = get_random_bytes(32)
+        # encrypt file
+        encrypted_file = aes_handler.encrypt_file(key, path)
+        # upload file
+        cid = NFTStorageHandler().store(encrypted_file)
+        # encrypt key
+        nonce, tag, ciphertext = aes_handler.encrypt(self.KEY, key)
+        encrypted_key = nonce + tag + ciphertext
+        return {'cid': cid, 'key': encrypted_key.decode('latin')}
+
+    def download(self, path: str, cid: str, key: str) -> str:
+        aes_handler = AESHandler()
+        # decrypt key
+        encrypted_key = key.encode('latin')
+        nonce = encrypted_key[:16]
+        tag = encrypted_key[16:32]
+        ciphertext = encrypted_key[32:]
+        decrypted_key = aes_handler.decrypt(self.KEY, ciphertext, nonce, tag)
+        # download file
+        nft_storage_handler = NFTStorageHandler()
+        # data = nft_storage_handler.retrieve(cid)
+        # url = nft_storage_handler.get_file_url(cid, data['files'][0]['name'])
+        url = nft_storage_handler.get_nft_url(cid)
+        response = requests.get(url)
+        # save content into a file
+        with open(path, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=1024):
+                if chunk:
+                    f.write(chunk)
+        # decrypt file
+        decrypted_file = aes_handler.decrypt_file(decrypted_key, path)
+        return decrypted_file
 
 
 class PDFHandler(FileHandler):
@@ -154,7 +192,7 @@ class PDFHandler(FileHandler):
         :return: self
         """
         print("Encrypting images...")
-        enc_handler = EncryptionHandler()
+        enc_handler = HomomorphicEncryptionHandler()
         for img_dir in img_dirs:
             print(f"Image directory -> {img_dir}")
             dir_name = img_dir.rsplit('/', 1)[-1]
@@ -166,7 +204,7 @@ class PDFHandler(FileHandler):
                 enc_handler.add_sign(sk_file, org_img)
                 # encrypt image
                 enc_img = f"{org_img}.sse"
-                enc_handler.encrypt_img(sk_file, org_img, enc_img)
+                enc_handler.encrypt(sk_file, org_img, enc_img)
                 # remove original image
                 self.remove(os.path.join(img_dir, f))
         return self
@@ -179,14 +217,14 @@ class PDFHandler(FileHandler):
         :return: str
         """
         print('Decrypting images...')
-        enc_handler = EncryptionHandler()
+        enc_handler = HomomorphicEncryptionHandler()
         for img_dir in img_dirs:
             print(f"Image directory -> {img_dir}")
             dir_name = img_dir.rsplit('/', 1)[-1]
             for f in os.listdir(img_dir):
                 enc_img = os.path.join(dir_name, f)
                 dec_img = enc_img.rstrip('.sse')
-                enc_handler.decrypt_img(sk_file, enc_img, dec_img)
+                enc_handler.decrypt(sk_file, enc_img, dec_img)
         return self
 
     def generate_keys(self):
@@ -199,7 +237,7 @@ class PDFHandler(FileHandler):
         sk_file = os.path.join(self.PRIVATE_KEY_DIR, f'{base_name}.stk')
         pk_file = os.path.join(self.PUBLIC_KEY_DIR, f'{base_name}.pck')
         dict_file = os.path.join(self.KEY_DICT_DIR, f'{base_name}.dict')
-        enc_handler = EncryptionHandler()
+        enc_handler = HomomorphicEncryptionHandler()
         enc_handler.generate_private_key(sk_file)
         enc_handler.generate_public_key(pk_file, sk_file)
         enc_handler.generate_key_dict(dict_file, sk_file)
@@ -273,13 +311,3 @@ class PDFHandler(FileHandler):
         for cid in cids:
             urls.extend(self._get_file_urls(cid))
         return urls
-
-    def download(self, cids: list, pk_file: str) -> str:
-        """
-        download file from file coin and decrypt it
-        """
-        # 1, get encrypted file url
-        _urls = self.get_file_urls(cids)
-        # 2, download encrypted file
-        # 3, decrypted file
-        # 4, merge files into pdf

@@ -14,8 +14,9 @@ import users.views
 class UserAdmin(BaseUserAdmin, ModelBackend):
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
-        (_('Personal info'), {'fields': (
-         'avatar', 'banner', 'first_name', 'last_name', 'email', 'name', 'desc', 'website_url', 'discord_url')
+        (_('Personal info'), {
+            'fields': ('avatar', 'banner', 'first_name', 'last_name', 'email', 'name', 'desc', 'website_url',
+                       'discord_url', 'twitter_url', 'is_verified')
         }),
         (_('Wallet info'), {'fields': ('address',)}),
         (_('Permissions'), {

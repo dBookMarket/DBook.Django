@@ -1,6 +1,8 @@
 from ctypes import *
 import os
+import uuid
 from pathlib import Path
+from Crypto.Cipher import AES
 
 
 class GoString(Structure):
@@ -8,6 +10,15 @@ class GoString(Structure):
 
 
 class EncryptionHandler:
+
+    def encrypt(self, *args, **kwargs):
+        raise NotImplementedError()
+
+    def decrypt(self, *args, **kwargs):
+        raise NotImplementedError()
+
+
+class HomomorphicEncryptionHandler(EncryptionHandler):
     BASE_DIR = Path(__file__).resolve().parent.parent
 
     def __init__(self):
@@ -79,7 +90,7 @@ class EncryptionHandler:
         func_gen_dict.argtypes = [GoString, GoString]
         func_gen_dict(_sk_file, _file)
 
-    def encrypt_img(self, sk_file: str, org_img: str, enc_img: str):
+    def encrypt(self, sk_file: str, org_img: str, enc_img: str):
         """
         Encrypt image
         :param sk_file: str, private key file
@@ -125,7 +136,7 @@ class EncryptionHandler:
         func_add_bwm.argtypes = [GoString, GoString, GoString]
         func_add_bwm(_org_img, _bwm_img, _enc_img)
 
-    def decrypt_img(self, sk_file: str, enc_img: str, dec_img: str):
+    def decrypt(self, sk_file: str, enc_img: str, dec_img: str):
         """
         decrypt image
         :param sk_file: str, private key file
@@ -169,3 +180,40 @@ class EncryptionHandler:
         func_view_bwm = self.he.ViewBWM
         func_view_bwm.argtypes = [GoString, GoString]
         func_view_bwm(_img_file, _bwm_img)
+
+
+class AESHandler(EncryptionHandler):
+    chunk_size = 1024
+
+    def encrypt(self, key: bytes, text: bytes) -> tuple:
+        cipher = AES.new(key, AES.MODE_EAX)
+        ciphertext, tag = cipher.encrypt_and_digest(text)
+        return cipher.nonce, tag, ciphertext
+
+    def decrypt(self, key: bytes, ciphertext: bytes, nonce: bytes, tag: bytes) -> bytes:
+        cipher = AES.new(key, AES.MODE_EAX, nonce)
+        text = cipher.decrypt_and_verify(ciphertext, tag)
+        return text
+
+    def encrypt_file(self, key: bytes, file: str):
+        cipher_file = f'{file}.bin'
+        with open(cipher_file, 'wb') as f_out:
+            with open(file, 'rb') as f_in:
+                text = f_in.read(self.chunk_size)
+                while text:
+                    for item in self.encrypt(key, text):
+                        f_out.write(item)
+                    text = f_in.read(self.chunk_size)
+
+        return cipher_file
+
+    def decrypt_file(self, key: bytes, file: str):
+        decrypted_file = file.rsplit('.', 1)[0]
+        with open(decrypted_file, 'wb') as f_out:
+            with open(file, 'rb') as f_in:
+                nonce, tag, ciphertext = [f_in.read(x) for x in (16, 16, self.chunk_size)]
+                while nonce:
+                    text = self.decrypt(key, ciphertext, nonce, tag)
+                    f_out.write(text)
+                    nonce, tag, ciphertext = [f_in.read(x) for x in (16, 16, self.chunk_size)]
+        return decrypted_file

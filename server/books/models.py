@@ -5,6 +5,7 @@ from utils.enums import IssueStatus, BlockChainType, CeleryTaskStatus
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 import uuid
+import os
 
 encryption_storage = FileSystemStorage(location=settings.ENCRYPTION_ROOT)
 
@@ -32,13 +33,10 @@ class Book(BaseModel):
     draft = models.ForeignKey(blank=True, to='Draft', to_field='id', related_name='book_draft',
                               on_delete=models.SET_NULL, null=True, verbose_name='草稿')
     file = models.FileField(upload_to='tmp', blank=True, null=True, default=None, verbose_name='文档')
-    # is_removed = models.BooleanField(default=False, verbose_name='已删除')
-
+    type = models.CharField(max_length=15, blank=True, default='pdf', verbose_name='文档类型')
     n_pages = models.IntegerField(blank=True, default=0, verbose_name='书籍总页数')
     # NFTStorage id
-    cids = models.JSONField(blank=True, default=list, verbose_name='NFT asset ids')
-    # cid = models.CharField(max_length=150, blank=True, default='', verbose_name='NFT asset id')
-    # nft_url = models.URLField(blank=True, default='', verbose_name='NFT asset url')
+    cid = models.CharField(max_length=150, blank=True, default='', verbose_name='NFT asset id')
 
     status = models.CharField(max_length=50, choices=CeleryTaskStatus.choices(),
                               default=CeleryTaskStatus.PENDING.value, verbose_name='File upload status')
@@ -50,6 +48,13 @@ class Book(BaseModel):
         ordering = ['id']
         verbose_name = '书籍'
         verbose_name_plural = verbose_name
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        if self.file:
+            extension = os.path.splitext(self.file.name)[1].replace('.', '')
+            self.type = extension.lower()
+        super().save(force_insert, force_update, using, update_fields)
 
 
 class Issue(BaseModel):
@@ -69,8 +74,6 @@ class Issue(BaseModel):
     status = models.CharField(blank=True, max_length=50, choices=IssueStatus.choices(),
                               default=IssueStatus.PRE_SALE.value, verbose_name='发行状态')
     destroy_log = models.CharField(blank=True, default='', max_length=42, verbose_name='销毁地址')
-
-    # is_removed = models.BooleanField(blank=True, default=False)
 
     class Meta:
         ordering = ['id']
@@ -146,30 +149,34 @@ class Asset(BaseModel):
     quantity = models.IntegerField(blank=True, default=1)
 
     # decrypt the nft to a temporary file and send it to frontend
-    file = models.FileField(upload_to='tmp', blank=True, default='')
+    # file = models.FileField(upload_to='tmp', blank=True, default='')
 
     class Meta:
         ordering = ['id']
         verbose_name = '个人资产'
         verbose_name_plural = verbose_name
 
-    def delete(self, using=None, keep_parents=False):
-        if self.file:
-            self.file.delete()
-        super().delete(using, keep_parents)
+    # def delete(self, using=None, keep_parents=False):
+    #     if self.file:
+    #         self.file.delete()
+    #     super().delete(using, keep_parents)
 
     def __str__(self):
         return f'{self.user.address}-{self.book.title}'
 
 
 class EncryptionKey(BaseModel):
-    user = models.OneToOneField(to='users.User', to_field='id', related_name='encryption_key_user',
-                                on_delete=models.CASCADE, verbose_name='用户')
+    user = models.ForeignKey(to='users.User', to_field='id', related_name='encryption_key_user',
+                             on_delete=models.CASCADE, verbose_name='用户')
     book = models.ForeignKey(to='Book', to_field='id', related_name='encryption_key_book', on_delete=models.CASCADE,
                              verbose_name='书籍')
-    public_key = models.FileField(upload_to=settings.PUBLIC_KEY_DIR, storage=encryption_storage, verbose_name='公钥文件')
-    private_key = models.FileField(upload_to=settings.PRIVATE_KEY_DIR, storage=encryption_storage, verbose_name='私钥文件')
-    key_dict = models.FileField(upload_to=settings.KEY_DICT_DIR, storage=encryption_storage, verbose_name='密钥字典')
+    public_key = models.FileField(blank=True, upload_to=settings.PUBLIC_KEY_DIR, storage=encryption_storage,
+                                  verbose_name='公钥文件')
+    private_key = models.FileField(blank=True, upload_to=settings.PRIVATE_KEY_DIR, storage=encryption_storage,
+                                   verbose_name='私钥文件')
+    key_dict = models.FileField(blank=True, upload_to=settings.KEY_DICT_DIR, storage=encryption_storage,
+                                verbose_name='密钥字典')
+    key = models.CharField(blank=True, max_length=64, verbose_name='密钥')
 
     class Meta:
         verbose_name = '加密文件'

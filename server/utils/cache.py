@@ -1,5 +1,6 @@
 import datetime
 import logging
+import os
 
 
 class Cache:
@@ -30,16 +31,17 @@ class Cache:
             if expiry_time >= now:
                 return self.session[key]
             # time out, remove cache
-            self.session.pop(key, None)
-            self.session.pop(f"{key}_{self.expiry_suffix}", None)
+            self.remove(key)
             return None
         except Exception as e:
             self.logger.error(f'Fail to get cache, error: {e}')
-            self.session.pop(key, None)
-            self.session.pop(f"{key}_{self.expiry_suffix}", None)
+            self.remove(key)
             return None
 
     def remove(self, key):
+        value = self.session[key]
+        if value and os.path.isfile(value):
+            os.remove(value)
         self.session.pop(key, None)
         self.session.pop(f"{key}_{self.expiry_suffix}", None)
 

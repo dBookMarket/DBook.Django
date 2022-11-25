@@ -13,7 +13,8 @@ class IssueAdmin(admin.ModelAdmin):
 
 
 class EncryptionKeyAdmin(admin.ModelAdmin):
-    list_display = ['id', 'user', 'public_key', 'private_key', 'key_dict']
+    list_display = ['id', 'user', 'book', 'key']
+    search_fields = ['user__name', 'book__title']
 
 
 admin.site.register(models.Draft)
