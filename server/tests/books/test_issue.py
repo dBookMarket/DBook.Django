@@ -149,7 +149,7 @@ def test_trade(auth_client, client, default_user, default_category):
     assert response.data['count'] == 1
     assert response.data['results'][0]['status'] == IssueStatus.SUCCESS.value
     # contract
-    obj_contract = books.models.Contract.objects.get(issue_id=issue_id)
+    obj_contract = books.models.Token.objects.get(issue_id=issue_id)
     assert obj_contract.address == '0x1234567890abcd'
     assert obj_contract.token_amount == 5
     assert obj_contract.token_criteria == 'ERC-1155'

@@ -2,8 +2,8 @@ from rest_framework import serializers
 from utils.serializers import BaseSerializer
 from utils.enums import IssueStatus
 from rest_framework.validators import UniqueValidator
-from books.models import Asset, Book
-from books.serializers import BookListingSerializer
+from books.models import Asset, Issue
+from books.serializers import BookListingSerializer, IssueListingSerializer
 from users.models import User
 from users.serializers import UserListingSerializer, UserRelatedField
 from . import models
@@ -15,7 +15,7 @@ from rest_framework.validators import UniqueTogetherValidator
 class TradeSerializer(BaseSerializer):
     user = UserRelatedField(required=False, queryset=User.objects.all(), default=serializers.CurrentUserDefault(),
                             many=False)
-    book = serializers.PrimaryKeyRelatedField(queryset=Book.objects.all(), many=False)
+    issue = serializers.PrimaryKeyRelatedField(queryset=Issue.objects.all(), many=False)
     quantity = serializers.IntegerField(required=True)
     price = serializers.FloatField(required=True)
     is_owned = serializers.SerializerMethodField(read_only=True)
@@ -26,7 +26,7 @@ class TradeSerializer(BaseSerializer):
         validators = [
             UniqueTogetherValidator(
                 queryset=models.Trade.objects.all(),
-                fields=['user', 'book'],
+                fields=['user', 'issue'],
                 message='This book already has been on sale'
             )
         ]
@@ -35,8 +35,8 @@ class TradeSerializer(BaseSerializer):
         user = self.context['request'].user
         return user == obj.user
 
-    def validate_book(self, value):
-        if value.issue_book.status != IssueStatus.OFF_SALE.value:
+    def validate_issue(self, value):
+        if value.status != IssueStatus.OFF_SALE.value:
             raise serializers.ValidationError(
                 'You are not allowed to trade this book because the first release is still on sale.')
         return value
@@ -49,12 +49,12 @@ class TradeSerializer(BaseSerializer):
         """
         super().validate(attrs)
         user = self.context['request'].user
-        book = attrs.get('book')
+        issue = attrs.get('issue')
         quantity = attrs.get('quantity', 0)
-        if book:
+        if issue:
             try:
-                obj_asset = Asset.objects.get(user=user, book=book)
-                all_trades = models.Trade.objects.filter(book=book)
+                obj_asset = Asset.objects.get(user=user, issue=issue)
+                all_trades = models.Trade.objects.filter(issue=issue)
                 n_sales = 0
                 queryset = all_trades.filter(user=user)
                 if self.instance:
@@ -71,13 +71,14 @@ class TradeSerializer(BaseSerializer):
 class TradeListingSerializer(TradeSerializer):
     class Meta:
         model = models.Trade
-        fields = ['user', 'book']
+        fields = ['user', 'issue']
 
 
 class TransactionSerializer(BaseSerializer):
     trade = serializers.PrimaryKeyRelatedField(required=True, queryset=models.Trade.objects.all(), many=False)
     # book = serializers.PrimaryKeyRelatedField(required=False, queryset=Book.objects.all(), many=False)
-    book = BookListingSerializer(many=False, read_only=True)
+    # book = BookListingSerializer(many=False, read_only=True)
+    issue = IssueListingSerializer(many=False, read_only=True)
     quantity = serializers.IntegerField(required=True)
     price = serializers.FloatField(required=False)
     seller = UserListingSerializer(read_only=True, many=False)
@@ -117,7 +118,7 @@ class TransactionSerializer(BaseSerializer):
                 raise serializers.ValidationError({'hash': 'This field is required'})
             if trade.quantity < quantity:
                 raise serializers.ValidationError({'quantity': 'The quantity is beyond the remaining number'})
-            if trade.first_release and trade.book.issue_book.buy_limit < quantity:
+            if trade.first_release and trade.issue.buy_limit < quantity:
                 raise serializers.ValidationError({
                     'quantity': f'The quantity is bigger than the buy limit({trade.book.issue_book.buy_limit})'
                 })

@@ -13,8 +13,8 @@ class User(AbstractUser):
     website_url = models.URLField(blank=True, default='', verbose_name='个人网站URL')
     discord_url = models.URLField(blank=True, default='', verbose_name='discord主页')
     twitter_url = models.URLField(blank=True, default='', verbose_name='twitter主页')
-    avatar = models.ImageField(blank=True, default=None, upload_to='media/avatar', verbose_name='头像')
-    banner = models.ImageField(blank=True, default=None, upload_to='media/banner', verbose_name='banner')
+    avatar = models.ImageField(blank=True, default=None, upload_to='avatar', verbose_name='头像')
+    banner = models.ImageField(blank=True, default=None, upload_to='banner', verbose_name='banner')
     is_verified = models.BooleanField(blank=True, default=False, verbose_name='已认证(twitter)')
 
     class Meta:

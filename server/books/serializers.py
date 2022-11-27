@@ -46,19 +46,19 @@ class BookSerializer(BaseSerializer):
     cover_url = serializers.SerializerMethodField(read_only=True)
 
     status = serializers.ReadOnlyField()
-    bookmark = serializers.SerializerMethodField(read_only=True)
-    contract = serializers.SerializerMethodField(read_only=True)
+    # bookmark = serializers.SerializerMethodField(read_only=True)
+    # token = serializers.SerializerMethodField(read_only=True)
     preview = serializers.SerializerMethodField(read_only=True)
     n_pages = serializers.ReadOnlyField()
     cid = serializers.ReadOnlyField()
 
-    def get_contract(self, obj):
-        try:
-            instance = models.Contract.objects.get(book=obj)
-            serializer = ContractSerializer(instance=instance, many=False, context=self.context)
-            return serializer.data
-        except models.Contract.DoesNotExist:
-            return {}
+    # def get_token(self, obj):
+    #     try:
+    #         instance = models.Token.objects.get(book=obj)
+    #         serializer = TokenSerializer(instance=instance, many=False, context=self.context)
+    #         return serializer.data
+    #     except models.Token.DoesNotExist:
+    #         return {}
 
     def get_preview(self, obj):
         try:
@@ -78,16 +78,6 @@ class BookSerializer(BaseSerializer):
     #     if result is None:
     #         return 'failure'
     #     return result.status.lower()
-
-    def get_bookmark(self, obj):
-        _user = self.context['request'].user
-        if isinstance(_user, AnonymousUser):
-            return {}
-        try:
-            obj_bookmark = models.Bookmark.objects.get(user=_user, book=obj)
-            return BookmarkSerializer(instance=obj_bookmark, many=False).data
-        except models.Bookmark.DoesNotExist:
-            return {}
 
     class Meta:
         model = models.Book
@@ -133,17 +123,16 @@ class BookListingSerializer(BookSerializer):
         fields = ['id', 'title', 'desc', 'cover_url', 'author', 'bookmark']
 
 
-class ContractSerializer(BaseSerializer):
-    book = serializers.PrimaryKeyRelatedField(queryset=models.Book.objects.all(), many=False,
-                                              validators=[UniqueValidator(queryset=models.Contract.objects.all())])
-    address = serializers.CharField(required=True, max_length=150,
-                                    validators=[UniqueValidator(queryset=models.Contract.objects.all())])
-    token_criteria = serializers.CharField(required=False, max_length=150, allow_blank=True)
+class TokenSerializer(BaseSerializer):
+    issue = serializers.PrimaryKeyRelatedField(required=False, queryset=models.Issue.objects.all(), many=False,
+                                               validators=[UniqueValidator(queryset=models.Token.objects.all())])
+    contract_address = serializers.CharField(required=False, max_length=150)
+    standard = serializers.CharField(required=False, max_length=150, allow_blank=True)
     block_chain = serializers.CharField(required=False, max_length=150, allow_blank=True)
-    token = serializers.CharField(required=False, max_length=150, allow_blank=True)
+    currency = serializers.CharField(required=False, max_length=150, allow_blank=True)
 
     class Meta:
-        model = models.Contract
+        model = models.Token
         fields = '__all__'
 
 
@@ -200,6 +189,10 @@ class IssueSerializer(BaseSerializer):
     trade = serializers.SerializerMethodField(read_only=True)
     is_wished = serializers.SerializerMethodField(read_only=True)
     n_owners = serializers.SerializerMethodField(read_only=True)
+    bookmark = serializers.SerializerMethodField(read_only=True)
+
+    # token info
+    token = TokenSerializer(required=True, many=False)
 
     class Meta:
         model = models.Issue
@@ -218,8 +211,8 @@ class IssueSerializer(BaseSerializer):
     def get_n_remains(self, obj):
         user = self.context['request'].user
         try:
-            obj_asset = models.Asset.objects.get(user=user, book=obj.book)
-            n_sales = Trade.objects.filter(user=user, book=obj.book).aggregate(t_amount=Sum('quantity'))['t_amount']
+            obj_asset = models.Asset.objects.get(user=user, issue=obj)
+            n_sales = Trade.objects.filter(user=user, issue=obj).aggregate(t_amount=Sum('quantity'))['t_amount']
             if n_sales is None:
                 n_sales = 0
             return obj_asset.amount - n_sales
@@ -227,7 +220,7 @@ class IssueSerializer(BaseSerializer):
             return 0
 
     def get_price_range(self, obj):
-        _range = Trade.objects.filter(book=obj.book).aggregate(min_price=Min('price'), max_price=Max('price'))
+        _range = Trade.objects.filter(issue=obj).aggregate(min_price=Min('price'), max_price=Max('price'))
         if _range['min_price'] is None:
             _range['min_price'] = 0
         if _range['max_price'] is None:
@@ -237,12 +230,12 @@ class IssueSerializer(BaseSerializer):
     def get_is_owned(self, obj):
         user = self.context['request'].user
         try:
-            return models.Asset.objects.get(user=user, book=obj.book).amount > 0
+            return models.Asset.objects.get(user=user, issue=obj).amount > 0
         except models.Asset.DoesNotExist:
             return False
 
     def get_n_owners(self, obj):
-        return models.Asset.objects.filter(book=obj.book).count()
+        return models.Asset.objects.filter(issue=obj).count()
 
     def get_is_wished(self, obj):
         user = self.context['request'].user
@@ -256,10 +249,34 @@ class IssueSerializer(BaseSerializer):
 
     def get_trade(self, obj):
         try:
-            obj_trade = Trade.objects.get(book=obj.book, first_release=True)
+            obj_trade = Trade.objects.get(issue=obj, first_release=True)
             return model_to_dict(obj_trade, fields=['id', 'quantity', 'price'])
         except Trade.DoesNotExist:
             return {}
+
+    def get_bookmark(self, obj):
+        _user = self.context['request'].user
+        if isinstance(_user, AnonymousUser):
+            return {}
+        try:
+            obj_bookmark = models.Bookmark.objects.get(user=_user, issue=obj)
+            return BookmarkSerializer(instance=obj_bookmark, many=False).data
+        except models.Bookmark.DoesNotExist:
+            return {}
+
+    def create(self, validated_data):
+        token = validated_data.pop('token')
+        obj_issue = super().create(validated_data)
+        models.Token.objects.create(**token, issue=obj_issue)
+        return obj_issue
+
+    def update(self, instance, validated_data):
+        token = validated_data.pop('token', None)
+        obj_issue = super().update(instance, validated_data)
+        if token:
+            token_id = token.pop('id', None)
+            models.Token.objects.update_or_create(defaults={**{'issue': obj_issue}, **token}, id=token_id)
+        return obj_issue
 
 
 class IssueListingSerializer(IssueSerializer):
@@ -268,18 +285,19 @@ class IssueListingSerializer(IssueSerializer):
 
 
 class BookmarkSerializer(BaseSerializer):
-    user = serializers.PrimaryKeyRelatedField(required=False, default=serializers.CurrentUserDefault(),
-                                              queryset=User.objects.all(), many=False)
-    book = serializers.PrimaryKeyRelatedField(queryset=models.Book.objects.all(), many=False)
+    # user = serializers.PrimaryKeyRelatedField(required=False, default=serializers.CurrentUserDefault(),
+    #                                           queryset=User.objects.all(), many=False)
+    issue = serializers.PrimaryKeyRelatedField(queryset=models.Issue.objects.all(), many=False)
     current_page = serializers.IntegerField(required=False)
 
     class Meta:
         model = models.Bookmark
-        fields = '__all__'
+        # fields = '__all__'
+        exclude = ['user']
         validators = [
             UniqueTogetherValidator(
                 queryset=models.Bookmark.objects.all(),
-                fields=['user', 'book'],
+                fields=['user', 'issue'],
                 message='This bookmark already exists'
             )
         ]
@@ -291,33 +309,29 @@ class BookmarkSerializer(BaseSerializer):
         2, Check if the current page is valid?
         """
         super().validate(attrs)
-        book = attrs.get('book')
+        issue = attrs.get('issue')
         current_page = attrs.get('current_page')
         user = self.context['request'].user
-        if book:
+        if issue:
             try:
-                asset = models.Asset.objects.get(user=user, book=book)
+                asset = models.Asset.objects.get(user=user, issue=issue)
                 if asset.quantity < 1:
-                    raise serializers.ValidationError({'book': 'Book not found'})
+                    raise serializers.ValidationError({'issue': 'Book not found'})
             except models.Asset.DoesNotExist:
-                raise serializers.ValidationError({'book': 'Book not found'})
+                raise serializers.ValidationError({'issue': 'Book not found'})
         if current_page:
             # update operation
-            if not book and self.instance:
-                book = self.instance.book
-            if current_page > book.n_pages or current_page < 1:
-                raise serializers.ValidationError({'current_page': f'The range of page number is [1, {book.n_pages}]'})
+            if not issue and self.instance:
+                issue = self.instance.issue
+            if current_page > issue.book.n_pages or current_page < 1:
+                raise serializers.ValidationError(
+                    {'current_page': f'The range of page number is [1, {issue.book.n_pages}]'})
         return attrs
 
 
 class AssetSerializer(BaseSerializer):
-    # user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), many=False)
-    # book = serializers.PrimaryKeyRelatedField(queryset=models.Book.objects.all(), write_only=True, many=False)
     quantity = serializers.IntegerField(required=False)
-    # secret key
-    # file = serializers.HiddenField(default='')
-
-    issue = serializers.SerializerMethodField(read_only=True)
+    issue = IssueListingSerializer(read_only=True)
 
     class Meta:
         model = models.Asset
@@ -329,9 +343,6 @@ class AssetSerializer(BaseSerializer):
                 message='The user already has this book'
             )
         ]
-
-    def get_issue(self, obj):
-        return IssueListingSerializer(obj.book.issue_book, context=self.context).data
 
 
 class IssueRelatedField(CustomPKRelatedField):

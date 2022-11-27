@@ -65,7 +65,7 @@ class AssetViewSet(BaseViewSet):
         """
         obj = self.get_object()
 
-        cache_key = f'asset-{obj.book.id}'
+        cache_key = f'asset-{obj.issue.id}'
         # expire_time = 7 * 24 * 3600  # 1 week
         cache = RedisAccessor()
         path = cache.get_value(cache_key)
@@ -73,12 +73,17 @@ class AssetViewSet(BaseViewSet):
             with RedisLock(f'{cache_key}-lock'):
                 path = cache.get_value(cache_key)
                 if path is None:
-                    encryption_key = models.EncryptionKey.objects.get(user=obj.book.author, book=obj.book)
-                    path = FileServiceConnector().download_file(obj.book.cid, encryption_key.key, obj.book.type)
+                    encryption_key = models.EncryptionKey.objects.get(user=obj.issue.book.author, book=obj.issue.book)
+                    path = FileServiceConnector().download_file(obj.issue.book.cid, encryption_key.key,
+                                                                obj.issue.book.type)
                     cache.set_value(cache_key, path)
         file_url = os.path.join('/', path.lstrip(str(settings.BASE_DIR.absolute())))
         url = request.build_absolute_uri(file_url)
-        return Response({'url': url})
+
+        # bookmark
+        obj_bookmark = models.Bookmark.objects.get(user=request.user, issue=obj.issue)
+        serializer = serializers.BookmarkSerializer(obj_bookmark, many=False)
+        return Response({'file_url': url, 'bookmark': serializer.data})
 
 
 class WishlistViewSet(BaseViewSet):

@@ -17,7 +17,7 @@ class IssueHandler:
         que.check_in(str(self.obj.id), utc_time.timestamp())
 
     def on_sale(self):
-        Trade.objects.update_or_create(user=self.obj.book.author, book=self.obj.book, defaults={
+        Trade.objects.update_or_create(user=self.obj.book.author, issue=self.obj, defaults={
             'first_release': True,
             'quantity': self.obj.quantity,
             'price': self.obj.price
@@ -25,11 +25,11 @@ class IssueHandler:
 
     def off_sale(self):
         # todo destroy unsold books by calling smart contract
-        Trade.objects.get(user=self.obj.book.author, book=self.obj.book, first_release=True).delete()
+        Trade.objects.get(user=self.obj.book.author, issue=self.obj, first_release=True).delete()
 
     def unsold(self):
         # todo destroy unsold books by calling smart contract
-        Trade.objects.filter(user=self.obj.book.author, book=self.obj.book, first_release=True).delete()
+        Trade.objects.filter(user=self.obj.book.author, issue=self.obj, first_release=True).delete()
 
     def handle(self):
         _status = self.obj.status

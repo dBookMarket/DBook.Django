@@ -29,23 +29,23 @@ def post_save_transaction(sender, instance, **kwargs):
     if instance.status == 'success':
         # 0, update issue
         if instance.trade.first_release:
-            instance.book.issue_book.n_circulations += instance.quantity
-            instance.book.issue_book.save()
+            instance.issue.n_circulations += instance.quantity
+            instance.issue.save()
         # 1, update trade
         instance.trade.quantity -= instance.quantity
         instance.trade.save()
         # 2, update seller asset
         if not instance.trade.first_release:
-            obj_asset = Asset.objects.get(user=instance.trade.user, book=instance.trade.book)
+            obj_asset = Asset.objects.get(user=instance.trade.user, issue=instance.trade.issue)
             obj_asset.quantity -= instance.quantity
             obj_asset.save()
         # 3, update buyer asset
         try:
-            obj_buyer_asset = Asset.objects.get(user=instance.buyer, book=instance.trade.book)
+            obj_buyer_asset = Asset.objects.get(user=instance.buyer, issue=instance.trade.issue)
             obj_buyer_asset.quantity += instance.quantity
             obj_buyer_asset.save()
         except Asset.DoesNotExist:
-            Asset.objects.create(user=instance.buyer, book=instance.trade.book, quantity=instance.quantity)
+            Asset.objects.create(user=instance.buyer, issue=instance.trade.issue, quantity=instance.quantity)
         # 4, update seller and author's benefit
         # first class market
         if instance.trade.first_release:
@@ -53,20 +53,20 @@ def post_save_transaction(sender, instance, **kwargs):
             amount = instance.quantity * instance.price * author_rate
             Benefit.objects.update_or_create(user=instance.seller, transaction=instance, defaults={
                 'amount': amount,
-                'currency': instance.book.contract_book.token
+                'currency': instance.issue.token_issue.currency
             })
         else:
             # second class market
-            author_rate = instance.book.issue_book.royalty
+            author_rate = instance.issue.royalty
             seller_rate = 1 - author_rate - settings.PLATFORM_ROYALTY
             t_amount = instance.quantity * instance.price
             author_amount = t_amount * author_rate
             seller_amount = t_amount * seller_rate
-            Benefit.objects.update_or_create(user=instance.book.author, transaction=instance, defaults={
+            Benefit.objects.update_or_create(user=instance.issue.book.author, transaction=instance, defaults={
                 'amount': author_amount,
-                'currency': instance.book.contract_book.token
+                'currency': instance.issue.token_issue.currency
             })
             Benefit.objects.update_or_create(user=instance.seller, transaction=instance, defaults={
                 'amount': seller_amount,
-                'currency': instance.book.contract_book.token
+                'currency': instance.issue.token_issue.currency
             })
