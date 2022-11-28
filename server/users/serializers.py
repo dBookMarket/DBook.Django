@@ -3,8 +3,7 @@ from rest_framework.validators import UniqueValidator, UniqueTogetherValidator
 from rest_framework.exceptions import PermissionDenied
 from .models import User, Fans
 from utils.serializers import CustomPKRelatedField
-from django.contrib.auth.models import AnonymousUser
-from django.db.models import Min, Max, Sum
+from django.db.models import Min, Max
 from books.models import Issue, Asset
 
 
@@ -52,7 +51,7 @@ class UserSerializer(serializers.ModelSerializer):
     def get_absolute_uri(self, f_obj):
         request = self.context.get('request')
         try:
-            return request.build_absolute_uri(f_obj) if f_obj else ''
+            return request.build_absolute_uri(f_obj.url) if f_obj else ''
         except Exception as e:
             print(f'Fail to get absolute url, error:{e}')
             return ''
@@ -70,17 +69,15 @@ class UserSerializer(serializers.ModelSerializer):
                 t_books = queryset.count()
                 t_volume = 0
                 sales = 0
-                books = []
                 for obj_issue in queryset:
-                    t_volume += obj_issue.price * obj.quantity
-                    sales += obj_issue.price * obj.n_circulations
-                    books.append(obj_issue.book_id)
-                tmp = queryset.annotate(lowest_price=Min('price'), highest_price=Max('price'))
-                n_owners = Asset.objects.filter(book__in=books).count()
+                    t_volume += obj_issue.price * obj_issue.quantity
+                    sales += obj_issue.price * obj_issue.n_circulations
+                tmp = queryset.aggregate(min_price=Min('price'), max_price=Max('price'))
+                n_owners = Asset.objects.filter(issue__in=queryset).count()
                 return {
                     'total_volume': t_volume,
-                    'lowest_price': tmp.lowest_price,
-                    'highest_price': tmp.highest_price,
+                    'min_price': tmp['min_price'],
+                    'max_price': tmp['max_price'],
                     'total_books': t_books,
                     'sales': sales,
                     'n_owners': n_owners

@@ -18,6 +18,7 @@ class User(AbstractUser):
     is_verified = models.BooleanField(blank=True, default=False, verbose_name='已认证(twitter)')
 
     class Meta:
+        ordering = ['id']
         verbose_name = '用户'
         verbose_name_plural = verbose_name
 
@@ -35,6 +36,7 @@ class Account(BaseModel):
                             default=SocialMediaType.TWITTER.value, verbose_name='账号类型')
 
     class Meta:
+        ordering = ['id']
         verbose_name = '账户'
         verbose_name_plural = verbose_name
 
@@ -49,6 +51,7 @@ class Fans(BaseModel):
                                verbose_name='作者')
 
     class Meta:
+        ordering = ['id']
         verbose_name = '粉丝'
         verbose_name_plural = verbose_name
 
