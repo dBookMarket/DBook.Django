@@ -3,6 +3,9 @@ from django.dispatch import receiver
 from .models import Trade, Benefit, Transaction
 from books.models import Asset
 from utils.helpers import ObjectPermHelper
+from utils.enums import TransactionStatus
+from utils.smart_contract_handler import ContractFactory
+from utils.redis_accessor import RedisLock
 from django.conf import settings
 from django.db.transaction import atomic
 
@@ -25,8 +28,37 @@ def post_save_benefit(sender, instance, **kwargs):
 @receiver(post_save, sender=Transaction)
 @atomic
 def post_save_transaction(sender, instance, **kwargs):
-    # todo need to call smart contract to send a transaction
-    if instance.status == 'success':
+    if instance.status == TransactionStatus.PENDING.value:
+        # if it's a first trade, call the smart contract to send a transaction on block chain polygon or bnb.
+        first_transaction = bool(instance.trade.first_release and instance.issue.n_circulations == 0)
+        # call smart contract
+        chain_type = instance.issue.token_issue.block_chain
+        handler = ContractFactory(chain_type)
+        payment = instance.quantity * instance.price * (1 - settings.PLATFORM_ROYALTY)
+        if first_transaction:
+            with RedisLock(f'issue_first_transaction_lock_{instance.issue.id}'):
+                if first_transaction:
+                    res = handler.first_trade(instance.seller.address, payment,
+                                              instance.buyer.address, instance.issue.token_issue.id, instance.quantity,
+                                              instance.issue.quantity)
+                    if res['status'] == TransactionStatus.SUCCESS.value:
+                        handler.set_token_info(instance.issue.token_issue.id, instance.seller.address,
+                                               instance.issue.royalty * 100, instance.issue.price)
+                    else:
+                        # pay money back
+                        pass
+                else:
+                    res = handler.first_trade(instance.seller.address, payment,
+                                              instance.buyer.address, instance.issue.token_issue.id, instance.quantity)
+        else:
+            res = handler.first_trade(instance.seller.address, payment,
+                                      instance.buyer.address, instance.issue.token_issue.id, instance.quantity)
+        # update transaction info
+        instance.hash = res['hash']
+        instance.status = res['status']
+        if instance.status != TransactionStatus.PENDING.value:
+            instance.save()
+    elif instance.status == TransactionStatus.SUCCESS.value:
         # 0, update issue
         if instance.trade.first_release:
             instance.issue.n_circulations += instance.quantity

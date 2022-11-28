@@ -1,8 +1,10 @@
-from .models import Book, EncryptionKey, Issue
+from books.models import Book, EncryptionKey, Issue
+from stores.models import Transaction
 from django.db.transaction import atomic
-from utils.enums import CeleryTaskStatus, IssueStatus
-from .file_service_connector import FileServiceConnector
+from utils.enums import CeleryTaskStatus, IssueStatus, TransactionStatus
+from books.file_service_connector import FileServiceConnector
 from utils.redis_handler import IssueQueue
+from utils.smart_contract_handler import PlatformContractHandler
 from books.issue_handler import IssueHandler
 from datetime import timedelta
 import pytz
@@ -76,3 +78,20 @@ def issue_timer():
                     que.check_out()
                 else:
                     que.check_out()
+
+
+def pay_back():
+    """
+    If some transaction is first release and failed, return money back to the buyer and remove this transaction
+    """
+    print('Money back to the buyers...')
+    queryset = Transaction.objects.filter(status=TransactionStatus.FAILURE.value, trade__first_release=True)
+    contract_handler = PlatformContractHandler()
+    for txn in queryset:
+        try:
+            success = contract_handler.pay_back(txn.buyer.address, txn.quantity * txn.price)
+            if success:
+                txn.delete()
+        except Exception as e:
+            print(f'Exception when paying back to the buyer -> {e}')
+            pass

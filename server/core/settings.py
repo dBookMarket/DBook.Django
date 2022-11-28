@@ -296,6 +296,8 @@ SWAGGER_SETTINGS = {
 # contract
 CONTRACT_SETTINGS = {
     'HTTP_PROVIDER': 'https://rpc-mumbai.maticvigil.com',
+    'POLYGON_PROVIDER': 'https://rpc-mumbai.maticvigil.com',
+    'BNB_PROVIDER': '',
     'ADMIN_KEY': os.getenv('CONTRACT_ADMIN_KEY', ''),
     'PLATFORM_CONTRACT_ADDRESS': '0xa2EBc3CeF87654B20B8096C8e37C55515362c068',
     'PLATFORM_CONTRACT_ABI': '''
@@ -792,7 +794,7 @@ LINKEDIN_SETTINGS = {
     'client_secret': os.getenv('LINKEDIN_CLIENT_SECRET', '')
 }
 
-SOCIAL_MEDIA_REDIRECT_URI = 'https://testnet.dbookmarket.com'
+SOCIAL_MEDIA_REDIRECT_URI = 'https://www.dbookmarket.com'
 
 # platform royalty
 PLATFORM_ROYALTY = 0.3

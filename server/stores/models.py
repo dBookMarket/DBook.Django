@@ -1,7 +1,7 @@
 from django.db import models
 from utils.models import BaseModel
 from users.models import User
-from utils.enums import Market
+from utils.enums import Market, TransactionStatus
 
 
 class Trade(BaseModel):
@@ -34,7 +34,8 @@ class Transaction(BaseModel):
                                on_delete=models.RESTRICT, verbose_name='卖家')
     buyer = models.ForeignKey(to='users.User', to_field='id', related_name='transaction_buyer',
                               on_delete=models.RESTRICT, verbose_name='买家')
-    status = models.CharField(max_length=50, blank=True, default='success', verbose_name='交易状态')
+    status = models.CharField(max_length=50, blank=True, default=TransactionStatus.SUCCESS.value,
+                              choices=TransactionStatus.choices(), verbose_name='交易状态')
     hash = models.CharField(max_length=150, verbose_name='链上哈希', unique=True, db_index=True)
     source = models.IntegerField(choices=Market.choices())
 
@@ -47,11 +48,13 @@ class Transaction(BaseModel):
         return self.hash
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        # add new one
         if force_insert:
             self.seller = self.trade.user
             self.issue = self.trade.issue
             if self.trade.first_release:
                 self.source = Market.FIRST_CLASS.value
+                self.status = TransactionStatus.PENDING.value
             else:
                 self.source = Market.SECOND_CLASS.value
             if self.price == 0:
