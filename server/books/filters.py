@@ -45,7 +45,7 @@ class IssueFilter(django_filters.FilterSet):
 class AssetFilter(django_filters.FilterSet):
     class Meta:
         model = models.Asset
-        fields = ['book']
+        fields = ['issue']
 
     @property
     def qs(self):

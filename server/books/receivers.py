@@ -1,6 +1,6 @@
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
-from books.models import Asset, Issue, Book, Draft, Bookmark, Wishlist, Contract
+from books.models import Asset, Issue, Book, Draft, Bookmark, Wishlist, Token
 from django.db.transaction import atomic
 from .file_service_connector import FileServiceConnector
 from rest_framework.exceptions import ValidationError
@@ -105,7 +105,7 @@ def post_save_asset(sender, instance, **kwargs):
         ObjectPermHelper.assign_perms(Asset, instance.user, instance)
 
         # add bookmark
-        Bookmark.objects.update_or_create(user=instance.user, book=instance.book, defaults={'current_page': 1})
+        Bookmark.objects.update_or_create(user=instance.user, issue=instance.issue, defaults={'current_page': 1})
 
     if instance.quantity == 0:
         instance.delete()
@@ -123,7 +123,7 @@ def post_save_wishlist(sender, instance, **kwargs):
         ObjectPermHelper.assign_perms(Wishlist, instance.user, instance)
 
 
-@receiver(post_save, sender=Contract)
-def post_save_contract(sender, instance, **kwargs):
+@receiver(post_save, sender=Token)
+def post_save_token(sender, instance, **kwargs):
     if kwargs['created']:
-        ObjectPermHelper.assign_perms(Contract, instance.book.author, instance)
+        ObjectPermHelper.assign_perms(Token, instance.issue.book.author, instance)

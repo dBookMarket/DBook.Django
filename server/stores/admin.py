@@ -3,13 +3,13 @@ from . import models
 
 
 class TradeAdmin(admin.ModelAdmin):
-    list_display = ['id', 'book', 'quantity', 'price', 'first_release']
-    search_fields = ['book__title']
+    list_display = ['id', 'issue', 'quantity', 'price', 'first_release']
+    search_fields = ['issue__book__title']
 
 
 class TransactionAdmin(admin.ModelAdmin):
-    list_display = ['id', 'trade', 'book', 'quantity', 'price', 'hash', 'status', 'seller', 'buyer', 'created_at']
-    search_fields = ['book__title', 'hash', 'status', 'seller__name', 'buyer__name']
+    list_display = ['id', 'trade', 'issue', 'quantity', 'price', 'hash', 'status', 'seller', 'buyer', 'created_at']
+    search_fields = ['issue__book__title', 'hash', 'status', 'seller__name', 'buyer__name']
 
 
 class BenefitAdmin(admin.ModelAdmin):

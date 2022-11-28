@@ -83,40 +83,44 @@ class Issue(BaseModel):
     def __str__(self):
         return self.book.title
 
+    @property
+    def token(self):
+        return self.token_issue
 
-class Contract(BaseModel):
-    book = models.OneToOneField(to='Book', to_field='id', related_name='contract_book',
-                                on_delete=models.CASCADE, verbose_name='书籍')
-    address = models.CharField(max_length=128, verbose_name='合约地址')
 
-    criteria = models.CharField(max_length=150, blank=True, default='ERC1155', verbose_name='代币标准')
+class Token(BaseModel):
+    issue = models.OneToOneField(to='Issue', to_field='id', related_name='token_issue',
+                                 on_delete=models.CASCADE, verbose_name='书籍')
+    contract_address = models.CharField(max_length=128, blank=True, default='', verbose_name='合约地址')
+
+    standard = models.CharField(max_length=150, blank=True, default='ERC1155', verbose_name='代币标准')
     block_chain = models.CharField(max_length=150, choices=BlockChainType.choices(),
                                    default=BlockChainType.POLYGON.value, verbose_name='区块链网络')
-    token = models.CharField(max_length=150, blank=True, default='USDC', verbose_name='代币')
+    currency = models.CharField(max_length=150, blank=True, default='USDC', verbose_name='代币')
 
     class Meta:
-        ordering = ['id', 'book']
-        verbose_name = '书籍合约'
+        ordering = ['id', 'issue']
+        verbose_name = 'NFT信息'
         verbose_name_plural = verbose_name
 
     def __str__(self):
-        return f'{self.book.title}'
+        return f'{self.issue.book.title}'
 
 
 class Bookmark(BaseModel):
     user = models.ForeignKey(to='users.User', to_field='id', related_name='bookmark_user',
                              on_delete=models.CASCADE, verbose_name='用户')
-    book = models.ForeignKey(to='Book', to_field='id', related_name='bookmark_book', on_delete=models.CASCADE,
-                             verbose_name='书籍')
+    issue = models.ForeignKey(to='Issue', to_field='id', related_name='bookmark_issue', on_delete=models.CASCADE,
+                              verbose_name='书籍')
     current_page = models.IntegerField(blank=True, default=0, verbose_name='当前阅读页码')
 
     class Meta:
-        ordering = ['id', 'user', 'book']
+        ordering = ['id', 'user', 'issue']
         verbose_name = '书签'
         verbose_name_plural = verbose_name
 
     def __str__(self):
-        return f'{self.user.address}-{self.book.title}'
+        return f'{self.user.address}-{self.issue.book.title}'
 
 
 class Preview(BaseModel):
@@ -144,8 +148,8 @@ class Preview(BaseModel):
 class Asset(BaseModel):
     user = models.ForeignKey(to='users.User', to_field='id', related_name='asset_user',
                              on_delete=models.CASCADE, verbose_name='用户')
-    book = models.ForeignKey(to='Book', to_field='id', related_name='asset_book',
-                             on_delete=models.RESTRICT, verbose_name='书籍')
+    issue = models.ForeignKey(to='Issue', to_field='id', related_name='asset_issue',
+                              on_delete=models.RESTRICT, verbose_name='书籍')
     quantity = models.IntegerField(blank=True, default=1)
 
     # decrypt the nft to a temporary file and send it to frontend
@@ -162,7 +166,7 @@ class Asset(BaseModel):
     #     super().delete(using, keep_parents)
 
     def __str__(self):
-        return f'{self.user.address}-{self.book.title}'
+        return f'{self.user.address}-{self.issue.book.title}'
 
 
 class EncryptionKey(BaseModel):
