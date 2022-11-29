@@ -91,8 +91,7 @@ class PlatformContractHandler(object):
             'to': to,
             'value': self.to_usdc(amount)
         })
-        self.web3.eth.wait_for_transaction_receipt(txn_hash)
-        receipt = self.web3.eth.get_transaction_receipt(txn_hash)
+        receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash)
         return receipt['status'] == 1
 
     def set_token_info(self, token_id: int, author: str, royalty: float, price: float) -> bool:
@@ -111,8 +110,7 @@ class PlatformContractHandler(object):
         except Exception as e:
             print(f'Exception when setting nft price->{e}')
             return False
-        self.web3.eth.wait_for_transaction_receipt(txn_hash)
-        receipt = self.web3.eth.get_transaction_receipt(txn_hash)
+        receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash)
         return receipt['status'] == 1
 
     def set_token_author(self, token_id: int, author: str) -> bool:
@@ -128,8 +126,7 @@ class PlatformContractHandler(object):
         except Exception as e:
             print(f'Exception when setting nft price->{e}')
             return False
-        self.web3.eth.wait_for_transaction_receipt(txn_hash)
-        receipt = self.web3.eth.get_transaction_receipt(txn_hash)
+        receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash)
         return receipt['status'] == 1
 
     def set_token_royalty(self, token_id: int, royalty: float) -> bool:
@@ -143,8 +140,7 @@ class PlatformContractHandler(object):
         except Exception as e:
             print(f'Exception when setting nft price->{e}')
             return False
-        self.web3.eth.wait_for_transaction_receipt(txn_hash)
-        receipt = self.web3.eth.get_transaction_receipt(txn_hash)
+        receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash)
         return receipt['status'] == 1
 
 
