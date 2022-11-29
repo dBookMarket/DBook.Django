@@ -36,7 +36,7 @@ class Transaction(BaseModel):
                               on_delete=models.RESTRICT, verbose_name='买家')
     status = models.CharField(max_length=50, blank=True, default=TransactionStatus.SUCCESS.value,
                               choices=TransactionStatus.choices(), verbose_name='交易状态')
-    hash = models.CharField(max_length=150, verbose_name='链上哈希', unique=True, db_index=True)
+    hash = models.CharField(max_length=150, verbose_name='链上哈希', db_index=True)
     source = models.IntegerField(choices=Market.choices())
 
     class Meta:

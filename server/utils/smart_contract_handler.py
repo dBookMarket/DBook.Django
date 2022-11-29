@@ -6,6 +6,7 @@ from utils.enums import BlockChainType, TransactionStatus
 
 class PlatformContractHandler(object):
     ADMIN_KEY = settings.CONTRACT_SETTINGS['ADMIN_KEY']
+    PLATFORM_KEY = settings.CONTRACT_SETTINGS['PLATFORM_KEY']
     PRECISION = 1_000_000
 
     def __init__(self, provider: str = settings.CONTRACT_SETTINGS.get('HTTP_PROVIDER')):
@@ -17,9 +18,10 @@ class PlatformContractHandler(object):
         self.contract = self.web3.eth.contract(address=settings.CONTRACT_SETTINGS['PLATFORM_CONTRACT_ADDRESS'],
                                                abi=settings.CONTRACT_SETTINGS['PLATFORM_CONTRACT_ABI'])
         self.admin_account = self.web3.eth.account.from_key(self.ADMIN_KEY)
+        self.platform_account = self.web3.eth.account.from_key(self.PLATFORM_KEY)
 
     def to_usdc(self, amount: float):
-        return amount * self.PRECISION
+        return int(amount * self.PRECISION)
 
     def add_author(self, account_addr: str) -> bool:
         """
@@ -43,23 +45,28 @@ class PlatformContractHandler(object):
         print(receipt)
         return bool(receipt['status'] == 1)
 
-    def first_trade(self, seller: str, payment: int, buyer: str, token_id: int, amount: int, mint_amount: int = 0):
+    def first_trade(self, seller: str, payment: float, buyer: str, token_id: int, amount: int, mint_amount: int = 0):
+        print(f'platform address->{self.platform_account.address}')
         # check address
         seller = Web3.toChecksumAddress(seller)
         buyer = Web3.toChecksumAddress(buyer)
 
         # send transaction
-        nonce = self.web3.eth.get_transaction_count(self.admin_account.address)
-        transaction = self.contract.functions.runFirstTrade(seller, self.to_usdc(payment), mint_amount, buyer, token_id,
-                                                            amount, 0x01).buildTransaction({
-            'from': self.admin_account.address, 'nonce': nonce
-        })
-        signed_txn = self.admin_account.sign_transaction(transaction)
-        txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+        # nonce = self.web3.eth.get_transaction_count(self.platform_account.address)
+        # transaction = self.contract.functions.runFirstTrade(seller, self.to_usdc(payment), mint_amount, buyer, token_id,
+        #                                                     amount, '0x01').buildTransaction({
+        #     'from': self.platform_account.address, 'nonce': nonce
+        # })
+        # signed_txn = self.platform_account.sign_transaction(transaction)
+        # txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+
+        txn_hash = self.contract.functions.runFirstTrade(seller, self.to_usdc(payment), mint_amount,
+                                                         buyer, token_id, amount,
+                                                         '0x01').transact({'from': self.platform_account.address})
 
         # get result
-        self.web3.eth.wait_for_transaction_receipt(txn_hash)
-        receipt = self.web3.eth.get_transaction_receipt(txn_hash)
+        receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash)
+        # receipt = self.web3.eth.get_transaction_receipt(txn_hash)
         status = TransactionStatus.SUCCESS.value if receipt['status'] == 1 else TransactionStatus.FAILURE.value
 
         return {

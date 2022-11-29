@@ -4,7 +4,7 @@ from django.db.transaction import atomic
 from utils.enums import CeleryTaskStatus, IssueStatus, TransactionStatus
 from books.file_service_connector import FileServiceConnector
 from utils.redis_handler import IssueQueue
-from utils.smart_contract_handler import PlatformContractHandler
+from utils.smart_contract_handler import ContractFactory
 from books.issue_handler import IssueHandler
 from datetime import timedelta
 import pytz
@@ -83,12 +83,14 @@ def issue_timer():
 def pay_back():
     """
     If some transaction is first release and failed, return money back to the buyer and remove this transaction
+    Only deal with the oldest five transactions per time because of the high cost of smart contract's operation
     """
     print('Money back to the buyers...')
-    queryset = Transaction.objects.filter(status=TransactionStatus.FAILURE.value, trade__first_release=True)
-    contract_handler = PlatformContractHandler()
-    for txn in queryset:
+    queryset = Transaction.objects.filter(status=TransactionStatus.FAILURE.value, trade__first_release=True).order_by(
+        'created_at')
+    for txn in queryset[:5]:
         try:
+            contract_handler = ContractFactory(txn.issue.token_issue.block_chain)
             success = contract_handler.pay_back(txn.buyer.address, txn.quantity * txn.price)
             if success:
                 txn.delete()

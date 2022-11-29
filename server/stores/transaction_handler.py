@@ -85,6 +85,7 @@ class TransactionHandler:
         # update transaction info
         self.obj.hash = res['hash']
         self.obj.status = res['status']
+        # avoid unlimited recursive
         if self.obj.status != TransactionStatus.PENDING.value:
             self.obj.save()
 
