@@ -46,8 +46,7 @@ class PlatformContractHandler(object):
         except Exception as e:
             print(f'Exception when calling add_author -> {e}')
             return False
-        self.web3.eth.wait_for_transaction_receipt(txn_hash)
-        receipt = self.web3.eth.get_transaction_receipt(txn_hash)
+        receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash)
         print(receipt)
         return bool(receipt['status'] == 1)
 
