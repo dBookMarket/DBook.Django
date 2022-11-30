@@ -21,6 +21,12 @@ class TransactionType(BaseEnum):
     PRESENT = 'present'
 
 
+class TransactionStatus(BaseEnum):
+    PENDING = 'pending'
+    FAILURE = 'failure'
+    SUCCESS = 'success'
+
+
 class CeleryTaskStatus(BaseEnum):
     PENDING = 'pending'
     STARTED = 'started'

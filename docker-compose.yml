@@ -22,6 +22,11 @@ x-common-environments-twitter: &twitter-api
 x-common-environments-linkedin: &linkedin-api
   LINKEDIN_CLIENT_ID: ${LINKEDIN_CLIENT_ID}
   LINKEDIN_CLIENT_SECRET: ${LINKEDIN_CLIENT_SECRET}
+x-common-environments-contract: &block-chain
+  NFT_STORAGE_ACCESS_TOKEN: ${NFT_STORAGE_ACCESS_TOKEN}
+  CONTRACT_ADMIN_KEY: ${CONTRACT_ADMIN_KEY}
+  CONTRACT_PLATFORM_KEY: ${CONTRACT_PLATFORM_KEY}
+
 
 services:
 
@@ -60,8 +65,7 @@ services:
       ADMIN_NAME: ${ADMIN_NAME}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
-      NFT_STORAGE_ACCESS_TOKEN: ${NFT_STORAGE_ACCESS_TOKEN}
-      CONTRACT_ADMIN_KEY: ${CONTRACT_ADMIN_KEY}
+      <<: *block-chain
       <<: *db
       # <<: *rabbitMQ
       <<: *redis

@@ -103,9 +103,8 @@ class UserViewSet(BaseViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly]
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    filterset_class = filters.UserFilter
     http_method_names = ['get', 'put', 'patch']
-
-    # filterset_class = filters.UserFilter
 
     # @action(methods=['POST', 'DELETE'], detail=True, url_path='issue-perm')
     # def assign_issue_perm(self, request, *args, **kwargs):
