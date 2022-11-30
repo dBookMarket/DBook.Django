@@ -96,7 +96,7 @@ class BookSerializer(BaseSerializer):
         if value:
             queryset = models.Draft.objects.filter(author=user).filter(id=value.id)
             if queryset.count() == 0:
-                raise serializers.ValidationError('Sorry, this draft is not yours.')
+                raise serializers.ValidationError('Sorry, you have no access to this draft.')
         return value
 
     def create(self, validated_data):
@@ -174,7 +174,7 @@ class IssueSerializer(BaseSerializer):
     book = BookRelatedField(required=True, queryset=models.Book.objects.all(), many=False)
     quantity = serializers.IntegerField()
     price = serializers.FloatField()
-    royalty = serializers.FloatField(required=False)
+    royalty = serializers.FloatField(required=False, min_value=0, max_value=100)
     buy_limit = serializers.IntegerField(required=False)
     published_at = serializers.DateTimeField()
     duration = serializers.IntegerField()

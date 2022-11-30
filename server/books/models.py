@@ -4,6 +4,7 @@ from stores.models import Trade
 from utils.enums import IssueStatus, BlockChainType, CeleryTaskStatus
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
+from django.core.validators import MinValueValidator, MaxValueValidator
 import uuid
 import os
 
@@ -65,7 +66,8 @@ class Issue(BaseModel):
 
     quantity = models.IntegerField(blank=True, default=1, verbose_name='发行数量')
     price = models.FloatField(blank=True, default=0, verbose_name='发行价格')
-    royalty = models.FloatField(blank=True, default=0, verbose_name='版税%')
+    royalty = models.FloatField(blank=True, default=0, verbose_name='版税%',
+                                validators=[MinValueValidator(0), MaxValueValidator(100)])
     buy_limit = models.IntegerField(blank=True, default=1, verbose_name='购买限制')
     published_at = models.DateTimeField(verbose_name='发行时间')
     duration = models.IntegerField(verbose_name='发行时长(min)')

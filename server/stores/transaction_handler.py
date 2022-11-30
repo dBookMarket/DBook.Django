@@ -43,7 +43,7 @@ class TransactionHandler:
             })
         else:
             # second class market
-            author_rate = self.obj.issue.royalty
+            author_rate = self.obj.issue.royalty / 100
             seller_rate = 1 - author_rate - settings.PLATFORM_ROYALTY
             t_amount = self.obj.quantity * self.obj.price
             author_amount = t_amount * author_rate
@@ -72,7 +72,7 @@ class TransactionHandler:
                                               self.obj.issue.quantity)
                     if res['status'] == TransactionStatus.SUCCESS.value:
                         handler.set_token_info(self.obj.issue.token_issue.id, self.obj.seller.address,
-                                               self.obj.issue.royalty * 100, self.obj.issue.price)
+                                               self.obj.issue.royalty, self.obj.issue.price)
                     else:
                         # pay money back
                         pass

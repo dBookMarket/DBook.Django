@@ -120,7 +120,7 @@ class TransactionSerializer(BaseSerializer):
                 raise serializers.ValidationError({'quantity': 'The quantity is beyond the remaining number'})
             if trade.first_release and trade.issue.buy_limit < quantity:
                 raise serializers.ValidationError({
-                    'quantity': f'The quantity is bigger than the buy limit({trade.book.issue_book.buy_limit})'
+                    'quantity': f'The quantity is bigger than the buy limit({trade.issue.buy_limit})'
                 })
         buyer = attrs.get('buyer')
         if trade and buyer and trade.user.id == buyer.id:
