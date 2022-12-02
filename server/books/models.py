@@ -59,6 +59,9 @@ class Book(BaseModel):
 
 
 class Issue(BaseModel):
+    """
+    Only one issue of a book can be allowed to create
+    """
     id = models.UUIDField(verbose_name='id', primary_key=True, blank=True, default=uuid.uuid4())
 
     book = models.OneToOneField(to='Book', to_field='id', related_name='issue_book', verbose_name='书籍',
@@ -107,6 +110,14 @@ class Token(BaseModel):
 
     def __str__(self):
         return f'{self.issue.book.title}'
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        if self.block_chain == BlockChainType.POLYGON.value:
+            self.contract_address = settings.CONTRACT_SETTINGS['POLYGON']['DBOOK_CONTRACT_ADDRESS']
+        elif self.block_chain == BlockChainType.BNB.value:
+            self.contract_address = settings.CONTRACT_SETTINGS['BNB']['DBOOK_CONTRACT_ADDRESS']
+        super().save(force_insert, force_update, using, update_fields)
 
 
 class Bookmark(BaseModel):

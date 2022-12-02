@@ -8,7 +8,7 @@ from users.serializers import UserRelatedField
 # from accounts.serializers import UserListingSerializer
 from stores.models import Trade
 from utils.serializers import BaseSerializer, CustomPKRelatedField
-from utils.enums import CeleryTaskStatus
+from utils.enums import CeleryTaskStatus, BlockChainType
 from rest_framework.validators import UniqueValidator, UniqueTogetherValidator
 # from secure.encryption_handler import EncryptionHandler
 # from django.conf import settings
@@ -126,9 +126,9 @@ class BookListingSerializer(BookSerializer):
 class TokenSerializer(BaseSerializer):
     issue = serializers.PrimaryKeyRelatedField(required=False, queryset=models.Issue.objects.all(), many=False,
                                                validators=[UniqueValidator(queryset=models.Token.objects.all())])
-    contract_address = serializers.CharField(required=False, max_length=150)
+    contract_address = serializers.CharField(read_only=True)
     standard = serializers.CharField(required=False, max_length=150, allow_blank=True)
-    block_chain = serializers.CharField(required=False, max_length=150, allow_blank=True)
+    block_chain = serializers.ChoiceField(required=True, choices=BlockChainType.choices())
     currency = serializers.CharField(required=False, max_length=150, allow_blank=True)
 
     class Meta:
