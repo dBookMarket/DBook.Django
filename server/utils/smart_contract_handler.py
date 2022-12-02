@@ -10,6 +10,9 @@ class PlatformContractHandler(object):
     PRECISION = 1_000_000
 
     def __init__(self, provider: str = settings.CONTRACT_SETTINGS.get('HTTP_PROVIDER')):
+        self.admin_account = self.web3.eth.account.from_key(self.ADMIN_KEY)
+        self.platform_account = self.web3.eth.account.from_key(self.PLATFORM_KEY)
+
         self.web3 = Web3(Web3.HTTPProvider(provider))
         # Unfortunately, it does deviate from the yellow paper specification,
         # which constrains the extraData field in each block to a maximum of 32-bytes.
@@ -17,8 +20,6 @@ class PlatformContractHandler(object):
         self.web3.middleware_onion.inject(geth_poa_middleware, layer=0)
         self.contract = self.web3.eth.contract(address=settings.CONTRACT_SETTINGS['PLATFORM_CONTRACT_ADDRESS'],
                                                abi=settings.CONTRACT_SETTINGS['PLATFORM_CONTRACT_ABI'])
-        self.admin_account = self.web3.eth.account.from_key(self.ADMIN_KEY)
-        self.platform_account = self.web3.eth.account.from_key(self.PLATFORM_KEY)
 
     def to_usdc(self, amount: float) -> int:
         return int(amount * self.PRECISION)
@@ -164,14 +165,22 @@ class PlatformContractHandler(object):
 
 class PolygonHandler(PlatformContractHandler):
 
-    def __init__(self, provider: str = settings.CONTRACT_SETTINGS['POLYGON_PROVIDER']):
+    def __init__(self, provider: str = settings.CONTRACT_SETTINGS['POLYGON']['PROVIDER']):
         super().__init__(provider)
+        self.contract = self.web3.eth.contract(
+            address=settings.CONTRACT_SETTINGS['POLYGON']['PLATFORM_CONTRACT_ADDRESS'],
+            abi=settings.CONTRACT_SETTINGS['POLYGON']['PLATFORM_CONTRACT_ABI']
+        )
 
 
 class BNBHandler(PlatformContractHandler):
 
-    def __init__(self, provider: str = settings.CONTRACT_SETTINGS['BNB_PROVIDER']):
+    def __init__(self, provider: str = settings.CONTRACT_SETTINGS['BNB']['PROVIDER']):
         super().__init__(provider)
+        self.contract = self.web3.eth.contract(
+            address=settings.CONTRACT_SETTINGS['BNB']['PLATFORM_CONTRACT_ADDRESS'],
+            abi=settings.CONTRACT_SETTINGS['BNB']['PLATFORM_CONTRACT_ABI']
+        )
 
 
 class ContractFactory:
@@ -182,4 +191,4 @@ class ContractFactory:
         elif _type == BlockChainType.BNB.value:
             return BNBHandler()
         else:
-            raise TypeError(f'Type {_type} is not supported.')
+            raise TypeError(f'Type `{_type}` is not supported.')
