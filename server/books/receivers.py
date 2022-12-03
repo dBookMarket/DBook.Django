@@ -14,7 +14,7 @@ import uuid
 from books.models import Preview
 from books.signals import sig_issue_new_book
 from books.issue_handler import IssueHandler
-from books.pdf_handler import PDFHandler
+from books.file_handler import FileHandlerFactory
 
 
 def upload_pdf(obj_book):
@@ -67,16 +67,17 @@ def issue_new_book(sender, instance, **kwargs):
         instance.file = f'{settings.TEMPORARY_DIR}/{filename}'
         instance.save()
     # add preview
-    pdf_handler = PDFHandler(instance.file.path)
+    # pdf_handler = PDFHandler(instance.file.path)
+    f_handler = FileHandlerFactory(instance.type, instance.file.path)
     obj_preview, created = Preview.objects.get_or_create(book=instance)
     if not created and obj_preview.file:
         obj_preview.file.delete()
-    pre_file = pdf_handler.get_preview_doc(from_page=obj_preview.start_page - 1,
-                                           to_page=obj_preview.start_page + obj_preview.n_pages - 2)
+    pre_file = f_handler.get_preview_doc(from_page=obj_preview.start_page - 1,
+                                         to_page=obj_preview.start_page + obj_preview.n_pages - 2)
     obj_preview.file = pre_file
     obj_preview.save()
     # update number of pages
-    instance.n_pages = pdf_handler.get_pages()
+    instance.n_pages = f_handler.get_pages()
     instance.save()
     # upload file to filecoin
     upload_pdf(instance)

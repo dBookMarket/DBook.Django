@@ -5,6 +5,10 @@ import multiprocessing
 import time
 import threading
 
+import ebooklib
+from ebooklib import epub
+from weasyprint import HTML
+
 
 def func():
     print('hi....')
@@ -23,9 +27,28 @@ if __name__ == '__main__':
     # HTML(filename='./test.htm').write_pdf('./output.pdf')
     # with open('./test.pdf', 'rb') as f:
     #     print(f.read()[:500])
-    asyncio.run(main())
+    # asyncio.run(main())
+    #
+    # p = threading.Thread(target=func)
+    # p.daemon=True
+    # p.start()
+    # print(p.is_alive())
 
-    p = threading.Thread(target=func)
-    p.daemon=True
-    p.start()
-    print(p.is_alive())
+    # book = epub.read_epub('./test.epub')
+    # print(book.get_metadata('DC', 'title')[0][0])
+
+    # n = 0
+    # content = b''
+    # for doc in book.get_items_of_type(ebooklib.ITEM_DOCUMENT):
+    #     content += doc.content
+    #
+    # HTML(string=content.decode()).write_pdf('./epub.pdf')
+
+    content = ''
+    with open('./test.txt', 'r') as f:
+        chunk = f.readline(512)
+        while chunk:
+            content += chunk
+            chunk = f.readline(512)
+
+    HTML(string=content).write_pdf('./text.pdf')

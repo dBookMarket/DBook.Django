@@ -24,3 +24,4 @@ pytest-cov==3.0.0
 tweepy==4.10.0
 weasyprint==52.5
 pandas==1.5.1
+EbookLib==0.18
