@@ -45,8 +45,8 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'address', 'name', 'desc', 'website_url', 'discord_url', 'avatar', 'banner', 'is_verified',
-                  'avatar_url', 'banner_url', 'statistic']
+        fields = ['id', 'address', 'name', 'desc', 'website_url', 'discord_url', 'twitter_url', 'avatar', 'banner',
+                  'is_verified', 'avatar_url', 'banner_url', 'statistic']
 
     def get_absolute_uri(self, f_obj):
         request = self.context.get('request')
@@ -98,7 +98,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 class UserListingSerializer(UserSerializer):
     class Meta(UserSerializer.Meta):
-        fields = ['id', 'address', 'name', 'desc', 'avatar_url']
+        fields = ['id', 'address', 'name', 'desc', 'avatar_url', 'website_url', 'discord_url', 'twitter_url']
 
 
 class UserRelatedField(CustomPKRelatedField):
