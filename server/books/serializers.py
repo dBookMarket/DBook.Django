@@ -46,19 +46,9 @@ class BookSerializer(BaseSerializer):
     cover_url = serializers.SerializerMethodField(read_only=True)
 
     status = serializers.ReadOnlyField()
-    # bookmark = serializers.SerializerMethodField(read_only=True)
-    # token = serializers.SerializerMethodField(read_only=True)
     preview = serializers.SerializerMethodField(read_only=True)
     n_pages = serializers.ReadOnlyField()
     cid = serializers.ReadOnlyField()
-
-    # def get_token(self, obj):
-    #     try:
-    #         instance = models.Token.objects.get(book=obj)
-    #         serializer = TokenSerializer(instance=instance, many=False, context=self.context)
-    #         return serializer.data
-    #     except models.Token.DoesNotExist:
-    #         return {}
 
     def get_preview(self, obj):
         try:
@@ -98,6 +88,18 @@ class BookSerializer(BaseSerializer):
             if queryset.count() == 0:
                 raise serializers.ValidationError('Sorry, you have no access to this draft.')
         return value
+
+    def validate(self, attrs):
+        super().validate(attrs)
+
+        file = attrs.get('file')
+        draft = attrs.get('draft')
+
+        if not self.instance:
+            if not file and not draft:
+                raise serializers.ValidationError('No file or draft found')
+
+        return attrs
 
     def create(self, validated_data):
         obj = super().create(validated_data)
