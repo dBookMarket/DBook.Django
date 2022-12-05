@@ -85,6 +85,10 @@ class ObjectPermHelper:
         app_label = model_cls._meta.app_label
         model_name = model_cls._meta.model_name
         perm = f"{app_label}.{action}_{model_name}"
+        # model level
+        if not user.has_perm(perm):
+            assign_perm(perm, user)
+        # object level
         if not user.has_perm(perm, obj):
             assign_perm(perm, user, obj)
 

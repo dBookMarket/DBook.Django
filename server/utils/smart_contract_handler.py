@@ -15,10 +15,12 @@ class PlatformContractHandler(object):
         # which constrains the extraData field in each block to a maximum of 32-bytes.
         # Geth’s PoA uses more than 32 bytes, so this middleware modifies the block data a bit before returning it.
         self.web3.middleware_onion.inject(geth_poa_middleware, layer=0)
-        self.contract = self.web3.eth.contract(address=settings.CONTRACT_SETTINGS['PLATFORM_CONTRACT_ADDRESS'],
-                                               abi=settings.CONTRACT_SETTINGS['PLATFORM_CONTRACT_ABI'])
+
         self.admin_account = self.web3.eth.account.from_key(self.ADMIN_KEY)
         self.platform_account = self.web3.eth.account.from_key(self.PLATFORM_KEY)
+
+        self.contract = None
+        self.dbook_contract = None
 
     def to_usdc(self, amount: float) -> int:
         return int(amount * self.PRECISION)
@@ -124,7 +126,7 @@ class PlatformContractHandler(object):
                     self.set_token_royalty(token_id, royalty) and
                     self.set_token_price(token_id, price))
 
-    def set_token_price(self, token_id: int, price: float) -> bool:
+    def set_token_price(self, token_id: int, price: float) -> tuple:
         try:
             nonce = self.web3.eth.get_transaction_count(self.admin_account.address)
             txn = self.contract.functions.setNftPrice(token_id, self.to_usdc(price)).buildTransaction({
@@ -134,9 +136,9 @@ class PlatformContractHandler(object):
             txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
         except Exception as e:
             print(f'Exception when setting nft price->{e}')
-            return False
+            return '', False
         receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash)
-        return receipt['status'] == 1
+        return txn_hash.hex(), receipt['status'] == 1
 
     def set_token_author(self, token_id: int, author: str) -> bool:
         try:
@@ -169,6 +171,20 @@ class PlatformContractHandler(object):
         receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash)
         return receipt['status'] == 1
 
+    def burn(self, owner: str, token_id: int, amount: int) -> bool:
+        try:
+            nonce = self.web3.eth.get_transaction_count(self.platform_account.address)
+            txn = self.dbook_contract.functions.burn(owner, token_id, amount).buildTransaction({
+                'from': self.platform_account.address, 'nonce': nonce, 'gasPrice': self.get_gas_price()
+            })
+            signed_txn = self.platform_account.sign_transaction(txn)
+            txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+        except Exception as e:
+            print(f'Exception when setting nft price->{e}')
+            return False
+        receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash)
+        return receipt['status'] == 1
+
 
 class PolygonHandler(PlatformContractHandler):
 
@@ -177,6 +193,10 @@ class PolygonHandler(PlatformContractHandler):
         self.contract = self.web3.eth.contract(
             address=settings.CONTRACT_SETTINGS['POLYGON']['PLATFORM_CONTRACT_ADDRESS'],
             abi=settings.CONTRACT_SETTINGS['POLYGON']['PLATFORM_CONTRACT_ABI']
+        )
+        self.dbook_contract = self.web3.eth.contract(
+            address=settings.CONTRACT_SETTINGS['POLYGON']['DBOOK_CONTRACT_ADDRESS'],
+            abi=settings.CONTRACT_SETTINGS['POLYGON']['DBOOK_CONTRACT_ABI']
         )
 
 
@@ -187,6 +207,10 @@ class BNBHandler(PlatformContractHandler):
         self.contract = self.web3.eth.contract(
             address=settings.CONTRACT_SETTINGS['BNB']['PLATFORM_CONTRACT_ADDRESS'],
             abi=settings.CONTRACT_SETTINGS['BNB']['PLATFORM_CONTRACT_ABI']
+        )
+        self.dbook_contract = self.web3.eth.contract(
+            address=settings.CONTRACT_SETTINGS['BNB']['DBOOK_CONTRACT_ADDRESS'],
+            abi=settings.CONTRACT_SETTINGS['BNB']['DBOOK_CONTRACT_ABI']
         )
 
 

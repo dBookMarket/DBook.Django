@@ -1,22 +1,15 @@
-# import os
-# from uuid import uuid4
 from rest_framework import serializers
-# from rest_framework.exceptions import PermissionDenied
 from . import models, signals
 from users.models import User
 from users.serializers import UserRelatedField
-# from accounts.serializers import UserListingSerializer
 from stores.models import Trade
 from utils.serializers import BaseSerializer, CustomPKRelatedField
 from utils.enums import CeleryTaskStatus, BlockChainType
 from rest_framework.validators import UniqueValidator, UniqueTogetherValidator
-# from secure.encryption_handler import EncryptionHandler
-# from django.conf import settings
 from django.db.models import Max, Min, Sum
-# from books.file_service_connector import FileServiceConnector
-# from books.issue_handler import IssueHandler
 from django.contrib.auth.models import AnonymousUser
 from django.forms.models import model_to_dict
+from django.utils import timezone
 import copy
 
 
@@ -179,7 +172,7 @@ class IssueSerializer(BaseSerializer):
     royalty = serializers.FloatField(required=False, min_value=0, max_value=100)
     buy_limit = serializers.IntegerField(required=False)
     published_at = serializers.DateTimeField()
-    duration = serializers.IntegerField()
+    duration = serializers.IntegerField(min_value=1)
 
     status = serializers.ReadOnlyField()
 
@@ -208,6 +201,11 @@ class IssueSerializer(BaseSerializer):
         queryset = models.Book.objects.filter(author=user).filter(id=value.id)
         if queryset.count() == 0:
             raise serializers.ValidationError('Sorry, this book is not yours!')
+        return value
+
+    def validate_published_at(self, value):
+        if value <= timezone.now():
+            raise serializers.ValidationError('The value of published_at is invalid, should be after now.')
         return value
 
     def get_n_remains(self, obj):
@@ -284,6 +282,16 @@ class IssueSerializer(BaseSerializer):
 class IssueListingSerializer(IssueSerializer):
     class Meta(IssueSerializer.Meta):
         fields = ['id', 'book', 'price', 'quantity', 'n_circulations', 'published_at']
+
+
+class IssueResaleSerializer(IssueSerializer):
+
+    def validate(self, attrs):
+        super().validate(attrs)
+        published_at = attrs.get('published_at')
+        if not published_at:
+            raise serializers.ValidationError({'published_at': 'This field is required.'})
+        return attrs
 
 
 class BookmarkSerializer(BaseSerializer):

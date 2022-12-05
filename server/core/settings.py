@@ -300,14 +300,136 @@ CONTRACT_SETTINGS = {
     'ADMIN_KEY': os.getenv('CONTRACT_ADMIN_KEY', ''),
     'PLATFORM_KEY': os.getenv('CONTRACT_PLATFORM_KEY', ''),
 
-    'PLATFORM_CONTRACT_ADDRESS': '0x21a88b49938B956680c80a1A493c2adA80Cf4483',
-    'PLATFORM_CONTRACT_ABI': '''
+    'PLATFORM_CONTRACT_ADDRESS': '',
+    'PLATFORM_CONTRACT_ABI': '',
+
+    'DBOOK_CONTRACT_ADDRESS': '',
+    'DBOOK_CONTRACT_ABI': '',
+
+    'POLYGON': {
+        'PROVIDER': 'https://rpc-mumbai.maticvigil.com',
+        'DBOOK_CONTRACT_ADDRESS': '0xcbF7AA75654120a98256AE50B1896A040AB14Ee6',
+        'DBOOK_CONTRACT_ABI': '''
             [
                 {
+                  "inputs": [
+                    {
+                      "internalType": "string",
+                      "name": "name",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "symbol",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "uri",
+                      "type": "string"
+                    }
+                  ],
+                  "stateMutability": "nonpayable",
+                  "type": "constructor"
+                },
+                {
                   "anonymous": false,
                   "inputs": [
                     {
+                      "indexed": true,
+                      "internalType": "address",
+                      "name": "account",
+                      "type": "address"
+                    },
+                    {
+                      "indexed": true,
+                      "internalType": "address",
+                      "name": "operator",
+                      "type": "address"
+                    },
+                    {
                       "indexed": false,
+                      "internalType": "bool",
+                      "name": "approved",
+                      "type": "bool"
+                    }
+                  ],
+                  "name": "ApprovalForAll",
+                  "type": "event"
+                },
+                {
+                  "anonymous": false,
+                  "inputs": [
+                    {
+                      "indexed": true,
+                      "internalType": "address",
+                      "name": "previousOwner",
+                      "type": "address"
+                    },
+                    {
+                      "indexed": true,
+                      "internalType": "address",
+                      "name": "newOwner",
+                      "type": "address"
+                    }
+                  ],
+                  "name": "OwnershipTransferred",
+                  "type": "event"
+                },
+                {
+                  "anonymous": false,
+                  "inputs": [
+                    {
+                      "indexed": true,
+                      "internalType": "address",
+                      "name": "operator",
+                      "type": "address"
+                    },
+                    {
+                      "indexed": true,
+                      "internalType": "address",
+                      "name": "from",
+                      "type": "address"
+                    },
+                    {
+                      "indexed": true,
+                      "internalType": "address",
+                      "name": "to",
+                      "type": "address"
+                    },
+                    {
+                      "indexed": false,
+                      "internalType": "uint256[]",
+                      "name": "ids",
+                      "type": "uint256[]"
+                    },
+                    {
+                      "indexed": false,
+                      "internalType": "uint256[]",
+                      "name": "values",
+                      "type": "uint256[]"
+                    }
+                  ],
+                  "name": "TransferBatch",
+                  "type": "event"
+                },
+                {
+                  "anonymous": false,
+                  "inputs": [
+                    {
+                      "indexed": true,
+                      "internalType": "address",
+                      "name": "operator",
+                      "type": "address"
+                    },
+                    {
+                      "indexed": true,
+                      "internalType": "address",
+                      "name": "from",
+                      "type": "address"
+                    },
+                    {
+                      "indexed": true,
                       "internalType": "address",
                       "name": "to",
                       "type": "address"
@@ -315,41 +437,17 @@ CONTRACT_SETTINGS = {
                     {
                       "indexed": false,
                       "internalType": "uint256",
-                      "name": "nftId",
+                      "name": "id",
                       "type": "uint256"
                     },
                     {
                       "indexed": false,
                       "internalType": "uint256",
-                      "name": "amount",
-                      "type": "uint256"
-                    },
-                    {
-                      "indexed": false,
-                      "internalType": "bytes",
-                      "name": "data",
-                      "type": "bytes"
-                    },
-                    {
-                      "indexed": false,
-                      "internalType": "uint256",
-                      "name": "price",
-                      "type": "uint256"
-                    },
-                    {
-                      "indexed": false,
-                      "internalType": "address",
-                      "name": "publisherAddress",
-                      "type": "address"
-                    },
-                    {
-                      "indexed": false,
-                      "internalType": "uint256",
-                      "name": "publisherRatio",
+                      "name": "value",
                       "type": "uint256"
                     }
                   ],
-                  "name": "Issue",
+                  "name": "TransferSingle",
                   "type": "event"
                 },
                 {
@@ -357,102 +455,34 @@ CONTRACT_SETTINGS = {
                   "inputs": [
                     {
                       "indexed": false,
-                      "internalType": "address",
-                      "name": "seller",
-                      "type": "address"
+                      "internalType": "string",
+                      "name": "value",
+                      "type": "string"
                     },
                     {
-                      "indexed": false,
-                      "internalType": "address",
-                      "name": "receiver",
-                      "type": "address"
-                    },
-                    {
-                      "indexed": false,
+                      "indexed": true,
                       "internalType": "uint256",
-                      "name": "nftId",
-                      "type": "uint256"
-                    },
-                    {
-                      "indexed": false,
-                      "internalType": "uint256",
-                      "name": "nftAmount",
-                      "type": "uint256"
-                    },
-                    {
-                      "indexed": false,
-                      "internalType": "bytes",
-                      "name": "data",
-                      "type": "bytes"
-                    },
-                    {
-                      "indexed": false,
-                      "internalType": "uint256",
-                      "name": "tradeValue",
-                      "type": "uint256"
-                    },
-                    {
-                      "indexed": false,
-                      "internalType": "uint256",
-                      "name": "fee",
+                      "name": "id",
                       "type": "uint256"
                     }
                   ],
-                  "name": "Trade",
+                  "name": "URI",
                   "type": "event"
                 },
                 {
                   "inputs": [
                     {
                       "internalType": "address",
-                      "name": "token1155",
+                      "name": "account",
                       "type": "address"
                     },
                     {
-                      "internalType": "address",
-                      "name": "token20",
-                      "type": "address"
-                    },
-                    {
-                      "internalType": "string",
-                      "name": "version",
-                      "type": "string"
+                      "internalType": "uint256",
+                      "name": "id",
+                      "type": "uint256"
                     }
                   ],
-                  "name": "__DBookPlatform_init",
-                  "outputs": [],
-                  "stateMutability": "nonpayable",
-                  "type": "function"
-                },
-                {
-                  "inputs": [
-                    {
-                      "internalType": "address",
-                      "name": "minter",
-                      "type": "address"
-                    }
-                  ],
-                  "name": "addAuth",
-                  "outputs": [],
-                  "stateMutability": "nonpayable",
-                  "type": "function"
-                },
-                {
-                  "inputs": [
-                    {
-                      "internalType": "address",
-                      "name": "minter",
-                      "type": "address"
-                    }
-                  ],
-                  "name": "delAuth",
-                  "outputs": [],
-                  "stateMutability": "nonpayable",
-                  "type": "function"
-                },
-                {
-                  "inputs": [],
-                  "name": "getFee",
+                  "name": "balanceOf",
                   "outputs": [
                     {
                       "internalType": "uint256",
@@ -464,39 +494,24 @@ CONTRACT_SETTINGS = {
                   "type": "function"
                 },
                 {
-                  "inputs": [],
-                  "name": "getFirstTradeFee",
-                  "outputs": [
-                    {
-                      "internalType": "uint256",
-                      "name": "",
-                      "type": "uint256"
-                    }
-                  ],
-                  "stateMutability": "view",
-                  "type": "function"
-                },
-                {
-                  "inputs": [],
-                  "name": "getFrozen",
-                  "outputs": [
-                    {
-                      "internalType": "bool",
-                      "name": "",
-                      "type": "bool"
-                    }
-                  ],
-                  "stateMutability": "view",
-                  "type": "function"
-                },
-                {
-                  "inputs": [],
-                  "name": "getIssueList",
-                  "outputs": [
+                  "inputs": [
                     {
                       "internalType": "address[]",
-                      "name": "",
+                      "name": "accounts",
                       "type": "address[]"
+                    },
+                    {
+                      "internalType": "uint256[]",
+                      "name": "ids",
+                      "type": "uint256[]"
+                    }
+                  ],
+                  "name": "balanceOfBatch",
+                  "outputs": [
+                    {
+                      "internalType": "uint256[]",
+                      "name": "",
+                      "type": "uint256[]"
                     }
                   ],
                   "stateMutability": "view",
@@ -505,94 +520,68 @@ CONTRACT_SETTINGS = {
                 {
                   "inputs": [
                     {
-                      "internalType": "uint256",
-                      "name": "nftId",
-                      "type": "uint256"
-                    }
-                  ],
-                  "name": "getNftPrice",
-                  "outputs": [
+                      "internalType": "address",
+                      "name": "account",
+                      "type": "address"
+                    },
                     {
                       "internalType": "uint256",
-                      "name": "",
+                      "name": "id",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "value",
                       "type": "uint256"
                     }
                   ],
-                  "stateMutability": "view",
+                  "name": "burn",
+                  "outputs": [],
+                  "stateMutability": "nonpayable",
                   "type": "function"
                 },
                 {
-                  "inputs": [],
-                  "name": "getPlatformAddress",
-                  "outputs": [
+                  "inputs": [
                     {
                       "internalType": "address",
-                      "name": "",
+                      "name": "account",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256[]",
+                      "name": "ids",
+                      "type": "uint256[]"
+                    },
+                    {
+                      "internalType": "uint256[]",
+                      "name": "values",
+                      "type": "uint256[]"
+                    }
+                  ],
+                  "name": "burnBatch",
+                  "outputs": [],
+                  "stateMutability": "nonpayable",
+                  "type": "function"
+                },
+                {
+                  "inputs": [
+                    {
+                      "internalType": "address",
+                      "name": "account",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "operator",
                       "type": "address"
                     }
                   ],
-                  "stateMutability": "view",
-                  "type": "function"
-                },
-                {
-                  "inputs": [],
-                  "name": "getPlatformRatio",
+                  "name": "isApprovedForAll",
                   "outputs": [
                     {
-                      "internalType": "uint256",
+                      "internalType": "bool",
                       "name": "",
-                      "type": "uint256"
-                    }
-                  ],
-                  "stateMutability": "view",
-                  "type": "function"
-                },
-                {
-                  "inputs": [
-                    {
-                      "internalType": "uint256",
-                      "name": "nftId",
-                      "type": "uint256"
-                    }
-                  ],
-                  "name": "getPublisherAddress",
-                  "outputs": [
-                    {
-                      "internalType": "address",
-                      "name": "",
-                      "type": "address"
-                    }
-                  ],
-                  "stateMutability": "view",
-                  "type": "function"
-                },
-                {
-                  "inputs": [
-                    {
-                      "internalType": "uint256",
-                      "name": "nftId",
-                      "type": "uint256"
-                    }
-                  ],
-                  "name": "getPublisherRatio",
-                  "outputs": [
-                    {
-                      "internalType": "uint256",
-                      "name": "",
-                      "type": "uint256"
-                    }
-                  ],
-                  "stateMutability": "view",
-                  "type": "function"
-                },
-                {
-                  "inputs": [],
-                  "name": "getVersion",
-                  "outputs": [
-                    {
-                      "internalType": "string",
-                      "name": "",
-                      "type": "string"
+                      "type": "bool"
                     }
                   ],
                   "stateMutability": "view",
@@ -607,7 +596,7 @@ CONTRACT_SETTINGS = {
                     },
                     {
                       "internalType": "uint256",
-                      "name": "nftId",
+                      "name": "tokenId",
                       "type": "uint256"
                     },
                     {
@@ -619,24 +608,42 @@ CONTRACT_SETTINGS = {
                       "internalType": "bytes",
                       "name": "data",
                       "type": "bytes"
-                    },
-                    {
-                      "internalType": "uint256",
-                      "name": "price",
-                      "type": "uint256"
-                    },
-                    {
-                      "internalType": "address",
-                      "name": "publisherAddress",
-                      "type": "address"
-                    },
-                    {
-                      "internalType": "uint256",
-                      "name": "publisherRatio",
-                      "type": "uint256"
                     }
                   ],
-                  "name": "issue",
+                  "name": "mint",
+                  "outputs": [],
+                  "stateMutability": "nonpayable",
+                  "type": "function"
+                },
+                {
+                  "inputs": [],
+                  "name": "name",
+                  "outputs": [
+                    {
+                      "internalType": "string",
+                      "name": "",
+                      "type": "string"
+                    }
+                  ],
+                  "stateMutability": "view",
+                  "type": "function"
+                },
+                {
+                  "inputs": [],
+                  "name": "owner",
+                  "outputs": [
+                    {
+                      "internalType": "address",
+                      "name": "",
+                      "type": "address"
+                    }
+                  ],
+                  "stateMutability": "view",
+                  "type": "function"
+                },
+                {
+                  "inputs": [],
+                  "name": "renounceOwnership",
                   "outputs": [],
                   "stateMutability": "nonpayable",
                   "type": "function"
@@ -644,41 +651,51 @@ CONTRACT_SETTINGS = {
                 {
                   "inputs": [
                     {
-                      "internalType": "uint256",
-                      "name": "payValue",
-                      "type": "uint256"
+                      "internalType": "address",
+                      "name": "from",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "to",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256[]",
+                      "name": "ids",
+                      "type": "uint256[]"
+                    },
+                    {
+                      "internalType": "uint256[]",
+                      "name": "amounts",
+                      "type": "uint256[]"
+                    },
+                    {
+                      "internalType": "bytes",
+                      "name": "data",
+                      "type": "bytes"
                     }
                   ],
-                  "name": "payFirstTrade",
+                  "name": "safeBatchTransferFrom",
                   "outputs": [],
-                  "stateMutability": "payable",
+                  "stateMutability": "nonpayable",
                   "type": "function"
                 },
                 {
                   "inputs": [
                     {
                       "internalType": "address",
-                      "name": "seller",
+                      "name": "from",
                       "type": "address"
-                    },
-                    {
-                      "internalType": "uint256",
-                      "name": "payValue",
-                      "type": "uint256"
-                    },
-                    {
-                      "internalType": "uint256",
-                      "name": "mintAmont",
-                      "type": "uint256"
                     },
                     {
                       "internalType": "address",
-                      "name": "buyer",
+                      "name": "to",
                       "type": "address"
                     },
                     {
                       "internalType": "uint256",
-                      "name": "nftId",
+                      "name": "id",
                       "type": "uint256"
                     },
                     {
@@ -688,11 +705,11 @@ CONTRACT_SETTINGS = {
                     },
                     {
                       "internalType": "bytes",
-                      "name": "metaData",
+                      "name": "data",
                       "type": "bytes"
                     }
                   ],
-                  "name": "runFirstTrade",
+                  "name": "safeTransferFrom",
                   "outputs": [],
                   "stateMutability": "nonpayable",
                   "type": "function"
@@ -700,56 +717,17 @@ CONTRACT_SETTINGS = {
                 {
                   "inputs": [
                     {
-                      "internalType": "uint256",
-                      "name": "fee",
-                      "type": "uint256"
-                    }
-                  ],
-                  "name": "setFee",
-                  "outputs": [],
-                  "stateMutability": "nonpayable",
-                  "type": "function"
-                },
-                {
-                  "inputs": [
-                    {
-                      "internalType": "uint256",
-                      "name": "firstTradeFee",
-                      "type": "uint256"
-                    }
-                  ],
-                  "name": "setFirstTradeFee",
-                  "outputs": [],
-                  "stateMutability": "nonpayable",
-                  "type": "function"
-                },
-                {
-                  "inputs": [
+                      "internalType": "address",
+                      "name": "operator",
+                      "type": "address"
+                    },
                     {
                       "internalType": "bool",
-                      "name": "isFrozen",
+                      "name": "approved",
                       "type": "bool"
                     }
                   ],
-                  "name": "setFrozen",
-                  "outputs": [],
-                  "stateMutability": "nonpayable",
-                  "type": "function"
-                },
-                {
-                  "inputs": [
-                    {
-                      "internalType": "uint256",
-                      "name": "nftId",
-                      "type": "uint256"
-                    },
-                    {
-                      "internalType": "uint256",
-                      "name": "price",
-                      "type": "uint256"
-                    }
-                  ],
-                  "name": "setNftPrice",
+                  "name": "setApprovalForAll",
                   "outputs": [],
                   "stateMutability": "nonpayable",
                   "type": "function"
@@ -770,61 +748,44 @@ CONTRACT_SETTINGS = {
                 {
                   "inputs": [
                     {
-                      "internalType": "uint256",
-                      "name": "platformRatio",
-                      "type": "uint256"
+                      "internalType": "bytes4",
+                      "name": "interfaceId",
+                      "type": "bytes4"
                     }
                   ],
-                  "name": "setPlatformRatio",
-                  "outputs": [],
-                  "stateMutability": "nonpayable",
+                  "name": "supportsInterface",
+                  "outputs": [
+                    {
+                      "internalType": "bool",
+                      "name": "",
+                      "type": "bool"
+                    }
+                  ],
+                  "stateMutability": "view",
                   "type": "function"
                 },
                 {
-                  "inputs": [
-                    {
-                      "internalType": "uint256",
-                      "name": "nftId",
-                      "type": "uint256"
-                    },
-                    {
-                      "internalType": "address",
-                      "name": "publishAddress",
-                      "type": "address"
-                    }
-                  ],
-                  "name": "setPublisherAddress",
-                  "outputs": [],
-                  "stateMutability": "nonpayable",
-                  "type": "function"
-                },
-                {
-                  "inputs": [
-                    {
-                      "internalType": "uint256",
-                      "name": "nftId",
-                      "type": "uint256"
-                    },
-                    {
-                      "internalType": "uint256",
-                      "name": "publishRatio",
-                      "type": "uint256"
-                    }
-                  ],
-                  "name": "setPublisherRatio",
-                  "outputs": [],
-                  "stateMutability": "nonpayable",
-                  "type": "function"
-                },
-                {
-                  "inputs": [
+                  "inputs": [],
+                  "name": "symbol",
+                  "outputs": [
                     {
                       "internalType": "string",
-                      "name": "version",
+                      "name": "",
                       "type": "string"
                     }
                   ],
-                  "name": "setVersion",
+                  "stateMutability": "view",
+                  "type": "function"
+                },
+                {
+                  "inputs": [
+                    {
+                      "internalType": "address",
+                      "name": "newOwner",
+                      "type": "address"
+                    }
+                  ],
+                  "name": "transferOwnership",
                   "outputs": [],
                   "stateMutability": "nonpayable",
                   "type": "function"
@@ -832,66 +793,26 @@ CONTRACT_SETTINGS = {
                 {
                   "inputs": [
                     {
-                      "internalType": "address",
-                      "name": "seller",
-                      "type": "address"
-                    },
-                    {
-                      "internalType": "address",
-                      "name": "receiver",
-                      "type": "address"
-                    },
-                    {
                       "internalType": "uint256",
-                      "name": "nftId",
-                      "type": "uint256"
-                    },
-                    {
-                      "internalType": "uint256",
-                      "name": "nftAmount",
-                      "type": "uint256"
-                    },
-                    {
-                      "internalType": "bytes",
-                      "name": "data",
-                      "type": "bytes"
-                    },
-                    {
-                      "internalType": "uint256",
-                      "name": "tradeValue",
-                      "type": "uint256"
-                    },
-                    {
-                      "internalType": "uint256",
-                      "name": "fee",
+                      "name": "",
                       "type": "uint256"
                     }
                   ],
-                  "name": "trade",
-                  "outputs": [],
-                  "stateMutability": "nonpayable",
-                  "type": "function"
-                },
-                {
-                  "inputs": [
+                  "name": "uri",
+                  "outputs": [
                     {
-                      "internalType": "address payable",
-                      "name": "_to",
-                      "type": "address"
+                      "internalType": "string",
+                      "name": "",
+                      "type": "string"
                     }
                   ],
-                  "name": "withdrawMoneyTo",
-                  "outputs": [],
-                  "stateMutability": "nonpayable",
+                  "stateMutability": "view",
                   "type": "function"
                 }
               ]
         ''',
 
-    'POLYGON': {
-        'PROVIDER': 'https://rpc-mumbai.maticvigil.com',
-        'DBOOK_CONTRACT_ADDRESS': '0x775AB8Fa24943F05ba00F5E342d5292B2FF07db9',
-        'PLATFORM_CONTRACT_ADDRESS': '0x21a88b49938B956680c80a1A493c2adA80Cf4483',
+        'PLATFORM_CONTRACT_ADDRESS': '0x90416Ff73FA42ff8f3Dfa58e52b625EAa5489786',
         'PLATFORM_CONTRACT_ABI': '''
             [
                 {
@@ -1482,8 +1403,511 @@ CONTRACT_SETTINGS = {
 
     'BNB': {
         'PROVIDER': 'https://bsc-testnet.public.blastapi.io',
-        'DBOOK_CONTRACT_ADDRESS': '0xf55f35F0e2848cefc71724d99930c3495144e9f3',
-        'PLATFORM_CONTRACT_ADDRESS': '0xbF6c659e7a917807d2FdAcBC68329088686c4A6B',
+        'DBOOK_CONTRACT_ADDRESS': '0x8628E315b636224ed7e44aecf38fB6CFDb7Aa157',
+        'DBOOK_CONTRACT_ABI': '''
+            [
+                {
+                  "inputs": [
+                    {
+                      "internalType": "string",
+                      "name": "name",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "symbol",
+                      "type": "string"
+                    },
+                    {
+                      "internalType": "string",
+                      "name": "uri",
+                      "type": "string"
+                    }
+                  ],
+                  "stateMutability": "nonpayable",
+                  "type": "constructor"
+                },
+                {
+                  "anonymous": false,
+                  "inputs": [
+                    {
+                      "indexed": true,
+                      "internalType": "address",
+                      "name": "account",
+                      "type": "address"
+                    },
+                    {
+                      "indexed": true,
+                      "internalType": "address",
+                      "name": "operator",
+                      "type": "address"
+                    },
+                    {
+                      "indexed": false,
+                      "internalType": "bool",
+                      "name": "approved",
+                      "type": "bool"
+                    }
+                  ],
+                  "name": "ApprovalForAll",
+                  "type": "event"
+                },
+                {
+                  "anonymous": false,
+                  "inputs": [
+                    {
+                      "indexed": true,
+                      "internalType": "address",
+                      "name": "previousOwner",
+                      "type": "address"
+                    },
+                    {
+                      "indexed": true,
+                      "internalType": "address",
+                      "name": "newOwner",
+                      "type": "address"
+                    }
+                  ],
+                  "name": "OwnershipTransferred",
+                  "type": "event"
+                },
+                {
+                  "anonymous": false,
+                  "inputs": [
+                    {
+                      "indexed": true,
+                      "internalType": "address",
+                      "name": "operator",
+                      "type": "address"
+                    },
+                    {
+                      "indexed": true,
+                      "internalType": "address",
+                      "name": "from",
+                      "type": "address"
+                    },
+                    {
+                      "indexed": true,
+                      "internalType": "address",
+                      "name": "to",
+                      "type": "address"
+                    },
+                    {
+                      "indexed": false,
+                      "internalType": "uint256[]",
+                      "name": "ids",
+                      "type": "uint256[]"
+                    },
+                    {
+                      "indexed": false,
+                      "internalType": "uint256[]",
+                      "name": "values",
+                      "type": "uint256[]"
+                    }
+                  ],
+                  "name": "TransferBatch",
+                  "type": "event"
+                },
+                {
+                  "anonymous": false,
+                  "inputs": [
+                    {
+                      "indexed": true,
+                      "internalType": "address",
+                      "name": "operator",
+                      "type": "address"
+                    },
+                    {
+                      "indexed": true,
+                      "internalType": "address",
+                      "name": "from",
+                      "type": "address"
+                    },
+                    {
+                      "indexed": true,
+                      "internalType": "address",
+                      "name": "to",
+                      "type": "address"
+                    },
+                    {
+                      "indexed": false,
+                      "internalType": "uint256",
+                      "name": "id",
+                      "type": "uint256"
+                    },
+                    {
+                      "indexed": false,
+                      "internalType": "uint256",
+                      "name": "value",
+                      "type": "uint256"
+                    }
+                  ],
+                  "name": "TransferSingle",
+                  "type": "event"
+                },
+                {
+                  "anonymous": false,
+                  "inputs": [
+                    {
+                      "indexed": false,
+                      "internalType": "string",
+                      "name": "value",
+                      "type": "string"
+                    },
+                    {
+                      "indexed": true,
+                      "internalType": "uint256",
+                      "name": "id",
+                      "type": "uint256"
+                    }
+                  ],
+                  "name": "URI",
+                  "type": "event"
+                },
+                {
+                  "inputs": [
+                    {
+                      "internalType": "address",
+                      "name": "account",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "id",
+                      "type": "uint256"
+                    }
+                  ],
+                  "name": "balanceOf",
+                  "outputs": [
+                    {
+                      "internalType": "uint256",
+                      "name": "",
+                      "type": "uint256"
+                    }
+                  ],
+                  "stateMutability": "view",
+                  "type": "function"
+                },
+                {
+                  "inputs": [
+                    {
+                      "internalType": "address[]",
+                      "name": "accounts",
+                      "type": "address[]"
+                    },
+                    {
+                      "internalType": "uint256[]",
+                      "name": "ids",
+                      "type": "uint256[]"
+                    }
+                  ],
+                  "name": "balanceOfBatch",
+                  "outputs": [
+                    {
+                      "internalType": "uint256[]",
+                      "name": "",
+                      "type": "uint256[]"
+                    }
+                  ],
+                  "stateMutability": "view",
+                  "type": "function"
+                },
+                {
+                  "inputs": [
+                    {
+                      "internalType": "address",
+                      "name": "account",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "id",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "value",
+                      "type": "uint256"
+                    }
+                  ],
+                  "name": "burn",
+                  "outputs": [],
+                  "stateMutability": "nonpayable",
+                  "type": "function"
+                },
+                {
+                  "inputs": [
+                    {
+                      "internalType": "address",
+                      "name": "account",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256[]",
+                      "name": "ids",
+                      "type": "uint256[]"
+                    },
+                    {
+                      "internalType": "uint256[]",
+                      "name": "values",
+                      "type": "uint256[]"
+                    }
+                  ],
+                  "name": "burnBatch",
+                  "outputs": [],
+                  "stateMutability": "nonpayable",
+                  "type": "function"
+                },
+                {
+                  "inputs": [
+                    {
+                      "internalType": "address",
+                      "name": "account",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "operator",
+                      "type": "address"
+                    }
+                  ],
+                  "name": "isApprovedForAll",
+                  "outputs": [
+                    {
+                      "internalType": "bool",
+                      "name": "",
+                      "type": "bool"
+                    }
+                  ],
+                  "stateMutability": "view",
+                  "type": "function"
+                },
+                {
+                  "inputs": [
+                    {
+                      "internalType": "address",
+                      "name": "to",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "tokenId",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "amount",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bytes",
+                      "name": "data",
+                      "type": "bytes"
+                    }
+                  ],
+                  "name": "mint",
+                  "outputs": [],
+                  "stateMutability": "nonpayable",
+                  "type": "function"
+                },
+                {
+                  "inputs": [],
+                  "name": "name",
+                  "outputs": [
+                    {
+                      "internalType": "string",
+                      "name": "",
+                      "type": "string"
+                    }
+                  ],
+                  "stateMutability": "view",
+                  "type": "function"
+                },
+                {
+                  "inputs": [],
+                  "name": "owner",
+                  "outputs": [
+                    {
+                      "internalType": "address",
+                      "name": "",
+                      "type": "address"
+                    }
+                  ],
+                  "stateMutability": "view",
+                  "type": "function"
+                },
+                {
+                  "inputs": [],
+                  "name": "renounceOwnership",
+                  "outputs": [],
+                  "stateMutability": "nonpayable",
+                  "type": "function"
+                },
+                {
+                  "inputs": [
+                    {
+                      "internalType": "address",
+                      "name": "from",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "to",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256[]",
+                      "name": "ids",
+                      "type": "uint256[]"
+                    },
+                    {
+                      "internalType": "uint256[]",
+                      "name": "amounts",
+                      "type": "uint256[]"
+                    },
+                    {
+                      "internalType": "bytes",
+                      "name": "data",
+                      "type": "bytes"
+                    }
+                  ],
+                  "name": "safeBatchTransferFrom",
+                  "outputs": [],
+                  "stateMutability": "nonpayable",
+                  "type": "function"
+                },
+                {
+                  "inputs": [
+                    {
+                      "internalType": "address",
+                      "name": "from",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "address",
+                      "name": "to",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "id",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "amount",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "bytes",
+                      "name": "data",
+                      "type": "bytes"
+                    }
+                  ],
+                  "name": "safeTransferFrom",
+                  "outputs": [],
+                  "stateMutability": "nonpayable",
+                  "type": "function"
+                },
+                {
+                  "inputs": [
+                    {
+                      "internalType": "address",
+                      "name": "operator",
+                      "type": "address"
+                    },
+                    {
+                      "internalType": "bool",
+                      "name": "approved",
+                      "type": "bool"
+                    }
+                  ],
+                  "name": "setApprovalForAll",
+                  "outputs": [],
+                  "stateMutability": "nonpayable",
+                  "type": "function"
+                },
+                {
+                  "inputs": [
+                    {
+                      "internalType": "address",
+                      "name": "platformAddress",
+                      "type": "address"
+                    }
+                  ],
+                  "name": "setPlatformAddress",
+                  "outputs": [],
+                  "stateMutability": "nonpayable",
+                  "type": "function"
+                },
+                {
+                  "inputs": [
+                    {
+                      "internalType": "bytes4",
+                      "name": "interfaceId",
+                      "type": "bytes4"
+                    }
+                  ],
+                  "name": "supportsInterface",
+                  "outputs": [
+                    {
+                      "internalType": "bool",
+                      "name": "",
+                      "type": "bool"
+                    }
+                  ],
+                  "stateMutability": "view",
+                  "type": "function"
+                },
+                {
+                  "inputs": [],
+                  "name": "symbol",
+                  "outputs": [
+                    {
+                      "internalType": "string",
+                      "name": "",
+                      "type": "string"
+                    }
+                  ],
+                  "stateMutability": "view",
+                  "type": "function"
+                },
+                {
+                  "inputs": [
+                    {
+                      "internalType": "address",
+                      "name": "newOwner",
+                      "type": "address"
+                    }
+                  ],
+                  "name": "transferOwnership",
+                  "outputs": [],
+                  "stateMutability": "nonpayable",
+                  "type": "function"
+                },
+                {
+                  "inputs": [
+                    {
+                      "internalType": "uint256",
+                      "name": "",
+                      "type": "uint256"
+                    }
+                  ],
+                  "name": "uri",
+                  "outputs": [
+                    {
+                      "internalType": "string",
+                      "name": "",
+                      "type": "string"
+                    }
+                  ],
+                  "stateMutability": "view",
+                  "type": "function"
+                }
+              ]
+        ''',
+
+        'PLATFORM_CONTRACT_ADDRESS': '0xD5C6774B87Ec9b7f5b75a1438348719EC4e84E49',
         'PLATFORM_CONTRACT_ABI': '''
             [{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"to","type":"address"},
             {"indexed":false,"internalType":"uint256","name":"nftId","type":"uint256"},

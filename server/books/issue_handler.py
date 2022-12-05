@@ -1,5 +1,7 @@
 from stores.models import Trade
 from utils.redis_handler import IssueQueue
+from utils.smart_contract_handler import ContractFactory
+from django.db.transaction import atomic
 import pytz
 
 
@@ -24,15 +26,22 @@ class IssueHandler:
         })
 
     def off_sale(self):
-        # todo destroy unsold books by calling smart contract
+        # destroy unsold books by calling smart contract
+        contract = ContractFactory(self.obj.token_issue.block_chain)
+        txn_hash, isDestroyed = contract.burn(self.obj.book.author.address, self.obj.token_issue.id,
+                                              self.obj.quantity-self.obj.n_circulations)
+        print(f'Destroy NFT -> log: {txn_hash}')
+        self.obj.destroy_log = txn_hash
+        self.obj.save()
+        # delete trade
         Trade.objects.get(user=self.obj.book.author, issue=self.obj, first_release=True).delete()
 
     def unsold(self):
-        # todo destroy unsold books by calling smart contract
         Trade.objects.filter(user=self.obj.book.author, issue=self.obj, first_release=True).delete()
 
     def handle(self):
         _status = self.obj.status
         func = getattr(self, _status, None)
         if func is not None:
-            func()
+            with atomic():
+                func()

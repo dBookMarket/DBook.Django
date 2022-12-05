@@ -2,7 +2,9 @@ import os
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError
 from utils.views import BaseViewSet
+from utils.enums import IssueStatus
 from . import models, serializers, filters
 # from stores.models import Trade
 # from .pdf_handler import PDFHandler
@@ -41,6 +43,23 @@ class IssueViewSet(BaseViewSet):
     serializer_class = serializers.IssueSerializer
     filterset_class = filters.IssueFilter
     search_fields = ['book__title', 'book__desc', 'book__author__name']
+
+    @action(methods=['patch'], detail=True, url_path='resale')
+    def resale(self, request, *args, **kwargs):
+        """
+        Resale the book if it's unsold
+        """
+        obj = self.get_object()
+        if obj.status != IssueStatus.UNSOLD.value:
+            raise ValidationError({'detail': 'It is not allowed to resale this book except that it is unsold'})
+
+        obj.status = IssueStatus.PRE_SALE.value
+        serializer = self.get_serializer(obj, data=request.data, partial=True,
+                                         serializer_class=serializers.IssueResaleSerializer)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        return Response(serializer.data)
 
 
 class BookmarkViewSet(BaseViewSet):
