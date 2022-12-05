@@ -308,7 +308,7 @@ CONTRACT_SETTINGS = {
 
     'POLYGON': {
         'PROVIDER': 'https://rpc-mumbai.maticvigil.com',
-        'DBOOK_CONTRACT_ADDRESS': '0xcbF7AA75654120a98256AE50B1896A040AB14Ee6',
+        'DBOOK_CONTRACT_ADDRESS': '0x071997A12ab3344B4c39a74686819F45B63566a4',
         'DBOOK_CONTRACT_ABI': '''
             [
                 {
@@ -521,44 +521,21 @@ CONTRACT_SETTINGS = {
                   "inputs": [
                     {
                       "internalType": "address",
-                      "name": "account",
+                      "name": "to",
                       "type": "address"
                     },
                     {
                       "internalType": "uint256",
-                      "name": "id",
+                      "name": "tokenId",
                       "type": "uint256"
                     },
                     {
                       "internalType": "uint256",
-                      "name": "value",
+                      "name": "amount",
                       "type": "uint256"
                     }
                   ],
                   "name": "burn",
-                  "outputs": [],
-                  "stateMutability": "nonpayable",
-                  "type": "function"
-                },
-                {
-                  "inputs": [
-                    {
-                      "internalType": "address",
-                      "name": "account",
-                      "type": "address"
-                    },
-                    {
-                      "internalType": "uint256[]",
-                      "name": "ids",
-                      "type": "uint256[]"
-                    },
-                    {
-                      "internalType": "uint256[]",
-                      "name": "values",
-                      "type": "uint256[]"
-                    }
-                  ],
-                  "name": "burnBatch",
                   "outputs": [],
                   "stateMutability": "nonpayable",
                   "type": "function"
@@ -778,6 +755,19 @@ CONTRACT_SETTINGS = {
                   "type": "function"
                 },
                 {
+                  "inputs": [],
+                  "name": "totalSupply",
+                  "outputs": [
+                    {
+                      "internalType": "uint256",
+                      "name": "",
+                      "type": "uint256"
+                    }
+                  ],
+                  "stateMutability": "view",
+                  "type": "function"
+                },
+                {
                   "inputs": [
                     {
                       "internalType": "address",
@@ -812,7 +802,7 @@ CONTRACT_SETTINGS = {
               ]
         ''',
 
-        'PLATFORM_CONTRACT_ADDRESS': '0x90416Ff73FA42ff8f3Dfa58e52b625EAa5489786',
+        'PLATFORM_CONTRACT_ADDRESS': '0xc517B92B54C2D18c0De7FC1DC7752d4CD87D7010',
         'PLATFORM_CONTRACT_ABI': '''
             [
                 {
@@ -1403,7 +1393,7 @@ CONTRACT_SETTINGS = {
 
     'BNB': {
         'PROVIDER': 'https://bsc-testnet.public.blastapi.io',
-        'DBOOK_CONTRACT_ADDRESS': '0x8628E315b636224ed7e44aecf38fB6CFDb7Aa157',
+        'DBOOK_CONTRACT_ADDRESS': '0x1739553cB69bB0b80175D038D58cB133822411f7',
         'DBOOK_CONTRACT_ABI': '''
             [
                 {
@@ -1616,44 +1606,21 @@ CONTRACT_SETTINGS = {
                   "inputs": [
                     {
                       "internalType": "address",
-                      "name": "account",
+                      "name": "to",
                       "type": "address"
                     },
                     {
                       "internalType": "uint256",
-                      "name": "id",
+                      "name": "tokenId",
                       "type": "uint256"
                     },
                     {
                       "internalType": "uint256",
-                      "name": "value",
+                      "name": "amount",
                       "type": "uint256"
                     }
                   ],
                   "name": "burn",
-                  "outputs": [],
-                  "stateMutability": "nonpayable",
-                  "type": "function"
-                },
-                {
-                  "inputs": [
-                    {
-                      "internalType": "address",
-                      "name": "account",
-                      "type": "address"
-                    },
-                    {
-                      "internalType": "uint256[]",
-                      "name": "ids",
-                      "type": "uint256[]"
-                    },
-                    {
-                      "internalType": "uint256[]",
-                      "name": "values",
-                      "type": "uint256[]"
-                    }
-                  ],
-                  "name": "burnBatch",
                   "outputs": [],
                   "stateMutability": "nonpayable",
                   "type": "function"
@@ -1873,6 +1840,19 @@ CONTRACT_SETTINGS = {
                   "type": "function"
                 },
                 {
+                  "inputs": [],
+                  "name": "totalSupply",
+                  "outputs": [
+                    {
+                      "internalType": "uint256",
+                      "name": "",
+                      "type": "uint256"
+                    }
+                  ],
+                  "stateMutability": "view",
+                  "type": "function"
+                },
+                {
                   "inputs": [
                     {
                       "internalType": "address",
@@ -1907,7 +1887,7 @@ CONTRACT_SETTINGS = {
               ]
         ''',
 
-        'PLATFORM_CONTRACT_ADDRESS': '0xD5C6774B87Ec9b7f5b75a1438348719EC4e84E49',
+        'PLATFORM_CONTRACT_ADDRESS': '0xEa0455586142E99488DE372ec3898cB15F5800b9',
         'PLATFORM_CONTRACT_ABI': '''
             [{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"to","type":"address"},
             {"indexed":false,"internalType":"uint256","name":"nftId","type":"uint256"},

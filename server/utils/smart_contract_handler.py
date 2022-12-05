@@ -171,19 +171,21 @@ class PlatformContractHandler(object):
         receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash)
         return receipt['status'] == 1
 
-    def burn(self, owner: str, token_id: int, amount: int) -> bool:
+    def burn(self, owner: str, token_id: int, amount: int) -> tuple:
         try:
-            nonce = self.web3.eth.get_transaction_count(self.platform_account.address)
-            txn = self.dbook_contract.functions.burn(owner, token_id, amount).buildTransaction({
-                'from': self.platform_account.address, 'nonce': nonce, 'gasPrice': self.get_gas_price()
-            })
-            signed_txn = self.platform_account.sign_transaction(txn)
-            txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+            # nonce = self.web3.eth.get_transaction_count(self.platform_account.address)
+            # txn = self.dbook_contract.functions.burn(owner, token_id, amount).buildTransaction({
+            #     'from': self.platform_account.address, 'nonce': nonce, 'gasPrice': self.get_gas_price()
+            # })
+            # signed_txn = self.platform_account.sign_transaction(txn)
+            # txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+
+            txn_hash = self.dbook_contract.functions.burn(owner, token_id, amount).transact()
+            receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash)
+            return txn_hash.hex(), receipt['status'] == 1
         except Exception as e:
             print(f'Exception when setting nft price->{e}')
-            return False
-        receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash)
-        return receipt['status'] == 1
+            return '', False
 
 
 class PolygonHandler(PlatformContractHandler):

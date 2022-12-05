@@ -94,10 +94,10 @@ def post_save_issue(sender, instance, **kwargs):
         IssueHandler(instance).handle()
 
 
-@receiver(pre_save, sender=Issue)
-def pre_save_issue(sender, instance, **kwargs):
-    if instance.status == IssueStatus.OFF_SALE.value:
-        raise ValidationError(f"Sorry, it is not allowed to resale this book")
+# @receiver(pre_save, sender=Issue)
+# def pre_save_issue(sender, instance, **kwargs):
+#     if instance.status == IssueStatus.OFF_SALE.value:
+#         raise ValidationError(f"Sorry, it is not allowed to resale this book")
 
 
 @receiver(pre_delete, sender=Issue)
