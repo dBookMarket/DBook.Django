@@ -12,6 +12,7 @@ class TransactionHandler:
     def __init__(self, obj):
         self.obj = obj
 
+    @atomic
     def success(self):
         # 0, update issue
         if self.obj.trade.first_release:
@@ -95,5 +96,4 @@ class TransactionHandler:
     def handle(self):
         func = getattr(self, self.obj.status, None)
         if func:
-            with atomic():
-                func()
+            func()

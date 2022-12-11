@@ -60,24 +60,32 @@ def issue_timer():
                     issue.status = IssueStatus.ON_SALE.value
                     issue.save()
                     # prepare for sale
-                    IssueHandler(issue).handle()
-                    # set timer for ending the sale
-                    end_time = issue.published_at + timedelta(minutes=issue.duration)
-                    utc_time = end_time.astimezone(pytz.UTC)
-                    que.check_in(str(issue.id), utc_time.timestamp())
+                    # IssueHandler(issue).handle()
+                    # # set timer for ending the sale
+                    # end_time = issue.published_at + timedelta(minutes=issue.duration)
+                    # utc_time = end_time.astimezone(pytz.UTC)
+                    # que.check_in(str(issue.id), utc_time.timestamp())
                 elif issue.status == IssueStatus.ON_SALE.value:
                     # update status
                     if issue.n_circulations > 0:
                         issue.status = IssueStatus.OFF_SALE.value
+                        # destroy unsold books by calling smart contract
+                        contract = ContractFactory(issue.token_issue.block_chain)
+                        txn_hash, is_destroyed = contract.burn(issue.book.author.address, issue.token_issue.id,
+                                                               issue.quantity - issue.n_circulations)
+                        print(f'Destroy NFT {issue.id} -> log: {txn_hash}')
+                        issue.destroy_log = txn_hash
                     else:
                         issue.status = IssueStatus.UNSOLD.value
                     issue.save()
                     # make it clean after sale
-                    IssueHandler(issue).handle()
+                    # IssueHandler(issue).handle()
                     # quit queue
-                    que.check_out()
-                else:
-                    que.check_out()
+                    # que.check_out()
+                # else:
+                #     IssueHandler(issue).handle()
+                    # que.check_out()
+                IssueHandler(issue).handle()
 
 
 def pay_back():
