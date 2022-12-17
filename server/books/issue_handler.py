@@ -1,6 +1,6 @@
 from stores.models import Trade
 from utils.redis_handler import IssueQueue
-# from utils.smart_contract_handler import ContractFactory
+from utils.smart_contract_handler import ContractFactory
 # from django.db.transaction import atomic
 import pytz
 from datetime import timedelta
@@ -32,12 +32,12 @@ class IssueHandler:
 
     def off_sale(self):
         # # destroy unsold books by calling smart contract
-        # contract = ContractFactory(self.obj.token_issue.block_chain)
-        # txn_hash, isDestroyed = contract.burn(self.obj.book.author.address, self.obj.token_issue.id,
-        #                                       self.obj.quantity-self.obj.n_circulations)
-        # print(f'Destroy NFT -> log: {txn_hash}')
-        # self.obj.destroy_log = txn_hash
-        # self.obj.save()
+        contract = ContractFactory(self.obj.token_issue.block_chain)
+        txn_hash, is_destroyed = contract.burn(self.obj.book.author.address, self.obj.token_issue.id,
+                                               self.obj.quantity - self.obj.n_circulations)
+        print(f'Destroy NFT -> log: {txn_hash}')
+        self.obj.destroy_log = txn_hash
+        self.obj.save()
         # delete trade
         Trade.objects.filter(user=self.obj.book.author, issue=self.obj, first_release=True).delete()
         IssueQueue().check_out()

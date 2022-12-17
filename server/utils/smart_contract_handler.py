@@ -4,6 +4,10 @@ from django.conf import settings
 from utils.enums import BlockChainType, TransactionStatus
 
 
+class TransactionFailure(Exception):
+    pass
+
+
 class PlatformContractHandler(object):
     ADMIN_KEY = settings.CONTRACT_SETTINGS['ADMIN_KEY']
     PLATFORM_KEY = settings.CONTRACT_SETTINGS['PLATFORM_KEY']
@@ -20,7 +24,7 @@ class PlatformContractHandler(object):
         self.platform_account = self.web3.eth.account.from_key(self.PLATFORM_KEY)
 
         self.contract = None
-        self.dbook_contract = None
+        self.usdc_contract = None
 
     def to_usdc(self, amount: float) -> int:
         return int(amount * self.PRECISION)
@@ -59,6 +63,28 @@ class PlatformContractHandler(object):
         print(receipt)
         return bool(receipt['status'] == 1)
 
+    def approve_usdc_to_platform(self, amount: int, retry: int = 3):
+        """
+        Approve the platform contract amount of usdc to transfer.
+
+        :param amount: int, the number of usdc
+        :param retry: int, retry the transaction, default 3.
+        """
+        nonce = self.web3.eth.get_transaction_count(self.platform_account.address)
+        transaction = self.usdc_contract.functions.approve(self.contract.address, amount).buildTransaction({
+            'from': self.platform_account.address, 'nonce': nonce, 'gasPrice': self.get_gas_price()
+        })
+        signed_txn = self.platform_account.sign_transaction(transaction)
+        txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+        # get result
+        receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash)
+        if receipt['status'] != 1:
+            if retry > 0:
+                print(f'{4-retry}: retry to approve usdc to platform contract from platform wallet.')
+                self.approve_usdc_to_platform(amount, retry - 1)
+            else:
+                raise TransactionFailure('Failed to approve usdc to platform contract by platform wallet.')
+
     def first_trade(self, seller: str, payment: float, buyer: str, token_id: int, amount: int, mint_amount: int = 0):
         """
         trade of the issue from author
@@ -74,6 +100,9 @@ class PlatformContractHandler(object):
         # check address
         seller = Web3.toChecksumAddress(seller)
         buyer = Web3.toChecksumAddress(buyer)
+
+        # set approve
+        self.approve_usdc_to_platform(self.to_usdc(payment))
 
         # send transaction
         nonce = self.web3.eth.get_transaction_count(self.platform_account.address)
@@ -171,18 +200,24 @@ class PlatformContractHandler(object):
         receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash)
         return receipt['status'] == 1
 
-    def burn(self, owner: str, token_id: int, amount: int) -> tuple:
+    def burn(self, owner: str, token_id: int, amount: int, retry: int = 3) -> tuple:
         try:
-            # nonce = self.web3.eth.get_transaction_count(self.platform_account.address)
-            # txn = self.dbook_contract.functions.burn(owner, token_id, amount).buildTransaction({
-            #     'from': self.platform_account.address, 'nonce': nonce, 'gasPrice': self.get_gas_price()
-            # })
-            # signed_txn = self.platform_account.sign_transaction(txn)
-            # txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-
-            txn_hash = self.dbook_contract.functions.burn(owner, token_id, amount).transact()
+            nonce = self.web3.eth.get_transaction_count(self.admin_account.address)
+            txn = self.contract.functions.burn(owner, token_id, amount).buildTransaction({
+                'from': self.admin_account.address, 'nonce': nonce, 'gasPrice': self.get_gas_price()
+            })
+            signed_txn = self.admin_account.sign_transaction(txn)
+            txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
             receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash)
-            return txn_hash.hex(), receipt['status'] == 1
+
+            if receipt['status'] == 1:
+                return txn_hash.hex(), True
+            else:
+                if retry > 0:
+                    print(f'{4 - retry}: retry to burn {amount} nft({token_id}) of {owner}')
+                    self.burn(owner, token_id, amount, retry - 1)
+                else:
+                    return '', False
         except Exception as e:
             print(f'Exception when setting nft price->{e}')
             return '', False
@@ -196,9 +231,9 @@ class PolygonHandler(PlatformContractHandler):
             address=settings.CONTRACT_SETTINGS['POLYGON']['PLATFORM_CONTRACT_ADDRESS'],
             abi=settings.CONTRACT_SETTINGS['POLYGON']['PLATFORM_CONTRACT_ABI']
         )
-        self.dbook_contract = self.web3.eth.contract(
-            address=settings.CONTRACT_SETTINGS['POLYGON']['DBOOK_CONTRACT_ADDRESS'],
-            abi=settings.CONTRACT_SETTINGS['POLYGON']['DBOOK_CONTRACT_ABI']
+        self.usdc_contract = self.web3.eth.contract(
+            address=settings.CONTRACT_SETTINGS['POLYGON']['USDC_CONTRACT_ADDRESS'],
+            abi=settings.CONTRACT_SETTINGS['POLYGON']['USDC_CONTRACT_ABI']
         )
 
 
@@ -210,10 +245,11 @@ class BNBHandler(PlatformContractHandler):
             address=settings.CONTRACT_SETTINGS['BNB']['PLATFORM_CONTRACT_ADDRESS'],
             abi=settings.CONTRACT_SETTINGS['BNB']['PLATFORM_CONTRACT_ABI']
         )
-        self.dbook_contract = self.web3.eth.contract(
-            address=settings.CONTRACT_SETTINGS['BNB']['DBOOK_CONTRACT_ADDRESS'],
-            abi=settings.CONTRACT_SETTINGS['BNB']['DBOOK_CONTRACT_ABI']
+        self.usdc_contract = self.web3.eth.contract(
+            address=settings.CONTRACT_SETTINGS['BNB']['USDC_CONTRACT_ADDRESS'],
+            abi=settings.CONTRACT_SETTINGS['BNB']['USDC_CONTRACT_ABI']
         )
+
 
 
 class ContractFactory:
