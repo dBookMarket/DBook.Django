@@ -44,6 +44,16 @@ class IssueViewSet(BaseViewSet):
     filterset_class = filters.IssueFilter
     search_fields = ['book__title', 'book__desc', 'book__author__name']
 
+    @action(methods=['get'], detail=False, url_path='current', permission_classes=[IsAuthenticated])
+    def list_current(self, request, *args, **kwargs):
+        """
+        Fetch current user's wish list.
+        """
+        if not request.GET._mutable:
+            request.GET._mutable = True
+        request.GET['user'] = request.user
+        return super().list(request, *args, **kwargs)
+
     @action(methods=['patch'], detail=True, url_path='resale')
     def resale(self, request, *args, **kwargs):
         """
@@ -73,6 +83,16 @@ class AssetViewSet(BaseViewSet):
     serializer_class = serializers.AssetSerializer
     filterset_class = filters.AssetFilter
     http_method_names = ['get']
+
+    @action(methods=['get'], detail=False, url_path='current', permission_classes=[IsAuthenticated])
+    def list_current(self, request, *args, **kwargs):
+        """
+        Fetch current user's assets.
+        """
+        if not request.GET._mutable:
+            request.GET._mutable = True
+        request.GET['user'] = request.user
+        return super().list(request, *args, **kwargs)
 
     @action(methods=['get'], detail=True, url_path='read')
     def read(self, request, *args, **kwargs):

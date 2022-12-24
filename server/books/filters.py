@@ -47,13 +47,13 @@ class AssetFilter(django_filters.FilterSet):
         model = models.Asset
         fields = ['issue']
 
-    @property
-    def qs(self):
-        parent = super().qs
-        user = getattr(self.request, 'user', None)
-        if isinstance(user, AnonymousUser):
-            return {}
-        return parent.filter(user=user, quantity__gt=0)
+    # @property
+    # def qs(self):
+    #     parent = super().qs
+    #     user = getattr(self.request, 'user', None)
+    #     if isinstance(user, AnonymousUser):
+    #         return {}
+    #     return parent.filter(user=user, quantity__gt=0)
 
 
 class WishlistFilter(django_filters.FilterSet):
