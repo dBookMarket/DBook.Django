@@ -58,6 +58,33 @@ class Book(BaseModel):
         super().save(force_insert, force_update, using, update_fields)
 
 
+class Token(BaseModel):
+    issue = models.OneToOneField(to='Issue', to_field='id', related_name='token_issue',
+                                 on_delete=models.CASCADE, verbose_name='书籍')
+    contract_address = models.CharField(max_length=128, blank=True, default='', verbose_name='合约地址')
+
+    standard = models.CharField(max_length=150, blank=True, default='ERC1155', verbose_name='代币标准')
+    block_chain = models.CharField(max_length=150, choices=BlockChainType.choices(),
+                                   default=BlockChainType.POLYGON.value, verbose_name='区块链网络')
+    currency = models.CharField(max_length=150, blank=True, default='USDC', verbose_name='代币')
+
+    class Meta:
+        ordering = ['id', 'issue']
+        verbose_name = 'NFT信息'
+        verbose_name_plural = verbose_name
+
+    def __str__(self):
+        return f'{self.issue.book.title}'
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        if self.block_chain == BlockChainType.POLYGON.value:
+            self.contract_address = settings.CONTRACT_SETTINGS['POLYGON']['DBOOK_CONTRACT_ADDRESS']
+        elif self.block_chain == BlockChainType.BNB.value:
+            self.contract_address = settings.CONTRACT_SETTINGS['BNB']['DBOOK_CONTRACT_ADDRESS']
+        super().save(force_insert, force_update, using, update_fields)
+
+
 class Issue(BaseModel):
     """
     Only one issue of a book can be allowed to create
@@ -90,34 +117,10 @@ class Issue(BaseModel):
 
     @property
     def token(self):
-        return self.token_issue
-
-
-class Token(BaseModel):
-    issue = models.OneToOneField(to='Issue', to_field='id', related_name='token_issue',
-                                 on_delete=models.CASCADE, verbose_name='书籍')
-    contract_address = models.CharField(max_length=128, blank=True, default='', verbose_name='合约地址')
-
-    standard = models.CharField(max_length=150, blank=True, default='ERC1155', verbose_name='代币标准')
-    block_chain = models.CharField(max_length=150, choices=BlockChainType.choices(),
-                                   default=BlockChainType.POLYGON.value, verbose_name='区块链网络')
-    currency = models.CharField(max_length=150, blank=True, default='USDC', verbose_name='代币')
-
-    class Meta:
-        ordering = ['id', 'issue']
-        verbose_name = 'NFT信息'
-        verbose_name_plural = verbose_name
-
-    def __str__(self):
-        return f'{self.issue.book.title}'
-
-    def save(self, force_insert=False, force_update=False, using=None,
-             update_fields=None):
-        if self.block_chain == BlockChainType.POLYGON.value:
-            self.contract_address = settings.CONTRACT_SETTINGS['POLYGON']['DBOOK_CONTRACT_ADDRESS']
-        elif self.block_chain == BlockChainType.BNB.value:
-            self.contract_address = settings.CONTRACT_SETTINGS['BNB']['DBOOK_CONTRACT_ADDRESS']
-        super().save(force_insert, force_update, using, update_fields)
+        try:
+            return Token.objects.get(issue=self)
+        except Token.DoesNotExist:
+            return None
 
 
 class Bookmark(BaseModel):

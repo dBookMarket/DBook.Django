@@ -70,8 +70,8 @@ def issue_timer():
                     if issue.n_circulations > 0:
                         issue.status = IssueStatus.OFF_SALE.value
                         # destroy unsold books by calling smart contract
-                        contract = ContractFactory(issue.token_issue.block_chain)
-                        txn_hash, is_destroyed = contract.burn(issue.book.author.address, issue.token_issue.id,
+                        contract = ContractFactory(issue.token.block_chain)
+                        txn_hash, is_destroyed = contract.burn(issue.book.author.address, issue.token.id,
                                                                issue.quantity - issue.n_circulations)
                         print(f'Destroy NFT {issue.id} -> log: {txn_hash}')
                         issue.destroy_log = txn_hash

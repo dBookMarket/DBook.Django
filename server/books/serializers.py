@@ -115,7 +115,7 @@ class BookSerializer(BaseSerializer):
 class BookListingSerializer(BookSerializer):
     class Meta:
         model = models.Book
-        fields = ['id', 'title', 'desc', 'cover_url', 'author', 'bookmark']
+        fields = ['id', 'title', 'desc', 'cover_url', 'author']
 
 
 class TokenSerializer(BaseSerializer):
