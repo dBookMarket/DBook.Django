@@ -51,7 +51,7 @@ class IssueViewSet(BaseViewSet):
         """
         if not request.GET._mutable:
             request.GET._mutable = True
-        request.GET['user'] = request.user
+        request.GET['book__author'] = request.user
         return super().list(request, *args, **kwargs)
 
     @action(methods=['patch'], detail=True, url_path='resale')

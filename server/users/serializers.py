@@ -66,10 +66,14 @@ class UserSerializer(serializers.ModelSerializer):
         try:
             if obj.is_verified:
                 queryset = Issue.objects.filter(book__author=obj)
-                t_books = queryset.count()
+                # t_books = queryset.count()
+                t_books = 0
                 t_volume = 0
                 sales = 0
+                n_destroyed = 0
                 for obj_issue in queryset:
+                    t_books += obj_issue.quantity
+                    n_destroyed += obj_issue.quantity - obj_issue.n_circulations
                     t_volume += obj_issue.price * obj_issue.quantity
                     sales += obj_issue.price * obj_issue.n_circulations
                 tmp = queryset.aggregate(min_price=Min('price'), max_price=Max('price'))
@@ -80,6 +84,7 @@ class UserSerializer(serializers.ModelSerializer):
                     'max_price': tmp['max_price'],
                     'total_books': t_books,
                     'sales': sales,
+                    'n_destroyed': n_destroyed,
                     'n_owners': n_owners
                 }
             return {}
