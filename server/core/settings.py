@@ -3176,7 +3176,7 @@ LINKEDIN_SETTINGS = {
     'client_secret': os.getenv('LINKEDIN_CLIENT_SECRET', '')
 }
 
-SOCIAL_MEDIA_REDIRECT_URI = 'http://dbookmarket.com:56789' #'https://www.dbookmarket.com'
+SOCIAL_MEDIA_REDIRECT_URI = os.getenv('SOCIAL_MEDIA_REDIRECT_URI', 'https://www.dbookmarket.com')
 
 # platform royalty
 PLATFORM_ROYALTY = 0.3

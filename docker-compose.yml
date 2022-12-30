@@ -65,6 +65,9 @@ services:
       ADMIN_NAME: ${ADMIN_NAME}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
+      # SOCIAL_MEDIA_REDIRECT_URI
+      # http://dbookmarket.com:56789
+      SOCIAL_MEDIA_REDIRECT_URI: ${SOCIAL_MEDIA_REDIRECT_URI}
       <<: *block-chain
       <<: *db
       # <<: *rabbitMQ
