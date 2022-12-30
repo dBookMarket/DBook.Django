@@ -308,7 +308,7 @@ CONTRACT_SETTINGS = {
 
     'POLYGON': {
         'PROVIDER': 'https://rpc-mumbai.maticvigil.com',
-        # 'DBOOK_CONTRACT_ADDRESS': '0x071997A12ab3344B4c39a74686819F45B63566a4',
+        'DBOOK_CONTRACT_ADDRESS': '0x7C850235538410e46045873c6F7e86458F942136',
         # 'DBOOK_CONTRACT_ABI': '''
         #     [
         #         {
@@ -1718,7 +1718,7 @@ CONTRACT_SETTINGS = {
 
     'BNB': {
         'PROVIDER': 'https://bsc-testnet.public.blastapi.io',
-        # 'DBOOK_CONTRACT_ADDRESS': '0x1739553cB69bB0b80175D038D58cB133822411f7',
+        'DBOOK_CONTRACT_ADDRESS': '0xcf0b52b899Ac7ec7cfBdB022C2382bBb050C6Fc3',
         # 'DBOOK_CONTRACT_ABI': '''
         #     [
         #         {
@@ -3176,7 +3176,7 @@ LINKEDIN_SETTINGS = {
     'client_secret': os.getenv('LINKEDIN_CLIENT_SECRET', '')
 }
 
-SOCIAL_MEDIA_REDIRECT_URI = 'https://www.dbookmarket.com'
+SOCIAL_MEDIA_REDIRECT_URI = 'http://dbookmarket.com:56789' #'https://www.dbookmarket.com'
 
 # platform royalty
 PLATFORM_ROYALTY = 0.3

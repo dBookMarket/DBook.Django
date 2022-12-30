@@ -80,7 +80,7 @@ class PlatformContractHandler(object):
         receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash)
         if receipt['status'] != 1:
             if retry > 0:
-                print(f'{4-retry}: retry to approve usdc to platform contract from platform wallet.')
+                print(f'{4 - retry}: retry to approve usdc to platform contract from platform wallet.')
                 self.approve_usdc_to_platform(amount, retry - 1)
             else:
                 raise TransactionFailure('Failed to approve usdc to platform contract by platform wallet.')
@@ -249,7 +249,6 @@ class BNBHandler(PlatformContractHandler):
             address=settings.CONTRACT_SETTINGS['BNB']['USDC_CONTRACT_ADDRESS'],
             abi=settings.CONTRACT_SETTINGS['BNB']['USDC_CONTRACT_ABI']
         )
-
 
 
 class ContractFactory:

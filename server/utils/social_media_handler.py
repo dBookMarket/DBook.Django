@@ -207,7 +207,7 @@ class TwitterHandler(SocialMediaHandler):
         # get user info
         sm_user = self.get_user(access_token, access_token_secret)
         # save user
-        user = User.objects.get(account_addr=wallet_addr)
+        user = User.objects.get(address=wallet_addr)
         social_media, _ = Account.objects.update_or_create(user=user, type=SocialMediaType.TWITTER.value,
                                                            defaults={**sm_user, **{'shared': False}})
 
@@ -366,7 +366,7 @@ class LinkedInHandler(SocialMediaHandler):
         # get user
         sm_user = self.get_user(access_token)
         # save user
-        user = User.objects.get(account_addr=wallet_addr)
+        user = User.objects.get(address=wallet_addr)
         social_media, _ = Account.objects.update_or_create(user=user, type=SocialMediaType.LINKEDIN.value,
                                                            defaults={**sm_user, **{'shared': False}})
 

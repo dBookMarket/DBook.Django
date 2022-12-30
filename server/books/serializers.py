@@ -42,6 +42,14 @@ class BookSerializer(BaseSerializer):
     preview = serializers.SerializerMethodField(read_only=True)
     n_pages = serializers.ReadOnlyField()
     cid = serializers.ReadOnlyField()
+    has_issued = serializers.SerializerMethodField(read_only=True)
+
+    def get_has_issued(self, obj):
+        try:
+            models.Issue.objects.get(book=obj)
+            return True
+        except models.Issue.DoesNotExist:
+            return False
 
     def get_preview(self, obj):
         try:
@@ -52,15 +60,6 @@ class BookSerializer(BaseSerializer):
 
     def get_cover_url(self, obj):
         return self.get_absolute_uri(obj.cover)
-
-    # def get_status(self, obj):
-    #     if not obj.task_id:
-    #         return 'pending'
-    #     fsc = FileServiceConnector()
-    #     result = fsc.get_async_result(obj.task_id)
-    #     if result is None:
-    #         return 'failure'
-    #     return result.status.lower()
 
     class Meta:
         model = models.Book
@@ -115,7 +114,7 @@ class BookSerializer(BaseSerializer):
 class BookListingSerializer(BookSerializer):
     class Meta:
         model = models.Book
-        fields = ['id', 'title', 'desc', 'cover_url', 'author']
+        fields = ['id', 'title', 'desc', 'cover_url', 'author', 'has_issued']
 
 
 class TokenSerializer(BaseSerializer):
@@ -166,7 +165,8 @@ class BookRelatedField(CustomPKRelatedField):
 
 class IssueSerializer(BaseSerializer):
     # book = serializers.PrimaryKeyRelatedField(queryset=models.Book.objects.all(), many=False)
-    book = BookRelatedField(required=True, queryset=models.Book.objects.all(), many=False)
+    book = BookRelatedField(required=True, queryset=models.Book.objects.all(), many=False,
+                            validators=[UniqueValidator(queryset=models.Issue.objects.all())])
     quantity = serializers.IntegerField()
     price = serializers.FloatField()
     royalty = serializers.FloatField(required=False, min_value=0, max_value=100)
