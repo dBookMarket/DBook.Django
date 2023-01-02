@@ -185,6 +185,7 @@ class IssueSerializer(BaseSerializer):
     is_wished = serializers.SerializerMethodField(read_only=True)
     n_owners = serializers.SerializerMethodField(read_only=True)
     bookmark = serializers.SerializerMethodField(read_only=True)
+    n_owned = serializers.SerializerMethodField(read_only=True)
 
     # token info
     token = TokenSerializer(required=True, many=False)
@@ -215,7 +216,7 @@ class IssueSerializer(BaseSerializer):
             n_sales = Trade.objects.filter(user=user, issue=obj).aggregate(t_amount=Sum('quantity'))['t_amount']
             if n_sales is None:
                 n_sales = 0
-            return obj_asset.amount - n_sales
+            return obj_asset.quantity - n_sales
         except models.Asset.DoesNotExist:
             return 0
 
@@ -229,10 +230,21 @@ class IssueSerializer(BaseSerializer):
 
     def get_is_owned(self, obj):
         user = self.context['request'].user
+        if isinstance(user, AnonymousUser):
+            return False
         try:
-            return models.Asset.objects.get(user=user, issue=obj).amount > 0
+            return models.Asset.objects.get(user=user, issue=obj).quantity > 0
         except models.Asset.DoesNotExist:
             return False
+
+    def get_n_owned(self, obj):
+        user = self.context['request'].user
+        if isinstance(user, AnonymousUser):
+            return 0
+        try:
+            return models.Asset.objects.get(user=user, issue=obj).quantity
+        except models.Asset.DoesNotExist:
+            return 0
 
     def get_n_owners(self, obj):
         return models.Asset.objects.filter(issue=obj).count()
