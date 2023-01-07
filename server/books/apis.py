@@ -98,7 +98,7 @@ class AssetViewSet(BaseViewSet):
     def read(self, request, *args, **kwargs):
         """
         0, check if the user has this book or not?
-        1, fetch files from filecoin
+        1, fetch files from file coin
         2, decrypt files
         3, merge files into pdf
         """
@@ -112,7 +112,12 @@ class AssetViewSet(BaseViewSet):
             with RedisLock(f'{cache_key}-lock'):
                 path = cache.get_value(cache_key)
                 if path is None:
-                    encryption_key = models.EncryptionKey.objects.get(user=obj.issue.book.author, book=obj.issue.book)
+                    try:
+                        encryption_key = models.EncryptionKey.objects.get(user=obj.issue.book.author,
+                                                                          book=obj.issue.book)
+                    except models.EncryptionKey.DoesNotExist:
+                        print(f'encryption key not found for book {obj.issue.book.id}')
+                        return Response(status=status.HTTP_404_NOT_FOUND)
                     path = FileServiceConnector().download_file(obj.issue.book.cid, encryption_key.key,
                                                                 obj.issue.book.type)
                     cache.set_value(cache_key, path)

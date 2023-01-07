@@ -18,6 +18,7 @@ class Draft(BaseModel):
     content = models.TextField(max_length=1000000, verbose_name='内容')
 
     class Meta:
+        ordering = ['id']
         verbose_name = '草稿'
         verbose_name_plural = verbose_name
 

@@ -10,7 +10,7 @@ from weasyprint import HTML
 from django.conf import settings
 import os
 import uuid
-# from django.core.files import File
+from django.core.files import File
 from books.models import Preview
 from books.signals import sig_issue_new_book
 from books.issue_handler import IssueHandler
@@ -59,13 +59,13 @@ def issue_new_book(sender, instance, **kwargs):
         filename = f'{uuid.uuid4().hex}.pdf'
         filepath = os.path.join(settings.TEMPORARY_ROOT, filename)
         HTML(string=instance.draft.content).write_pdf(filepath)
-        # try:
-        #     with open(filepath, 'rb') as f:
-        #         instance.file.save(f'{instance.draft.title}.pdf', File(f))
-        # finally:
-        #     os.remove(filepath)
-        instance.file = f'{settings.TEMPORARY_DIR}/{filename}'
-        instance.save()
+        try:
+            with open(filepath, 'rb') as f:
+                instance.file.save(f'{instance.draft.title}.pdf', File(f))
+        finally:
+            os.remove(filepath)
+        # instance.file = f'{settings.TEMPORARY_DIR}/{filename}'
+        # instance.save()
     # add preview
     # pdf_handler = PDFHandler(instance.file.path)
     f_handler = FileHandlerFactory(instance.type, instance.file.path)

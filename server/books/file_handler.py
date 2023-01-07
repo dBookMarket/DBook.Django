@@ -208,7 +208,7 @@ class FileHandlerFactory:
             return PDFHandler(file)
         elif _type == 'epub':
             return EPUBHandler(file)
-        elif _type == 'text':
+        elif _type == 'txt':
             return TextHandler(file)
         else:
             raise TypeError(f'Type {_type} is not supported.')

@@ -3,7 +3,7 @@ from utils.serializers import BaseSerializer
 from utils.enums import IssueStatus
 from rest_framework.validators import UniqueValidator
 from books.models import Asset, Issue
-from books.serializers import BookListingSerializer, IssueListingSerializer
+from books.serializers import BookListingSerializer, IssueListingSerializer, IssueRelatedField
 from users.models import User
 from users.serializers import UserListingSerializer, UserRelatedField
 from . import models
@@ -15,7 +15,7 @@ from rest_framework.validators import UniqueTogetherValidator
 class TradeSerializer(BaseSerializer):
     user = UserRelatedField(required=False, queryset=User.objects.all(), default=serializers.CurrentUserDefault(),
                             many=False)
-    issue = serializers.PrimaryKeyRelatedField(queryset=Issue.objects.all(), many=False)
+    issue = IssueRelatedField(queryset=Issue.objects.all(), many=False)
     quantity = serializers.IntegerField(required=True)
     price = serializers.FloatField(required=True)
     is_owned = serializers.SerializerMethodField(read_only=True)
