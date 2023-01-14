@@ -130,6 +130,13 @@ class TokenSerializer(BaseSerializer):
         fields = '__all__'
 
 
+class TokenNestSerializer(TokenSerializer):
+    issue = serializers.PrimaryKeyRelatedField(required=False, queryset=models.Issue.objects.all(), many=False)
+
+    class Meta(TokenSerializer.Meta):
+        fields = '__all__'
+
+
 class PreviewSerializer(BaseSerializer):
     book = serializers.PrimaryKeyRelatedField(queryset=models.Book.objects.all(), many=False,
                                               validators=[UniqueValidator(queryset=models.Preview.objects.all())])
@@ -188,11 +195,17 @@ class IssueSerializer(BaseSerializer):
     n_owned = serializers.SerializerMethodField(read_only=True)
 
     # token info
-    token = TokenSerializer(required=True, many=False)
+    token = TokenNestSerializer(required=True, many=False)
 
     class Meta:
         model = models.Issue
         fields = '__all__'
+
+    def validate_token(self, value):
+        token_issue = value.get('issue')
+        if token_issue and self.instance and token_issue.id != self.instance.id:
+            raise serializers.ValidationError('The token does not belong to this issue')
+        return value
 
     def validate_book(self, value):
         if value.status != CeleryTaskStatus.SUCCESS.value:
@@ -286,8 +299,14 @@ class IssueSerializer(BaseSerializer):
         token = validated_data.pop('token', None)
         obj_issue = super().update(instance, validated_data)
         if token:
-            token_id = token.pop('id', None)
-            models.Token.objects.update_or_create(defaults={**{'issue': obj_issue}, **token}, id=token_id)
+            token['issue'] = obj_issue
+            try:
+                obj_token = models.Token.objects.get(issue=obj_issue)
+                for key, value in token.items():
+                    setattr(obj_token, key, value)
+                obj_token.save()
+            except models.Token.DoesNotExist:
+                models.Token.objects.create(**token)
         return obj_issue
 
 
