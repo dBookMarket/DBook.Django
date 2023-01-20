@@ -5,6 +5,7 @@ from utils.smart_contract_handler import ContractFactory
 from utils.redis_accessor import RedisLock
 from django.conf import settings
 from django.db.transaction import atomic
+from django.core.exceptions import ObjectDoesNotExist
 
 
 class TransactionHandler:
@@ -59,15 +60,21 @@ class TransactionHandler:
             })
 
     def pending(self):
-        # if it's a first trade, call the smart contract to send a transaction on block chain polygon or bnb.
-        first_transaction = bool(self.obj.trade.first_release and self.obj.issue.n_circulations == 0)
         # call smart contract
-        chain_type = self.obj.issue.token_issue.block_chain
+        try:
+            chain_type = self.obj.issue.token_issue.block_chain
+        except ObjectDoesNotExist as e:
+            print(f'Object does not exist -> {e}')
+            return
+
         handler = ContractFactory(chain_type)
         payment = self.obj.quantity * self.obj.price * (1 - settings.PLATFORM_ROYALTY)
-        if first_transaction:
+
+        # if it's a first trade, call the smart contract to send a transaction on block chain polygon or bnb.
+        if bool(self.obj.trade.first_release and self.obj.issue.n_circulations == 0):
             with RedisLock(f'issue_first_transaction_lock_{self.obj.issue.id}'):
-                if first_transaction:
+                # if it's a first trade, call the smart contract to send a transaction on block chain polygon or bnb.
+                if bool(self.obj.trade.first_release and self.obj.issue.n_circulations == 0):
                     res = handler.first_trade(self.obj.seller.address, payment,
                                               self.obj.buyer.address, self.obj.issue.token_issue.id, self.obj.quantity,
                                               self.obj.issue.quantity)
