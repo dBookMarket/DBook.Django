@@ -90,7 +90,7 @@ class Issue(BaseModel):
     """
     Only one issue of a book can be allowed to create
     """
-    id = models.UUIDField(verbose_name='id', primary_key=True, blank=True, default=uuid.uuid4())
+    id = models.UUIDField(verbose_name='id', primary_key=True, default=uuid.uuid4, editable=False)
 
     book = models.OneToOneField(to='Book', to_field='id', related_name='issue_book', verbose_name='书籍',
                                 on_delete=models.CASCADE)
