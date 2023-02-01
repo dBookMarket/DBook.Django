@@ -1,5 +1,4 @@
 from stores.models import Trade
-from books.models import Token
 from utils.redis_handler import IssueQueue
 import pytz
 from datetime import timedelta
@@ -11,13 +10,6 @@ class IssueHandler:
         self.obj = obj
 
     def pre_sale(self):
-        # check if has block chain information
-        try:
-            Token.objects.get(issue=self.obj)
-        except Token.DoesNotExist:
-            print(f'token not found for issue {self.obj.id}')
-            return
-
         # send the issue to a queue
         print(f'pre sale, published at {self.obj.published_at}')
         utc_time = self.obj.published_at.astimezone(pytz.UTC)

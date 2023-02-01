@@ -1,4 +1,4 @@
-from books.models import Book, EncryptionKey, Issue
+from books.models import Book, EncryptionKey, Issue, Token
 from stores.models import Transaction
 from django.db.transaction import atomic
 from utils.enums import CeleryTaskStatus, IssueStatus, TransactionStatus
@@ -6,8 +6,6 @@ from books.file_service_connector import FileServiceConnector
 from utils.redis_handler import IssueQueue
 from utils.smart_contract_handler import ContractFactory
 from books.issue_handler import IssueHandler
-from datetime import timedelta
-import pytz
 
 
 def watch_celery_task():
@@ -56,8 +54,15 @@ def issue_timer():
         for issue in queryset:
             with atomic():
                 if issue.status == IssueStatus.PRE_SALE.value:
-                    # update status
-                    issue.status = IssueStatus.ON_SALE.value
+                    # check if has block chain information
+                    # When a new issue is added, the token has not been created after issue saving.
+                    try:
+                        Token.objects.get(issue=issue)
+                        # update status
+                        issue.status = IssueStatus.ON_SALE.value
+                    except Token.DoesNotExist:
+                        print(f'token not found for issue {issue.id}')
+                        issue.status = IssueStatus.UNSOLD.value
                     issue.save()
                     # prepare for sale
                     # IssueHandler(issue).handle()
