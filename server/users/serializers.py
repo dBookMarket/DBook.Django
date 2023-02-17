@@ -4,6 +4,7 @@ from rest_framework.exceptions import PermissionDenied
 from .models import User, Fans
 from utils.serializers import CustomPKRelatedField
 from django.db.models import Min, Max
+from django.contrib.auth.models import AnonymousUser
 from books.models import Issue, Asset
 
 
@@ -42,6 +43,8 @@ class UserSerializer(serializers.ModelSerializer):
     banner_url = serializers.SerializerMethodField(read_only=True)
 
     statistic = serializers.SerializerMethodField(read_only=True)
+
+    is_fans = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = User
@@ -90,6 +93,12 @@ class UserSerializer(serializers.ModelSerializer):
             return {}
         except AttributeError:
             return {}
+
+    def get_is_fans(self, obj):
+        user = self.context.get('request').user
+        if isinstance(user, AnonymousUser):
+            return False
+        return Fans.objects.filter(user=user, author=obj).count() > 0
 
     def validate(self, attrs):
         super().validate(attrs)
