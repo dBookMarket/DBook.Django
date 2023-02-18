@@ -32,6 +32,11 @@ class BookViewSet(BaseViewSet):
     serializer_class = serializers.BookSerializer
     filterset_class = filters.BookFilter
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        issued_books = [issue.book.id for issue in models.Issue.objects.filter(book__in=queryset)]
+        return queryset.exclude(id__in=issued_books)
+
     def list(self, request, *args, **kwargs):
         kwargs['serializer_class'] = serializers.BookListingSerializer
         return super().list(request, *args, **kwargs)

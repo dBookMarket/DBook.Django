@@ -59,7 +59,6 @@ class TransactionHandler:
                 'currency': self.obj.issue.token_issue.currency
             })
 
-    @atomic
     def pending(self):
         # call smart contract
         try:
@@ -71,32 +70,39 @@ class TransactionHandler:
         handler = ContractFactory(chain_type)
         payment = self.obj.quantity * self.obj.price * (1 - settings.PLATFORM_ROYALTY)
 
-        # if it's a first trade, call the smart contract to send a transaction on block chain polygon or bnb.
-        if bool(self.obj.trade.first_release and self.obj.issue.n_circulations == 0):
-            with RedisLock(f'issue_first_transaction_lock_{self.obj.issue.id}'):
-                # if it's a first trade, call the smart contract to send a transaction on block chain polygon or bnb.
-                if bool(self.obj.trade.first_release and self.obj.issue.n_circulations == 0):
-                    res = handler.first_trade(self.obj.seller.address, payment,
-                                              self.obj.buyer.address, self.obj.issue.token_issue.id, self.obj.quantity,
-                                              self.obj.issue.quantity)
-                    if res['status'] == TransactionStatus.SUCCESS.value:
-                        handler.set_token_info(self.obj.issue.token_issue.id, self.obj.seller.address,
-                                               self.obj.issue.royalty, self.obj.issue.price)
+        try:
+            # if it's a first trade, call the smart contract to send a transaction on block chain polygon or bnb.
+            if bool(self.obj.trade.first_release and self.obj.issue.n_circulations == 0):
+                with RedisLock(f'issue_first_transaction_lock_{self.obj.issue.id}'):
+                    # if it's a first trade, call the smart contract to
+                    # send a transaction on block chain polygon or bnb.
+                    if bool(self.obj.trade.first_release and self.obj.issue.n_circulations == 0):
+                        res = handler.first_trade(self.obj.seller.address, payment,
+                                                  self.obj.buyer.address, self.obj.issue.token_issue.id,
+                                                  self.obj.quantity, self.obj.issue.quantity)
+                        if res['status'] == TransactionStatus.SUCCESS.value:
+                            handler.set_token_info(self.obj.issue.token_issue.id, self.obj.seller.address,
+                                                   self.obj.issue.royalty, self.obj.issue.price)
+                        else:
+                            # pay money back
+                            pass
                     else:
-                        # pay money back
-                        pass
-                else:
-                    res = handler.first_trade(self.obj.seller.address, payment,
-                                              self.obj.buyer.address, self.obj.issue.token_issue.id, self.obj.quantity)
-        else:
-            res = handler.first_trade(self.obj.seller.address, payment,
-                                      self.obj.buyer.address, self.obj.issue.token_issue.id, self.obj.quantity)
-        # update transaction info
-        self.obj.hash = res['hash']
-        self.obj.status = res['status']
-        # avoid unlimited recursive
-        if self.obj.status != TransactionStatus.PENDING.value:
+                        res = handler.first_trade(self.obj.seller.address, payment, self.obj.buyer.address,
+                                                  self.obj.issue.token_issue.id, self.obj.quantity)
+            else:
+                res = handler.first_trade(self.obj.seller.address, payment,
+                                          self.obj.buyer.address, self.obj.issue.token_issue.id, self.obj.quantity)
+        except Exception as e:
+            print(f'Fail to set transaction for issue {self.obj.issue.id} -> {e}')
+            self.obj.status = TransactionStatus.FAILURE.value
             self.obj.save()
+        else:
+            # update transaction info
+            self.obj.hash = res['hash']
+            self.obj.status = res['status']
+            # avoid unlimited recursive
+            if self.obj.status != TransactionStatus.PENDING.value:
+                self.obj.save()
 
     def failure(self):
         pass

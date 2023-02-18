@@ -18,7 +18,7 @@ class Draft(BaseModel):
     content = models.TextField(max_length=1000000, verbose_name='内容')
 
     class Meta:
-        ordering = ['id']
+        ordering = ['-updated_at']
         verbose_name = '草稿'
         verbose_name_plural = verbose_name
 
@@ -173,7 +173,7 @@ class Asset(BaseModel):
     # file = models.FileField(upload_to='tmp', blank=True, default='')
 
     class Meta:
-        ordering = ['id']
+        ordering = ['-updated_at']
         verbose_name = '个人资产'
         verbose_name_plural = verbose_name
 
@@ -223,7 +223,7 @@ class Wishlist(BaseModel):
                               verbose_name='发行书籍')
 
     class Meta:
-        ordering = ['id']
+        ordering = ['-updated_at']
         verbose_name = '心愿单'
         verbose_name_plural = verbose_name
 
@@ -237,7 +237,7 @@ class Advertisement(BaseModel):
     show = models.BooleanField(blank=True, default=True, verbose_name='是否显示')
 
     class Meta:
-        ordering = ['id']
+        ordering = ['-updated_at']
         verbose_name = '广告'
         verbose_name_plural = verbose_name
 

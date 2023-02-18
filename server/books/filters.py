@@ -45,7 +45,7 @@ class IssueFilter(django_filters.FilterSet):
 class AssetFilter(django_filters.FilterSet):
     class Meta:
         model = models.Asset
-        fields = ['issue']
+        fields = ['issue', 'user']
 
     # @property
     # def qs(self):
@@ -65,7 +65,7 @@ class WishlistFilter(django_filters.FilterSet):
 class AdvertisementFilter(django_filters.FilterSet):
     class Meta:
         model = models.Advertisement
-        fields = ['show', 'issue']
+        fields = ['issue']
 
     @property
     def qs(self):

@@ -114,7 +114,7 @@ class BookSerializer(BaseSerializer):
 class BookListingSerializer(BookSerializer):
     class Meta:
         model = models.Book
-        fields = ['id', 'title', 'desc', 'cover_url', 'author', 'has_issued']
+        fields = ['id', 'title', 'desc', 'cover_url', 'author', 'has_issued', 'status']
 
 
 class TokenSerializer(BaseSerializer):
@@ -312,7 +312,7 @@ class IssueSerializer(BaseSerializer):
 
 class IssueListingSerializer(IssueSerializer):
     class Meta(IssueSerializer.Meta):
-        fields = ['id', 'book', 'price', 'quantity', 'n_circulations', 'published_at']
+        fields = ['id', 'book', 'price', 'quantity', 'n_circulations', 'published_at', 'status']
 
 
 class IssueResaleSerializer(IssueSerializer):

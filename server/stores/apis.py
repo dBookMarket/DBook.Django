@@ -70,12 +70,13 @@ class BenefitViewSet(BaseViewSet):
     serializer_class = serializers.BenefitSerializer
     http_method_names = ['get']
 
-    @action(methods=['get'], detail=False, url_path='total')
+    @action(methods=['get'], detail=False, url_path='total', permission_classes=[IsAuthenticated])
     def total(self, request, *args, **kwargs):
         """
         return the user's total benefit
         """
         queryset = self.filter_queryset(self.get_queryset())
-        t_benefits = queryset.values('currency').annotate(t_amount=Sum('amount')).values('currency', 't_amount')
-        res = [{'currency': _obj.currency, 'amount': _obj.t_amount} for _obj in t_benefits]
+        t_benefits = queryset.filter(user=request.user).values('currency').annotate(t_amount=Sum('amount')).values(
+            'currency', 't_amount')
+        res = [{'currency': _obj.get('currency', 0), 'amount': _obj.get('t_amount', 0)} for _obj in t_benefits]
         return Response(res)
