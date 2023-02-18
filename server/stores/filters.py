@@ -8,6 +8,10 @@ class TradeFilter(django_filters.FilterSet):
         model = models.Trade
         fields = ['issue', 'user']
 
+    @property
+    def qs(self):
+        return super().qs.filter(first_release=False)
+
 
 class TransactionFilter(django_filters.FilterSet):
     class Meta:

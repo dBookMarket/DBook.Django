@@ -109,7 +109,7 @@ class Issue(BaseModel):
     destroy_log = models.CharField(blank=True, default='', max_length=42, verbose_name='销毁地址')
 
     class Meta:
-        ordering = ['id']
+        ordering = ['-updated_at']
         verbose_name = '书籍出版'
         verbose_name_plural = verbose_name
 

@@ -49,7 +49,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'address', 'name', 'desc', 'website_url', 'discord_url', 'twitter_url', 'avatar', 'banner',
-                  'is_verified', 'avatar_url', 'banner_url', 'statistic']
+                  'is_verified', 'avatar_url', 'banner_url', 'statistic', 'is_fans']
 
     def get_absolute_uri(self, f_obj):
         request = self.context.get('request')

@@ -59,6 +59,7 @@ class TransactionHandler:
                 'currency': self.obj.issue.token_issue.currency
             })
 
+    @atomic
     def pending(self):
         # call smart contract
         try:
