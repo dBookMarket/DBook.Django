@@ -47,7 +47,7 @@ class Book(BaseModel):
 
     class Meta:
         # UnorderedObjectListWarning
-        ordering = ['id']
+        ordering = ['-updated_at']
         verbose_name = '书籍'
         verbose_name_plural = verbose_name
 

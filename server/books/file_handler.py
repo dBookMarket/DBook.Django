@@ -117,7 +117,8 @@ class EPUBHandler(FileHandler):
         """
         :param file: str, the absolute path of file
         """
-        self.book = epub.read_epub(file)
+        # ERROR Relative URI reference without a base URI: <link href="css/idGeneratedStyles.css">
+        self.book = epub.read_epub(file, options={'ignore_ncx': True})
 
     def get_pages(self):
         return 0
