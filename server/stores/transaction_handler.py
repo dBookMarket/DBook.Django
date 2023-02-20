@@ -6,6 +6,7 @@ from utils.redis_accessor import RedisLock
 from django.conf import settings
 from django.db.transaction import atomic
 from django.core.exceptions import ObjectDoesNotExist
+from guardian.shortcuts import assign_perm
 
 
 class TransactionHandler:
@@ -58,6 +59,10 @@ class TransactionHandler:
                 'amount': seller_amount,
                 'currency': self.obj.issue.token_issue.currency
             })
+        # 5, add trade permission on buyer
+        code = 'stores.add_trade'
+        if not self.obj.buyer.has_perm(code):
+            assign_perm(self.obj.buyer, code)
 
     def pending(self):
         # call smart contract
