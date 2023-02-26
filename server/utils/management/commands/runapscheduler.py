@@ -55,14 +55,14 @@ class Command(BaseCommand):
         )
         logger.info('Added job "issue_timer"')
 
-        scheduler.add_job(
-            jobs.pay_back,
-            trigger=CronTrigger(minute='*/1'),  # per 1 minute
-            id='pay_back',
-            max_instances=1,
-            replace_existing=True
-        )
-        logger.info('Added job "pay_back"')
+        # scheduler.add_job(
+        #     jobs.pay_back,
+        #     trigger=CronTrigger(minute='*/1'),  # per 1 minute
+        #     id='pay_back',
+        #     max_instances=1,
+        #     replace_existing=True
+        # )
+        # logger.info('Added job "pay_back"')
 
         scheduler.add_job(
             delete_old_job_executions,

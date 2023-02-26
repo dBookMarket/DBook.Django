@@ -201,6 +201,10 @@ class IssueSerializer(BaseSerializer):
         model = models.Issue
         fields = '__all__'
 
+    def validate_royalty(self, value):
+        if value <= 0 or value > 100:
+            raise serializers.ValidationError('This field must be larger than 0 and smaller than 100')
+
     def validate_token(self, value):
         token_issue = value.get('issue')
         if token_issue and self.instance and token_issue.id != self.instance.id:
@@ -255,7 +259,9 @@ class IssueSerializer(BaseSerializer):
         if isinstance(user, AnonymousUser):
             return 0
         try:
-            return models.Asset.objects.get(user=user, issue=obj).quantity
+            n_assets = models.Asset.objects.get(user=user, issue=obj).quantity
+            n_trades = Trade.objects.filter(user=user, issue=obj).aggrate(q=Sum('quantity'))['q']
+            return n_assets - n_trades
         except models.Asset.DoesNotExist:
             return 0
 
@@ -312,7 +318,7 @@ class IssueSerializer(BaseSerializer):
 
 class IssueListingSerializer(IssueSerializer):
     class Meta(IssueSerializer.Meta):
-        fields = ['id', 'book', 'price', 'quantity', 'n_circulations', 'published_at', 'status']
+        fields = ['id', 'book', 'price', 'quantity', 'n_circulations', 'published_at', 'status', 'token']
 
 
 class IssueResaleSerializer(IssueSerializer):

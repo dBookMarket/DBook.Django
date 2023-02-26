@@ -3,7 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, DjangoObjectPermissions, IsAuthenticatedOrReadOnly
 from authorities.permissions import ObjectPermissionsOrReadOnly
 from rest_framework.response import Response
-from django.db.models import Q, Sum
+from django.db.models import Q, Sum, F
 from utils.views import BaseViewSet
 
 
@@ -51,17 +51,19 @@ class TransactionViewSet(BaseViewSet):
         Count the sales of each day
         """
         queryset = self.filter_queryset(self.get_queryset())
-        _queryset = queryset.values('created_at__date').annotate(q=Sum('quantity')).values('created_at__date',
-                                                                                           'q').order_by(
-            'created_at__date')
+        _queryset = queryset.values('created_at').annotate(q=Sum('quantity'), p=Sum(F('quantity') * F('price'))).values(
+            'created_at', 'q', 'p').order_by('created_at')
         dates = []
         quantities = []
+        prices = []
         for obj in _queryset:
-            dates.append(obj['created_at__date'].strftime('%Y-%m-%d'))
+            dates.append(obj['created_at'].strftime('%Y-%m-%d %H:%M:%S'))
             quantities.append(obj['q'])
+            prices.append(obj['prices'])
         return Response({
             'dates': dates,
-            'quantities': quantities
+            'quantities': quantities,
+            'prices': prices
         })
 
 

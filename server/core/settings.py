@@ -32,6 +32,7 @@ D_BOOK_APPS = [
     'users',
     'books',
     'stores',
+    'notifications',
     'utils'
 ]
 THIRD_APPS = [
@@ -83,6 +84,17 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'core.wsgi.application'
+
+ASGI_APPLICATION = 'core.asgi.application'
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [(os.getenv('REDIS_HOST'), os.getenv('REDIS_PORT', 6379))],
+        },
+    },
+}
 
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases

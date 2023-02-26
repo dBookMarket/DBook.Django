@@ -10,9 +10,6 @@ from threading import Thread
 def post_save_trade(sender, instance, **kwargs):
     if kwargs['created']:
         ObjectPermHelper.assign_perms(Trade, instance.user, instance)
-    # delete trade if quantity = 0
-    if instance.quantity == 0:
-        instance.delete()
 
 
 @receiver(post_save, sender=Benefit)

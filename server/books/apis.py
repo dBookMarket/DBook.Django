@@ -6,6 +6,7 @@ from rest_framework.exceptions import ValidationError
 from utils.views import BaseViewSet
 from utils.enums import IssueStatus
 from . import models, serializers, filters
+from stores.models import Trade
 # from stores.models import Trade
 # from .pdf_handler import PDFHandler
 # from django.db.transaction import atomic
@@ -17,6 +18,7 @@ from authorities.permissions import ObjectPermissionsOrReadOnly
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
 from utils.redis_accessor import RedisLock, RedisAccessor
 from django.conf import settings
+from django.db.models import Sum
 
 
 class DraftViewSet(BaseViewSet):
@@ -99,7 +101,7 @@ class AssetViewSet(BaseViewSet):
         request.GET['user'] = request.user
         return super().list(request, *args, **kwargs)
 
-    @action(methods=['get'], detail=True, url_path='read')
+    @action(methods=['get'], detail=True, url_path='read', permission_classes=[IsAuthenticated])
     def read(self, request, *args, **kwargs):
         """
         0, check if the user has this book or not?
@@ -108,6 +110,11 @@ class AssetViewSet(BaseViewSet):
         3, merge files into pdf
         """
         obj = self.get_object()
+
+        n_trades = Trade.objects.filter(user=request.user, issue=obj.issue).aggregate(q=Sum('quantity'))['q']
+
+        if obj.quantity - n_trades == 0:
+            raise ValidationError({'detail': 'Sorry you have no books remained.'})
 
         cache_key = f'asset-{obj.issue.id}'
         # expire_time = 7 * 24 * 3600  # 1 week

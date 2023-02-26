@@ -1,9 +1,9 @@
 from rest_framework import serializers
 from utils.serializers import BaseSerializer
-from utils.enums import IssueStatus
+from utils.enums import IssueStatus, TransactionStatus
 from rest_framework.validators import UniqueValidator
 from books.models import Asset, Issue
-from books.serializers import BookListingSerializer, IssueListingSerializer, IssueRelatedField
+from books.serializers import IssueListingSerializer, IssueRelatedField
 from users.models import User
 from users.serializers import UserListingSerializer, UserRelatedField
 from . import models
@@ -118,10 +118,22 @@ class TransactionSerializer(BaseSerializer):
                 raise serializers.ValidationError({'hash': 'This field is required'})
             if trade.quantity < quantity:
                 raise serializers.ValidationError({'quantity': 'The quantity is beyond the remaining number'})
-            if trade.first_release and trade.issue.buy_limit < quantity:
-                raise serializers.ValidationError({
-                    'quantity': f'The quantity is bigger than the buy limit({trade.issue.buy_limit})'
-                })
+            if trade.first_release:
+                user = self.context['request'].user
+                n_owns = models.Transaction.objects.filter(buyer=user,
+                                                           status__in={
+                                                               TransactionStatus.PENDING.value,
+                                                               TransactionStatus.SUCCESS.value
+                                                           }).aggregate(t=Sum('quantity'))['t']
+                # try:
+                #     _asset = Asset.objects.get(user=user, issue=trade.issue)
+                #     n_owns += _asset.quantity
+                # except Asset.DoesNotExist:
+                #     n_owns += 0
+                if trade.issue.buy_limit < n_owns + quantity:
+                    raise serializers.ValidationError({
+                        'quantity': f'The quantity is bigger than the buy limit({trade.issue.buy_limit})'
+                    })
         buyer = attrs.get('buyer')
         if trade and buyer and trade.user.id == buyer.id:
             raise serializers.ValidationError({'buyer': 'You are not allowed to buy your own book'})

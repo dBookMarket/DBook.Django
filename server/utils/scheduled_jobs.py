@@ -94,20 +94,20 @@ def issue_timer():
                 IssueHandler(issue).handle()
 
 
-def pay_back():
-    """
-    If some transaction is first release and failed, return money back to the buyer and remove this transaction
-    Only deal with the oldest five transactions per time because of the high cost of smart contract's operation
-    """
-    print('Money back to the buyers...')
-    queryset = Transaction.objects.filter(status=TransactionStatus.FAILURE.value, trade__first_release=True).order_by(
-        'created_at')
-    for txn in queryset[:5]:
-        try:
-            contract_handler = ContractFactory(txn.issue.token_issue.block_chain)
-            success = contract_handler.pay_back(txn.buyer.address, txn.quantity * txn.price)
-            if success:
-                txn.delete()
-        except Exception as e:
-            print(f'Exception when paying back to the buyer -> {e}')
-            pass
+# def pay_back():
+#     """
+#     If some transaction is first release and failed, return money back to the buyer and remove this transaction
+#     Only deal with the oldest five transactions per time because of the high cost of smart contract's operation
+#     """
+#     print('Money back to the buyers...')
+#     queryset = Transaction.objects.filter(status=TransactionStatus.FAILURE.value, trade__first_release=True).order_by(
+#         'created_at')
+#     for txn in queryset[:5]:
+#         try:
+#             contract_handler = ContractFactory(txn.issue.token_issue.block_chain)
+#             success = contract_handler.pay_back(txn.buyer.address, txn.quantity * txn.price)
+#             if success:
+#                 txn.delete()
+#         except Exception as e:
+#             print(f'Exception when paying back to the buyer -> {e}')
+#             pass
