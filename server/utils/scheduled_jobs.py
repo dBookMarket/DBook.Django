@@ -78,6 +78,7 @@ def issue_timer():
                         contract = ContractFactory(issue.token.block_chain)
                         txn_hash, is_destroyed = contract.burn(issue.book.author.address, issue.token.id,
                                                                issue.quantity - issue.n_circulations)
+                        # todo if not destroyed
                         print(f'Destroy NFT {issue.id} -> log: {txn_hash}')
                         issue.destroy_log = txn_hash
                     else:

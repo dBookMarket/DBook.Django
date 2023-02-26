@@ -62,9 +62,12 @@ class TransactionHandler:
         # 5, add trade permission on buyer
         code = 'stores.add_trade'
         if not self.obj.buyer.has_perm(code):
-            assign_perm(self.obj.buyer, code)
+            assign_perm(code, self.obj.buyer)
 
     def pending(self):
+        if not self.obj.trade.first_release:
+            return
+
         # call smart contract
         try:
             chain_type = self.obj.issue.token_issue.block_chain

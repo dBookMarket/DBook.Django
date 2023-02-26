@@ -202,6 +202,12 @@ class PlatformContractHandler(object):
 
     def burn(self, owner: str, token_id: int, amount: int, retry: int = 3) -> tuple:
         try:
+            owner = Web3.toChecksumAddress(owner)
+            success = self.add_author(owner)
+
+            if not success:
+                raise RuntimeError(f'Cannot add auth for {owner}')
+
             nonce = self.web3.eth.get_transaction_count(self.admin_account.address)
             txn = self.contract.functions.burn(owner, token_id, amount).buildTransaction({
                 'from': self.admin_account.address, 'nonce': nonce, 'gasPrice': self.get_gas_price()
@@ -219,7 +225,7 @@ class PlatformContractHandler(object):
                 else:
                     return '', False
         except Exception as e:
-            print(f'Exception when setting nft price->{e}')
+            print(f'Exception when burning nft->{e}')
             return '', False
 
 

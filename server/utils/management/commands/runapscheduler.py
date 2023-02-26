@@ -48,7 +48,7 @@ class Command(BaseCommand):
 
         scheduler.add_job(
             jobs.issue_timer,
-            trigger=CronTrigger(second='*/5'),  # Every 5 seconds
+            trigger=CronTrigger(second='*/1'),  # Every 1 second
             id='issue_timer',
             max_instances=3,
             replace_existing=True,
