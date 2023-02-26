@@ -113,9 +113,17 @@ class TransactionSerializer(BaseSerializer):
         trade = attrs.get('trade')
         quantity = attrs.get('quantity')
         _hash = attrs.get('hash')
+        _status = attrs.get('status')
         if trade and quantity:
-            if not trade.first_release and not _hash:
-                raise serializers.ValidationError({'hash': 'This field is required'})
+            if not trade.first_release:
+                if not _hash:
+                    raise serializers.ValidationError({'hash': 'This field is required'})
+                allowed_status = {TransactionStatus.SUCCESS.value, TransactionStatus.FAILURE.value}
+                if _status not in allowed_status:
+                    raise serializers.ValidationError({
+                        'status': f'This field is invalid, must be one of {allowed_status}'
+                    })
+            # todo need lock?
             if trade.quantity < quantity:
                 raise serializers.ValidationError({'quantity': 'The quantity is beyond the remaining number'})
             if trade.first_release:
