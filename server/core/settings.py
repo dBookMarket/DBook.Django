@@ -1729,7 +1729,7 @@ CONTRACT_SETTINGS = {
     },
 
     'BNB': {
-        'PROVIDER': 'https://bsc-testnet.public.blastapi.io',
+        'PROVIDER': 'https://endpoints.omniatech.io/v1/bsc/testnet/public',
         'DBOOK_CONTRACT_ADDRESS': '0xcf0b52b899Ac7ec7cfBdB022C2382bBb050C6Fc3',
         # 'DBOOK_CONTRACT_ABI': '''
         #     [
