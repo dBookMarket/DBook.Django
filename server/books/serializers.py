@@ -202,8 +202,9 @@ class IssueSerializer(BaseSerializer):
         fields = '__all__'
 
     def validate_royalty(self, value):
-        if value <= 0 or value > 100:
-            raise serializers.ValidationError('This field must be larger than 0 and smaller than 100')
+        if value == 0:
+            raise serializers.ValidationError('This field must be larger than 0')
+        return value
 
     def validate_token(self, value):
         token_issue = value.get('issue')
