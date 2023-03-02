@@ -59,7 +59,7 @@ class TransactionViewSet(BaseViewSet):
         for obj in _queryset:
             dates.append(obj['created_at'].strftime('%Y-%m-%d %H:%M:%S'))
             quantities.append(obj['q'])
-            prices.append(obj['prices'])
+            prices.append(obj['p'])
         return Response({
             'dates': dates,
             'quantities': quantities,
