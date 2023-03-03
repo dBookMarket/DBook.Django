@@ -24,4 +24,6 @@ RUN chmod +x checkdbconnection.py
 RUN chmod +x startserver.sh
 RUN chmod +x runtest.sh
 
+# daphne sock dirctory
+RUN mkdir tmp
 #COPY ./supervisord.conf /etc/supervisor/
