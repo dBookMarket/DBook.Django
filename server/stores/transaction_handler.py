@@ -1,5 +1,6 @@
 from stores.models import Benefit
 from books.models import Asset
+from notifications.models import Notification
 from utils.enums import TransactionStatus
 from utils.smart_contract_handler import ContractFactory
 from utils.redis_accessor import RedisLock
@@ -68,6 +69,10 @@ class TransactionHandler:
         code = 'stores.add_trade'
         if not self.obj.buyer.has_perm(code):
             assign_perm(code, self.obj.buyer)
+        # 6, notify the buyer
+        Notification.objects.create(receiver=self.obj.buyer,
+                                    message=f'Congratulations, you have bought {self.obj.quantity} '
+                                            f'of the book `{self.obj.issue.book.title}` successfully.')
 
     def pending(self):
         if not self.obj.trade.first_release:
@@ -127,6 +132,10 @@ class TransactionHandler:
                     self.logger.error(f'Money back failed for transaction {self.obj.id}')
             except Exception as e:
                 self.logger.error(f'Exception when money back to the buyer -> {e}')
+        # notify the buyer
+        Notification.objects.create(receiver=self.obj.buyer,
+                                    message=f'Sorry, the transaction is failed. '
+                                            f'If you does not get the money back, please contact the website manager.')
 
     def handle(self):
         func = getattr(self, self.obj.status, None)

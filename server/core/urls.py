@@ -21,11 +21,13 @@ from django.conf import settings
 from rest_framework.documentation import include_docs_urls
 
 import apis.urls
+import books.urls
 from rest_swagger.views import get_swagger_view
 
 schema_view = get_swagger_view(title='D-BOOK API')
 
 urlpatterns = [
+    path('books', include(books.urls)),
     path('grappelli/', include('grappelli.urls')),
     path('d-book-admin/', admin.site.urls),
     path(r'api/v1/', include(apis.urls)),
