@@ -5,7 +5,7 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
 
     async def connect(self):
         user = self.scope['user']
-        if bool(user is None or not user.is_authenticated()):
+        if user is None or not user.is_authenticated:
             await self.close()
 
         self.group_name = f'notification_{user.id}'
