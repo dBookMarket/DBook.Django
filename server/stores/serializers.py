@@ -128,16 +128,14 @@ class TransactionSerializer(BaseSerializer):
                 raise serializers.ValidationError({'quantity': 'The quantity is beyond the remaining number'})
             if trade.first_release:
                 user = self.context['request'].user
-                n_owns = models.Transaction.objects.filter(buyer=user,
-                                                           status__in={
-                                                               TransactionStatus.PENDING.value,
-                                                               TransactionStatus.SUCCESS.value
-                                                           }).aggregate(t=Sum('quantity'))['t']
-                # try:
-                #     _asset = Asset.objects.get(user=user, issue=trade.issue)
-                #     n_owns += _asset.quantity
-                # except Asset.DoesNotExist:
-                #     n_owns += 0
+                _txn = models.Transaction.objects.filter(buyer=user, issue=trade.issue,
+                                                         status__in={
+                                                             TransactionStatus.PENDING.value,
+                                                             TransactionStatus.SUCCESS.value
+                                                         })
+                if self.instance:
+                    _txn = _txn.exclude(id=self.instance.id)
+                n_owns = _txn.aggregate(t=Sum('quantity')).get('t', 0)
                 if trade.issue.buy_limit < n_owns + quantity:
                     raise serializers.ValidationError({
                         'quantity': f'The quantity is bigger than the buy limit({trade.issue.buy_limit})'
