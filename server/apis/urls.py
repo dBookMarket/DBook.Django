@@ -15,11 +15,10 @@ Including another URLconf
 from django.conf.urls import include, re_path
 from rest_framework.routers import DefaultRouter
 
-
 import books.apis
 import stores.apis
 import users.apis
-import authorities.apis
+import notifications.apis
 
 
 class OptionalRouter(DefaultRouter):
@@ -45,6 +44,7 @@ router.register(r"trades", stores.apis.TradeViewSet, basename="trade")
 router.register(r"transactions", stores.apis.TransactionViewSet, basename="transaction")
 router.register(r"benefits", stores.apis.BenefitViewSet, basename="benefit")
 
+router.register(r"notifications", notifications.apis.NotificationViewSet, basename="notification")
 
 urlpatterns = [
     re_path(r'^', include(router.urls)),
