@@ -1,6 +1,6 @@
 from . import models, serializers, filters
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated, DjangoObjectPermissions, IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from authorities.permissions import ObjectPermissionsOrReadOnly
 from rest_framework.response import Response
 from django.db.models import Q, Sum, F

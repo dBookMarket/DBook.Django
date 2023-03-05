@@ -83,8 +83,8 @@ class UserSerializer(serializers.ModelSerializer):
                 n_owners = Asset.objects.filter(issue__in=queryset).count()
                 return {
                     'total_volume': t_volume,
-                    'min_price': tmp['min_price'],
-                    'max_price': tmp['max_price'],
+                    'min_price': tmp['min_price'] if tmp['min_price'] is not None else 0,
+                    'max_price': tmp['max_price'] if tmp['max_price'] is not None else 0,
                     'total_books': t_books,
                     'sales': sales,
                     'n_destroyed': n_destroyed,

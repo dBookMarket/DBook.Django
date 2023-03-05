@@ -61,6 +61,8 @@ class TradeSerializer(BaseSerializer):
                     queryset = queryset.exclude(id=self.instance.id)
                 if queryset:
                     n_sales = queryset.aggregate(t_quantity=Sum('quantity'))['t_quantity']
+                    if n_sales is None:
+                        n_sales = 0
                 if obj_asset.quantity < (quantity + n_sales):
                     raise serializers.ValidationError({'quantity': 'The quantity is beyond the number of books owned'})
             except Asset.DoesNotExist:
@@ -134,7 +136,9 @@ class TransactionSerializer(BaseSerializer):
                                                                TransactionStatus.PENDING.value,
                                                                TransactionStatus.SUCCESS.value
                                                            }).exclude(id__in=_except_ids).aggregate(
-                    t=Sum('quantity')).get('t', 0)
+                    t=Sum('quantity'))['t']
+                if n_owns is None:
+                    n_owns = 0
                 if trade.issue.buy_limit < n_owns + quantity:
                     raise serializers.ValidationError({
                         'quantity': f'The quantity is beyond the buy limit({trade.issue.buy_limit})'

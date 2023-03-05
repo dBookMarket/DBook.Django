@@ -261,7 +261,9 @@ class IssueSerializer(BaseSerializer):
             return 0
         try:
             n_assets = models.Asset.objects.get(user=user, issue=obj).quantity
-            n_trades = Trade.objects.filter(user=user, issue=obj).aggregate(q=Sum('quantity')).get('q', 0)
+            n_trades = Trade.objects.filter(user=user, issue=obj).aggregate(q=Sum('quantity'))['q']
+            if n_trades is None:
+                n_trades = 0
             return n_assets - n_trades
         except models.Asset.DoesNotExist:
             return 0

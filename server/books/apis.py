@@ -112,6 +112,8 @@ class AssetViewSet(BaseViewSet):
         obj = self.get_object()
 
         n_trades = Trade.objects.filter(user=request.user, issue=obj.issue).aggregate(q=Sum('quantity'))['q']
+        if n_trades is None:
+            n_trades = 0
 
         if obj.quantity - n_trades == 0:
             raise ValidationError({'detail': 'Sorry you have no books remained.'})
