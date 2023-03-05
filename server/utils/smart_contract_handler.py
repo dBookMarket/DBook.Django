@@ -121,7 +121,7 @@ class PlatformContractHandler(object):
             'status': status
         }
 
-    def pay_back(self, to: str, amount: float) -> bool:
+    def money_back(self, to: str, amount: float) -> bool:
         """
         if the transaction is failed, pay back to the buyer.
         :param to: str, buyer address
@@ -203,10 +203,9 @@ class PlatformContractHandler(object):
     def burn(self, owner: str, token_id: int, amount: int, retry: int = 3) -> tuple:
         try:
             owner = Web3.toChecksumAddress(owner)
-            success = self.add_author(owner)
-
-            if not success:
-                raise RuntimeError(f'Cannot add auth for {owner}')
+            # success = self.add_author(self.admin_account.address)
+            # if not success:
+            #     raise RuntimeError(f'Cannot add auth for {owner}')
 
             nonce = self.web3.eth.get_transaction_count(self.admin_account.address)
             txn = self.contract.functions.burn(owner, token_id, amount).buildTransaction({

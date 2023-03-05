@@ -77,7 +77,7 @@ class UserSerializer(serializers.ModelSerializer):
                 for obj_issue in queryset:
                     t_books += obj_issue.quantity
                     n_destroyed += obj_issue.quantity - obj_issue.n_circulations
-                    t_volume += obj_issue.price * obj_issue.quantity
+                    t_volume += obj_issue.price * obj_issue.n_circulations
                     sales += obj_issue.price * obj_issue.n_circulations
                 tmp = queryset.aggregate(min_price=Min('price'), max_price=Max('price'))
                 n_owners = Asset.objects.filter(issue__in=queryset).count()

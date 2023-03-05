@@ -127,7 +127,7 @@ class TransactionHandler:
         if self.obj.trade.first_release:
             try:
                 contract_handler = ContractFactory(self.obj.issue.token_issue.block_chain)
-                success = contract_handler.pay_back(self.obj.buyer.address, self.obj.quantity * self.obj.price)
+                success = contract_handler.money_back(self.obj.buyer.address, self.obj.quantity * self.obj.price)
                 if not success:
                     self.logger.error(f'Money back failed for transaction {self.obj.id}')
             except Exception as e:

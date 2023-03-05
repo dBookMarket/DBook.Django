@@ -37,9 +37,11 @@ class BookFilter(django_filters.FilterSet):
 
 
 class IssueFilter(django_filters.FilterSet):
+    author = django_filters.NumberFilter(field_name='book__author')
+
     class Meta:
         model = models.Issue
-        fields = ['book', 'book__author']
+        fields = ['book', 'author', 'book__author']
 
 
 class AssetFilter(django_filters.FilterSet):

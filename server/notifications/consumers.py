@@ -1,11 +1,28 @@
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
+from rest_framework.authtoken.models import Token
+from channels.db import database_sync_to_async
 
 
 class NotificationConsumer(AsyncJsonWebsocketConsumer):
 
+    @database_sync_to_async
+    def get_user(self, query_string: str):
+        try:
+            for param in query_string.split('&'):
+                k_v = param.split('=')
+                if len(k_v) == 2:
+                    if k_v[0] == 'token':
+                        token = Token.objects.get(key=k_v[1])
+                        return token.user
+        except Token.DoesNotExist:
+            return None
+    
     async def connect(self):
-        user = self.scope['user']
+        user = await self.get_user(self.scope['query_string'].decode())
+        # user = self.scope['user']
+
         if user is None or not user.is_authenticated:
+            print(f'User {user} is not authenticated.')
             await self.close()
 
         self.group_name = f'notification_{user.id}'

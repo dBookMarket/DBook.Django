@@ -105,7 +105,7 @@ def issue_timer():
 #     for txn in queryset[:5]:
 #         try:
 #             contract_handler = ContractFactory(txn.issue.token_issue.block_chain)
-#             success = contract_handler.pay_back(txn.buyer.address, txn.quantity * txn.price)
+#             success = contract_handler.money_back(txn.buyer.address, txn.quantity * txn.price)
 #             if success:
 #                 txn.delete()
 #         except Exception as e:

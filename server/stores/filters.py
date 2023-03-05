@@ -14,9 +14,11 @@ class TradeFilter(django_filters.FilterSet):
 
 
 class TransactionFilter(django_filters.FilterSet):
+    author = django_filters.NumberFilter(field_name='issue__book__author')
+
     class Meta:
         model = models.Transaction
-        fields = ['trade', 'buyer', 'trade__user', 'trade__issue', 'issue', 'seller']
+        fields = ['trade', 'buyer', 'trade__user', 'trade__issue', 'issue', 'seller', 'author']
 
 
 class BenefitFilter(django_filters.FilterSet):
