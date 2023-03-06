@@ -22,7 +22,7 @@ class FileServiceConnector(CeleryConnector):
 
     def download_file(self, cid: str, key: str, file_type: str):
         filename = f'{uuid.uuid4().hex}.{file_type}.bin'
-        file_path = os.path.join(settings.TEMPORARY_ROOT, filename)
+        file_path = os.path.join(settings.BOOK_ROOT, filename)
         res = self.send_task(FileServiceConfig.TASK_DOWNLOAD_FILE, (file_path, cid, key))
         # remove encrypted file
         os.remove(file_path)

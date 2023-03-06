@@ -106,7 +106,7 @@ class Issue(BaseModel):
     # destroyed_quantity = models.IntegerField(blank=True, default=0, verbose_name='销毁数量')
     status = models.CharField(blank=True, max_length=50, choices=IssueStatus.choices(),
                               default=IssueStatus.PRE_SALE.value, verbose_name='发行状态')
-    destroy_log = models.CharField(blank=True, default='', max_length=42, verbose_name='销毁地址')
+    destroy_log = models.CharField(blank=True, default='', max_length=128, verbose_name='销毁地址')
 
     class Meta:
         ordering = ['-updated_at']

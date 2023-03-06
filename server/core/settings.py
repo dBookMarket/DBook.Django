@@ -159,6 +159,8 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 TEMPORARY_DIR = 'tmp'
 TEMPORARY_ROOT = os.path.join(MEDIA_ROOT, TEMPORARY_DIR)
+BOOK_DIR = 'book'
+BOOK_ROOT = os.path.join(MEDIA_ROOT, BOOK_DIR)
 PREVIEW_DIR = 'previews'
 PREVIEW_DOC_ROOT = os.path.join(MEDIA_ROOT, PREVIEW_DIR)
 
