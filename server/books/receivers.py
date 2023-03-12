@@ -10,6 +10,7 @@ from weasyprint import HTML
 from django.conf import settings
 import os
 import uuid
+from ebooklib import epub
 from django.core.files import File
 from books.models import Preview
 from books.signals import sig_issue_new_book
@@ -39,6 +40,55 @@ def upload_pdf(obj_book):
         print(f'Exception when calling upload_pdf: {e}')
 
 
+def html_to_epub(obj_book: Book):
+    if obj_book.draft:
+        filename = f'{uuid.uuid4().hex}.epub'
+        filepath = os.path.join(settings.TEMPORARY_ROOT, filename)
+        book = epub.EpubBook()
+        book.set_title(obj_book.draft.title)
+        book.add_author(obj_book.author.name)
+        book.set_cover('cover.jpg', obj_book.cover.open('rb').read())
+
+        # cover = epub.EpubHtml(title='Cover', file_name='cover-page.xhtml')
+        # cover.set_content('<p><img src="cover.jpg" alt="cover image"/></p>')
+
+        title = epub.EpubHtml(title='Title', file_name='title-page.xhtml')
+        title.set_content(f'<h1>{obj_book.draft.title}</h1>')
+
+        content = epub.EpubHtml(title='Content', file_name='content-page.xhtml')
+        content.set_content(obj_book.draft.content)
+
+        # book.add_item(cover)
+        book.add_item(title)
+        book.add_item(content)
+
+        book.toc = (epub.Link('content-page.xhtml', 'Content', 'content'),
+                    epub.Link('cover-page.xhtml', 'Cover', 'cover'))
+        book.add_item(epub.EpubNcx())
+        book.add_item(epub.EpubNav())
+
+        book.spine = ['cover', title, 'nav', content]
+        epub.write_epub(filepath, book)
+
+        try:
+            with open(filepath, 'rb') as f:
+                obj_book.file.save(f'{obj_book.draft.title}.epub', File(f))
+        finally:
+            os.remove(filepath)
+
+
+def html_to_pdf(obj_book: Book):
+    if obj_book.draft:
+        filename = f'{uuid.uuid4().hex}.pdf'
+        filepath = os.path.join(settings.TEMPORARY_ROOT, filename)
+        HTML(string=obj_book.draft.content).write_pdf(filepath)
+        try:
+            with open(filepath, 'rb') as f:
+                obj_book.file.save(f'{obj_book.draft.title}.pdf', File(f))
+        finally:
+            os.remove(filepath)
+
+
 @receiver(post_save, sender=Draft)
 def post_save_draft(sender, instance, **kwargs):
     if kwargs['created']:
@@ -55,17 +105,8 @@ def post_save_book(sender, instance, **kwargs):
 @atomic
 def issue_new_book(sender, instance, **kwargs):
     # convert draft to pdf if using draft
-    if instance.draft:
-        filename = f'{uuid.uuid4().hex}.pdf'
-        filepath = os.path.join(settings.TEMPORARY_ROOT, filename)
-        HTML(string=instance.draft.content).write_pdf(filepath)
-        try:
-            with open(filepath, 'rb') as f:
-                instance.file.save(f'{instance.draft.title}.pdf', File(f))
-        finally:
-            os.remove(filepath)
-        # instance.file = f'{settings.TEMPORARY_DIR}/{filename}'
-        # instance.save()
+    html_to_epub(instance)
+
     # add preview
     # pdf_handler = PDFHandler(instance.file.path)
     f_handler = FileHandlerFactory(instance.type, instance.file.path)

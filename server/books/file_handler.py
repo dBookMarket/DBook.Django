@@ -6,9 +6,9 @@ import zipfile
 from django.conf import settings
 from pathlib import Path
 import uuid
-import ebooklib
 from ebooklib import epub
 from weasyprint import HTML
+from epubconverter import epub_to_pdf
 
 
 class FileHandler:
@@ -117,6 +117,7 @@ class EPUBHandler(FileHandler):
         """
         :param file: str, the absolute path of file
         """
+        self.filename = file
         # ERROR Relative URI reference without a base URI: <link href="css/idGeneratedStyles.css">
         self.book = epub.read_epub(file, options={'ignore_ncx': True})
 
@@ -130,7 +131,7 @@ class EPUBHandler(FileHandler):
         except Exception as e:
             print(f'Exception when get file name->{e}')
             return uuid.uuid4().hex
-
+    
     def get_preview_doc(self, from_page: int = 0, to_page: int = 4):
         """
         get a piece of original file
@@ -141,11 +142,14 @@ class EPUBHandler(FileHandler):
         file_name = f'{self.get_file_name()}.pdf'
         file_path = os.path.join(settings.TEMPORARY_ROOT, file_name)
 
-        content = b''
-        for doc in self.book.get_items_of_type(ebooklib.ITEM_DOCUMENT):
-            content += doc.content
+        # contents = ''
+        # for doc in self.book.get_items_of_type(ebooklib.ITEM_DOCUMENT):
+        #     contents += doc.content.decode()
 
-        HTML(string=content.decode()).write_pdf(file_path)
+        # contents = self.beautify()
+        # print(f'-----------=-=-=============={contents}')
+        # HTML(string=contents).write_pdf(file_path)
+        epub_to_pdf(self.filename, file_path)
 
         try:
             pdf_handler = PDFHandler(file_path)
