@@ -256,6 +256,20 @@ class BNBHandler(PlatformContractHandler):
         )
 
 
+class FilecoinHandler(PlatformContractHandler):
+
+    def __init__(self, provider: str = settings.CONTRACT_SETTINGS['FILECOIN']['PROVIDER']):
+        super().__init__(provider)
+        self.contract = self.web3.eth.contract(
+            address=settings.CONTRACT_SETTINGS['FILECOIN']['PLATFORM_CONTRACT_ADDRESS'],
+            abi=settings.CONTRACT_SETTINGS['FILECOIN']['PLATFORM_CONTRACT_ABI']
+        )
+        self.usdc_contract = self.web3.eth.contract(
+            address=settings.CONTRACT_SETTINGS['FILECOIN']['USDC_CONTRACT_ADDRESS'],
+            abi=settings.CONTRACT_SETTINGS['FILECOIN']['USDC_CONTRACT_ABI']
+        )
+
+
 class ContractFactory:
 
     def __new__(cls, _type: str, *args, **kwargs):
@@ -263,5 +277,7 @@ class ContractFactory:
             return PolygonHandler()
         elif _type == BlockChainType.BNB.value:
             return BNBHandler()
+        elif _type == BlockChainType.FILECOIN.value:
+            return FilecoinHandler()
         else:
             raise TypeError(f'Type `{_type}` is not supported.')

@@ -50,6 +50,7 @@ class SocialMediaType(BaseEnum):
 class BlockChainType(BaseEnum):
     POLYGON = 'polygon'
     BNB = 'bnb'
+    FILECOIN = 'filecoin'
 
 
 class Market(BaseEnum):

@@ -62,8 +62,7 @@ def html_to_epub(obj_book: Book):
         book.add_item(title)
         book.add_item(content)
 
-        book.toc = (epub.Link('content-page.xhtml', 'Content', 'content'),
-                    epub.Link('cover-page.xhtml', 'Cover', 'cover'))
+        book.toc = (epub.Link('content-page.xhtml', 'Content', 'content'),)
         book.add_item(epub.EpubNcx())
         book.add_item(epub.EpubNav())
 

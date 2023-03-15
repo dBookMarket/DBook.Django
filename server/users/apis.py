@@ -19,7 +19,7 @@ from . import filters
 from utils.helpers import Helper
 from utils.social_media_handler import SocialMediaFactory, DuplicationError, RequestError, TwitterHandler
 from utils.enums import UserType, SocialMediaType
-from utils.smart_contract_handler import PlatformContractHandler, PolygonHandler, BNBHandler
+from utils.smart_contract_handler import PlatformContractHandler, PolygonHandler, BNBHandler, FilecoinHandler
 from utils.views import BaseViewSet
 
 
@@ -142,10 +142,11 @@ class UserViewSet(BaseViewSet):
         _user = self.request.user
 
         # add author perm into smart contract
-        # added = PlatformContractHandler().add_author(_user.address)
-        added = bool(PolygonHandler().add_author(_user.address) and BNBHandler().add_author(_user.address))
+        added = bool(PolygonHandler().add_author(_user.address) and
+                     BNBHandler().add_author(_user.address) and
+                     FilecoinHandler().add_author(_user.address))
         if not added:
-            raise ValidationError({'detail': 'Fail to add perm from contract, please try later.'})
+            raise ValidationError({'detail': 'Fail to add perm on block-chain, please try later.'})
 
         # add issue perm
         # role author

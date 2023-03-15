@@ -4,7 +4,8 @@ ENV PYTHONUNBUFFERED 1
 
 WORKDIR /code
 
-RUN apt-get update && apt-get install -qq wkhtmltopdf
+RUN apt-get update
+RUN apt-get install -y wkhtmltopdf
 
 # add fonts
 RUN apt-get install -y fontconfig
