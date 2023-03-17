@@ -9,6 +9,9 @@ import uuid
 from ebooklib import epub
 from weasyprint import HTML
 from epubconverter import epub_to_pdf
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class FileHandler:
@@ -36,7 +39,7 @@ class FileHandler:
                     # build zip
                     zf.write(paths[1], compress_type=zipfile.ZIP_DEFLATED)
         except Exception as e:
-            print(f'Exception when calling FileHandler->compress: {e}')
+            logger.error(f'Exception when calling FileHandler->compress: {e}')
             shutil.rmtree(zip_file_path)
             raise
         finally:
@@ -104,7 +107,7 @@ class PDFHandler(FileHandler):
             # save file
             preview_doc.ez_save(file_path)
         except Exception as e:
-            print(f'Exception when calling PDFHandler->get_preview_doc: {e}')
+            logger.error(f'Exception when calling PDFHandler->get_preview_doc: {e}')
             raise
         finally:
             preview_doc.close()
@@ -129,7 +132,7 @@ class EPUBHandler(FileHandler):
             _title = self.book.get_metadata('DC', 'title')[0][0]
             return _title.replace(' ', '-')
         except Exception as e:
-            print(f'Exception when get file name->{e}')
+            logger.error(f'Exception when get file name->{e}')
             return uuid.uuid4().hex
     
     def get_preview_doc(self, from_page: int = 0, to_page: int = 4):
@@ -147,7 +150,7 @@ class EPUBHandler(FileHandler):
         #     contents += doc.content.decode()
 
         # contents = self.beautify()
-        # print(f'-----------=-=-=============={contents}')
+        # logger.error(f'-----------=-=-=============={contents}')
         # HTML(string=contents).write_pdf(file_path)
         epub_to_pdf(self.filename, file_path)
 

@@ -2,6 +2,9 @@ from web3 import Web3
 from web3.middleware import geth_poa_middleware
 from django.conf import settings
 from utils.enums import BlockChainType, TransactionStatus
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class TransactionFailure(Exception):
@@ -50,17 +53,16 @@ class PlatformContractHandler(object):
             # check account address
             account_addr = Web3.toChecksumAddress(account_addr)
 
-            print('admin address ->', self.admin_account.address)
+            logger.error('admin address ->', self.admin_account.address)
             nonce = self.web3.eth.get_transaction_count(self.admin_account.address)
             transaction = self.contract.functions.addAuth(account_addr).buildTransaction(
                 {'from': self.admin_account.address, 'nonce': nonce, 'gasPrice': self.get_gas_price()})
             signed_txn = self.admin_account.sign_transaction(transaction)
             txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
         except Exception as e:
-            print(f'Exception when calling add_author -> {e}')
+            logger.error(f'Exception when calling add_author -> {e}')
             return False
         receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash)
-        print(receipt)
         return bool(receipt['status'] == 1)
 
     def approve_usdc_to_platform(self, amount: int, retry: int = 3):
@@ -80,7 +82,7 @@ class PlatformContractHandler(object):
         receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash)
         if receipt['status'] != 1:
             if retry > 0:
-                print(f'{4 - retry}: retry to approve usdc to platform contract from platform wallet.')
+                logger.info(f'{4 - retry}: retry to approve usdc to platform contract from platform wallet.')
                 self.approve_usdc_to_platform(amount, retry - 1)
             else:
                 raise TransactionFailure('Failed to approve usdc to platform contract by platform wallet.')
@@ -96,7 +98,7 @@ class PlatformContractHandler(object):
         :param amount: int, amount of nft to buyer
         :param mint_amount: int, the number of nft to be minted
         """
-        print(f'platform address->{self.platform_account.address}')
+        logger.info(f'platform address->{self.platform_account.address}')
         # check address
         seller = Web3.toChecksumAddress(seller)
         buyer = Web3.toChecksumAddress(buyer)
@@ -164,7 +166,7 @@ class PlatformContractHandler(object):
             signed_txn = self.admin_account.sign_transaction(txn)
             txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
         except Exception as e:
-            print(f'Exception when setting nft price->{e}')
+            logger.error(f'Exception when setting nft price->{e}')
             return '', False
         receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash)
         return txn_hash.hex(), receipt['status'] == 1
@@ -180,7 +182,7 @@ class PlatformContractHandler(object):
             signed_txn = self.admin_account.sign_transaction(txn)
             txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
         except Exception as e:
-            print(f'Exception when setting nft price->{e}')
+            logger.error(f'Exception when setting nft price->{e}')
             return False
         receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash)
         return receipt['status'] == 1
@@ -195,7 +197,7 @@ class PlatformContractHandler(object):
             signed_txn = self.admin_account.sign_transaction(txn)
             txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
         except Exception as e:
-            print(f'Exception when setting nft price->{e}')
+            logger.error(f'Exception when setting nft price->{e}')
             return False
         receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash)
         return receipt['status'] == 1
@@ -219,12 +221,12 @@ class PlatformContractHandler(object):
                 return txn_hash.hex(), True
             else:
                 if retry > 0:
-                    print(f'{4 - retry}: retry to burn {amount} nft({token_id}) of {owner}')
+                    logger.info(f'{4 - retry}: retry to burn {amount} nft({token_id}) of {owner}')
                     self.burn(owner, token_id, amount, retry - 1)
                 else:
                     return '', False
         except Exception as e:
-            print(f'Exception when burning nft->{e}')
+            logger.error(f'Exception when burning nft->{e}')
             return '', False
 
 

@@ -1,4 +1,4 @@
-from django.db.models.signals import post_save, pre_delete, pre_save
+from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 from books.models import Asset, Issue, Book, Draft, Bookmark, Wishlist, Token
 from django.db.transaction import atomic
@@ -16,6 +16,9 @@ from books.models import Preview
 from books.signals import sig_issue_new_book
 from books.issue_handler import IssueHandler
 from books.file_handler import FileHandlerFactory
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def upload_pdf(obj_book):
@@ -25,19 +28,19 @@ def upload_pdf(obj_book):
         if obj_book.task_id:
             file_service_connector.revoke_task(obj_book.task_id)
     except Exception as e:
-        print(f'Exception when revoking file upload task: {e}, task id: {obj_book.task_id}')
+        logger.error(f'Exception when revoking file upload task: {e}, task id: {obj_book.task_id}')
         raise ValidationError(
             {'file': 'Update file failed because of the failure of revoking the old one.'}
         )
     # start a new task
     try:
-        print(f'pdf path -> {obj_book.file.path}')
+        logger.info(f'pdf path -> {obj_book.file.path}')
         result = file_service_connector.upload_file(obj_book.file.path)
         if result:
             obj_book.task_id = result.task_id
             obj_book.save()
     except Exception as e:
-        print(f'Exception when calling upload_pdf: {e}')
+        logger.error(f'Exception when calling upload_pdf: {e}')
 
 
 def html_to_epub(obj_book: Book):
@@ -56,21 +59,21 @@ def html_to_epub(obj_book: Book):
         # cover = epub.EpubHtml(title='Cover', file_name='cover-page.xhtml')
         # cover.set_content('<p><img src="cover.jpg" alt="cover image"/></p>')
 
-        title = epub.EpubHtml(title='Title', file_name='title-page.xhtml')
-        title.set_content(f'<h1>{obj_book.draft.title}</h1>')
+        # title = epub.EpubHtml(title='Title', file_name='title-page.xhtml')
+        # title.set_content(f'<h1>{obj_book.draft.title}</h1>')
 
         content = epub.EpubHtml(title='Content', file_name='content-page.xhtml')
         content.set_content(obj_book.draft.content)
 
         # book.add_item(cover)
-        book.add_item(title)
+        # book.add_item(title)
         book.add_item(content)
 
         book.toc = (epub.Link('content-page.xhtml', 'Content', 'content'),)
         book.add_item(epub.EpubNcx())
         book.add_item(epub.EpubNav())
 
-        book.spine = ['cover', title, 'nav', content]
+        book.spine = ['cover', 'nav', content]
         epub.write_epub(filepath, book)
 
         try:
@@ -134,7 +137,7 @@ def post_save_issue(sender, instance, **kwargs):
 
     if instance.status == IssueStatus.PRE_SALE.value:
         # set timer
-        print(f'Put issue {instance.id} into the queue')
+        logger.info(f'Put issue {instance.id} into the queue')
         IssueHandler(instance).handle()
 
 

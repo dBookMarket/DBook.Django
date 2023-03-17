@@ -6,6 +6,9 @@ import json
 from urllib.parse import quote
 
 from django.conf import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class SocialMediaFactory(object):
@@ -95,7 +98,7 @@ class TwitterHandler(SocialMediaHandler):
 
         resp = requests.post(_uri, data=_data)
 
-        print('response from access token api ->', resp, resp.text, resp.content)
+        logger.info('response from access token api ->', resp, resp.text, resp.content)
 
         if not resp.ok:
             raise RequestError(f'Fail to get access token, error is {resp.text}')
@@ -103,7 +106,7 @@ class TwitterHandler(SocialMediaHandler):
         try:
             resp_data = resp.json()
         except requests.exceptions.JSONDecodeError as e:
-            print(f'Warning: Exception when calling TwitterHandler.get_access_token -> {e}')
+            logger.error(f'Warning: Exception when calling TwitterHandler.get_access_token -> {e}')
             resp_data = self.txt_to_json(resp.text)
 
         return resp_data['oauth_token'], resp_data['oauth_token_secret']
@@ -125,7 +128,7 @@ class TwitterHandler(SocialMediaHandler):
         try:
             resp = user_client.get_me()
         except Exception as e:
-            print(f'Exception when calling TwitterHandler.get_user -> {e}')
+            logger.error(f'Exception when calling TwitterHandler.get_user -> {e}')
             raise RequestError('Fail to get user profile, please ask manager for help.')
 
         if resp.errors:
@@ -158,10 +161,10 @@ class TwitterHandler(SocialMediaHandler):
         try:
             resp = user_client.create_tweet(text=content)
         except tweepy.errors.Forbidden as e:
-            print(f'Exception when calling TwitterHandler.share -> {e}')
+            logger.error(f'Exception when calling TwitterHandler.share -> {e}')
             raise DuplicationError('You already tweet one.')
         except Exception as e:
-            print(f'Exception when calling TwitterHandler.share -> {e}')
+            logger.error(f'Exception when calling TwitterHandler.share -> {e}')
             raise RequestError('Fail to send share, please try later...')
 
         if resp.errors:
@@ -183,9 +186,9 @@ class TwitterHandler(SocialMediaHandler):
         try:
             auth_url = oauth_user_handler.get_authorization_url(signin_with_twitter=True)
         except Exception as e:
-            print(f'Exception when calling TwitterHandler.authenticate -> {e}')
+            logger.error(f'Exception when calling TwitterHandler.authenticate -> {e}')
             raise RequestError('Fail to authenticate, please try later...')
-        print('auth url->', auth_url)
+        logger.info('auth url->', auth_url)
         return auth_url
 
     def link_user_and_share(self, wallet_addr: str, token: str, verifier: str, content: str):
@@ -265,7 +268,7 @@ class LinkedInHandler(SocialMediaHandler):
             raise RequestError(f'Fail to get access token, error is {resp.text}.')
 
         # get access token
-        # print(resp.json())
+        # logger.info(resp.json())
         access_token = resp.json()['access_token']
         return access_token
 
@@ -281,7 +284,7 @@ class LinkedInHandler(SocialMediaHandler):
         scope = 'r_liteprofile%20r_emailaddress%20w_member_social'
         auth_uri = f'https://www.linkedin.com/oauth/v2/authorization?response_type=code&' \
                    f'client_id={client_id}&redirect_uri={quote(self.REDIRECT_URI)}&state={self.STATE}&scope={scope}'
-        print('auth linkedIn uri ->', auth_uri)
+        logger.info('auth linkedIn uri ->', auth_uri)
         return auth_uri
 
     def get_user(self, access_token: str) -> dict:
@@ -303,7 +306,7 @@ class LinkedInHandler(SocialMediaHandler):
         if not resp.ok:
             raise RequestError(f'Cannot get user profile, error is {resp.text}')
 
-        print('linkedin user info -> ', resp.json())
+        logger.info('linkedin user info -> ', resp.json())
         resp_data = resp.json()
         return {
             'account_id': resp_data['id'],
@@ -340,7 +343,7 @@ class LinkedInHandler(SocialMediaHandler):
         _uri = self._get_uri('shares')
         resp = requests.post(_uri, data=json.dumps(_data), headers=_headers)
 
-        print(resp, resp.json())
+        logger.info(resp, resp.json())
 
         if not resp.ok:
             raise RequestError(f'Fail to send share, error is {resp.text}')

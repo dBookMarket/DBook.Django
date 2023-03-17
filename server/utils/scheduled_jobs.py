@@ -1,17 +1,19 @@
 from books.models import Book, EncryptionKey, Issue, Token
-from stores.models import Transaction
 from django.db.transaction import atomic
-from utils.enums import CeleryTaskStatus, IssueStatus, TransactionStatus
+from utils.enums import CeleryTaskStatus, IssueStatus
 from books.file_service_connector import FileServiceConnector
 from utils.redis_handler import IssueQueue
 from utils.smart_contract_handler import ContractFactory
 from books.issue_handler import IssueHandler
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def watch_celery_task():
     # todo how to update book info
     #   how to upload a book with one cid
-    print('Dealing with celery tasks...')
+    logger.info('Dealing with celery tasks...')
     try:
         file_task_connector = FileServiceConnector()
         books = Book.objects.exclude(task_id='').exclude(status=CeleryTaskStatus.SUCCESS.value)
@@ -41,14 +43,14 @@ def watch_celery_task():
                     book.save()
 
     except Exception as e:
-        print(f'Exception when calling watch_celery_task: {e}')
+        logger.error(f'Exception when calling watch_celery_task: {e}')
 
 
 def issue_timer():
-    print('Check issue queue...')
+    logger.info('Check issue queue...')
     que = IssueQueue()
     issues = que.get_top()
-    print(f'Current issues...{issues}')
+    logger.info(f'Current issues...{issues}')
     if issues:
         queryset = Issue.objects.filter(id__in=issues)
         for issue in queryset:
@@ -61,7 +63,7 @@ def issue_timer():
                         # update status
                         issue.status = IssueStatus.ON_SALE.value
                     except Token.DoesNotExist:
-                        print(f'token not found for issue {issue.id}')
+                        logger.error(f'token not found for issue {issue.id}')
                         issue.status = IssueStatus.UNSOLD.value
                     issue.save()
                     # prepare for sale
@@ -79,7 +81,7 @@ def issue_timer():
                         txn_hash, is_destroyed = contract.burn(issue.book.author.address, issue.token.id,
                                                                issue.quantity - issue.n_circulations)
                         # todo if not destroyed
-                        print(f'Destroy NFT {issue.id} -> log: {txn_hash}')
+                        logger.info(f'Destroy NFT {issue.id} -> log: {txn_hash}')
                         issue.destroy_log = txn_hash
                     else:
                         issue.status = IssueStatus.UNSOLD.value
@@ -99,7 +101,7 @@ def issue_timer():
 #     If some transaction is first release and failed, return money back to the buyer and remove this transaction
 #     Only deal with the oldest five transactions per time because of the high cost of smart contract's operation
 #     """
-#     print('Money back to the buyers...')
+#     logger.info('Money back to the buyers...')
 #     queryset = Transaction.objects.filter(status=TransactionStatus.FAILURE.value, trade__first_release=True).order_by(
 #         'created_at')
 #     for txn in queryset[:5]:
@@ -109,5 +111,5 @@ def issue_timer():
 #             if success:
 #                 txn.delete()
 #         except Exception as e:
-#             print(f'Exception when paying back to the buyer -> {e}')
+#             logger.error(f'Exception when paying back to the buyer -> {e}')
 #             pass

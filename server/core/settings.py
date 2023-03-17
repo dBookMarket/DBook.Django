@@ -234,7 +234,7 @@ LOGGING = {
     'propagate': False,
     'formatters': {
         'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'format': '{process:d} {thread:d} {levelname} {asctime} {module} {message}',
             'style': '{',
         },
         'simple': {
@@ -246,7 +246,7 @@ LOGGING = {
         'console': {
             'level': 'INFO',
             'class': 'logging.StreamHandler',
-            'formatter': 'simple'
+            'formatter': 'verbose'
         },
         'file': {
             'level': 'DEBUG',
@@ -257,20 +257,20 @@ LOGGING = {
             'interval': 1,
             'backupCount': 1
         },
-        'gunicorn_error': {
-            'class': 'logging.handlers.RotatingFileHandler',
-            'maxBytes': 1024 * 1024 * 600,
-            'backupCount': 1,
-            'formatter': 'verbose',
-            'filename': os.path.join(BASE_DIR, 'logs', 'gunicorn.error.log')
-        },
-        'gunicorn_access': {
-            'class': 'logging.handlers.RotatingFileHandler',
-            'maxBytes': 1024 * 1024 * 600,
-            'backupCount': 1,
-            'formatter': 'verbose',
-            'filename': os.path.join(BASE_DIR, 'logs', 'gunicorn.access.log')
-        }
+        # 'gunicorn_error': {
+        #     'class': 'logging.handlers.RotatingFileHandler',
+        #     'maxBytes': 1024 * 1024 * 600,
+        #     'backupCount': 1,
+        #     'formatter': 'verbose',
+        #     'filename': os.path.join(BASE_DIR, 'logs', 'gunicorn.error.log')
+        # },
+        # 'gunicorn_access': {
+        #     'class': 'logging.handlers.RotatingFileHandler',
+        #     'maxBytes': 1024 * 1024 * 600,
+        #     'backupCount': 1,
+        #     'formatter': 'verbose',
+        #     'filename': os.path.join(BASE_DIR, 'logs', 'gunicorn.access.log')
+        # }
     },
     'root': {
         'handlers': ['console', 'file'],
@@ -282,18 +282,18 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': False
         },
-        'gunicorn.error': {
-            'handlers': ['gunicorn_error'],
-            'level': 'DEBUG',
-            'propagate': True,
-            'qualname': 'gunicorn.error'
-        },
-        'gunicorn.access': {
-            'handlers': ['gunicorn_access'],
-            'level': 'INFO',
-            'propagate': False,
-            'qualname': 'gunicorn.access'
-        }
+        # 'gunicorn.error': {
+        #     'handlers': ['gunicorn_error'],
+        #     'level': 'DEBUG',
+        #     'propagate': True,
+        #     'qualname': 'gunicorn.error'
+        # },
+        # 'gunicorn.access': {
+        #     'handlers': ['gunicorn_access'],
+        #     'level': 'INFO',
+        #     'propagate': False,
+        #     'qualname': 'gunicorn.access'
+        # }
     }
 }
 
@@ -4557,6 +4557,8 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^https?://(.+\.)?(ddid|dbookmarket)\.\w+$",
     r"^https?://127\.0\.0\.1(:\d+)?$",
     r"^https?://localhost(:\d+)?$",
+    # for test
+    r"^https?://42.192.210.104(:\d+)?$"
 ]
 # CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
