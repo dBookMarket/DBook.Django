@@ -141,12 +141,12 @@ class UserViewSet(BaseViewSet):
     def add_author_perm(self):
         _user = self.request.user
 
-        # add author perm into smart contract
-        added = bool(PolygonHandler().add_author(_user.address) and
-                     BNBHandler().add_author(_user.address) and
-                     FilecoinHandler().add_author(_user.address))
-        if not added:
-            raise ValidationError({'detail': 'Fail to add perm on block-chain, please try later.'})
+        # todo add author perm into smart contract
+        # added = bool(PolygonHandler().add_author(_user.address) and
+        #              BNBHandler().add_author(_user.address) and
+        #              FilecoinHandler().add_author(_user.address))
+        # if not added:
+        #     raise ValidationError({'detail': 'Fail to add perm on block-chain, please try later.'})
 
         # add issue perm
         # role author

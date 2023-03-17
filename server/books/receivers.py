@@ -42,8 +42,12 @@ def upload_pdf(obj_book):
 
 def html_to_epub(obj_book: Book):
     if obj_book.draft:
+        if not os.path.exists(settings.TEMPORARY_ROOT):
+            os.makedirs(settings.TEMPORARY_ROOT)
+
         filename = f'{uuid.uuid4().hex}.epub'
         filepath = os.path.join(settings.TEMPORARY_ROOT, filename)
+
         book = epub.EpubBook()
         book.set_title(obj_book.draft.title)
         book.add_author(obj_book.author.name)
