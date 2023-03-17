@@ -43,7 +43,8 @@ class PlatformContractHandler(object):
         BNB needs a gas price to send a transaction
         2 gwei -> 2*10^9 wei
         """
-        return Web3.toWei(2, 'gwei')
+        # return Web3.toWei(2, 'gwei')
+        return self.web3.eth.gas_price
 
     def add_author(self, account_addr: str) -> bool:
         """

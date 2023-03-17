@@ -17,7 +17,7 @@ def epub_to_pdf(filename: str, pdf_filename: str):
     # p_dir, _ = os.path.split(filename)
     extracted_dir = os.path.join(settings.TEMPORARY_ROOT, uuid4().hex)
     if not os.path.exists(extracted_dir):
-        os.mkdir(extracted_dir)
+        os.makedirs(extracted_dir)
 
     try:
         # convert epub to zip
