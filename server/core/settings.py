@@ -234,11 +234,11 @@ LOGGING = {
     'propagate': False,
     'formatters': {
         'verbose': {
-            'format': '{process:d} {thread:d} {levelname} {asctime} {module} {message}',
+            'format': '[{process:d}][{thread:d}][{levelname}][{asctime}][{module}]: {message}',
             'style': '{',
         },
         'simple': {
-            'format': '{levelname} {message}',
+            'format': '[{levelname}]: {message}',
             'style': '{',
         },
     },

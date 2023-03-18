@@ -46,6 +46,9 @@ class PlatformContractHandler(object):
         # return Web3.toWei(2, 'gwei')
         return self.web3.eth.gas_price
 
+    def build_transaction_params(self, kwargs: dict) -> dict:
+        return kwargs
+
     def add_author(self, account_addr: str) -> bool:
         """
         Give the user issue permission from contract.
@@ -54,10 +57,11 @@ class PlatformContractHandler(object):
             # check account address
             account_addr = Web3.toChecksumAddress(account_addr)
 
-            logger.error('admin address ->', self.admin_account.address)
+            logger.error(f'admin address -> {self.admin_account.address}')
             nonce = self.web3.eth.get_transaction_count(self.admin_account.address)
             transaction = self.contract.functions.addAuth(account_addr).buildTransaction(
-                {'from': self.admin_account.address, 'nonce': nonce, 'gasPrice': self.get_gas_price()})
+                self.build_transaction_params({'from': self.admin_account.address, 'nonce': nonce})
+            )
             signed_txn = self.admin_account.sign_transaction(transaction)
             txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
         except Exception as e:
@@ -74,9 +78,9 @@ class PlatformContractHandler(object):
         :param retry: int, retry the transaction, default 3.
         """
         nonce = self.web3.eth.get_transaction_count(self.platform_account.address)
-        transaction = self.usdc_contract.functions.approve(self.contract.address, amount).buildTransaction({
-            'from': self.platform_account.address, 'nonce': nonce, 'gasPrice': self.get_gas_price()
-        })
+        transaction = self.usdc_contract.functions.approve(self.contract.address, amount).buildTransaction(
+            self.build_transaction_params({'from': self.platform_account.address, 'nonce': nonce})
+        )
         signed_txn = self.platform_account.sign_transaction(transaction)
         txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
         # get result
@@ -110,9 +114,9 @@ class PlatformContractHandler(object):
         # send transaction
         nonce = self.web3.eth.get_transaction_count(self.platform_account.address)
         transaction = self.contract.functions.runFirstTrade(seller, self.to_usdc(payment), mint_amount,
-                                                            buyer, token_id, amount, '0x01').buildTransaction({
-            'from': self.platform_account.address, 'nonce': nonce, 'gasPrice': self.get_gas_price()
-        })
+                                                            buyer, token_id, amount, '0x01').buildTransaction(
+            self.build_transaction_params({'from': self.platform_account.address, 'nonce': nonce})
+        )
         signed_txn = self.platform_account.sign_transaction(transaction)
         txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
         # get result
@@ -136,12 +140,11 @@ class PlatformContractHandler(object):
         to = Web3.toChecksumAddress(to)
 
         # send transaction
-        txn_hash = self.web3.eth.send_transaction({
+        txn_hash = self.web3.eth.send_transaction(self.build_transaction_params({
             'from': self.admin_account.address,
             'to': to,
-            'value': self.to_usdc(amount),
-            'gasPrice': self.get_gas_price()
-        })
+            'value': self.to_usdc(amount)
+        }))
         receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash)
         return receipt['status'] == 1
 
@@ -161,9 +164,9 @@ class PlatformContractHandler(object):
     def set_token_price(self, token_id: int, price: float) -> tuple:
         try:
             nonce = self.web3.eth.get_transaction_count(self.admin_account.address)
-            txn = self.contract.functions.setNftPrice(token_id, self.to_usdc(price)).buildTransaction({
-                'from': self.admin_account.address, 'nonce': nonce, 'gasPrice': self.get_gas_price()
-            })
+            txn = self.contract.functions.setNftPrice(token_id, self.to_usdc(price)).buildTransaction(
+                self.build_transaction_params({'from': self.admin_account.address, 'nonce': nonce})
+            )
             signed_txn = self.admin_account.sign_transaction(txn)
             txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
         except Exception as e:
@@ -177,9 +180,9 @@ class PlatformContractHandler(object):
             author = Web3.toChecksumAddress(author)
 
             nonce = self.web3.eth.get_transaction_count(self.admin_account.address)
-            txn = self.contract.functions.setPublisherAddress(token_id, author).buildTransaction({
-                'from': self.admin_account.address, 'nonce': nonce, 'gasPrice': self.get_gas_price()
-            })
+            txn = self.contract.functions.setPublisherAddress(token_id, author).buildTransaction(
+                self.build_transaction_params({'from': self.admin_account.address, 'nonce': nonce})
+            )
             signed_txn = self.admin_account.sign_transaction(txn)
             txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
         except Exception as e:
@@ -192,9 +195,9 @@ class PlatformContractHandler(object):
         try:
             nonce = self.web3.eth.get_transaction_count(self.admin_account.address)
             txn = self.contract.functions.setPublisherRatio(token_id,
-                                                            self.to_percent_percent(royalty)).buildTransaction({
-                'from': self.admin_account.address, 'nonce': nonce, 'gasPrice': self.get_gas_price()
-            })
+                                                            self.to_percent_percent(royalty)).buildTransaction(
+                self.build_transaction_params({'from': self.admin_account.address, 'nonce': nonce})
+            )
             signed_txn = self.admin_account.sign_transaction(txn)
             txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
         except Exception as e:
@@ -211,9 +214,9 @@ class PlatformContractHandler(object):
             #     raise RuntimeError(f'Cannot add auth for {owner}')
 
             nonce = self.web3.eth.get_transaction_count(self.admin_account.address)
-            txn = self.contract.functions.burn(owner, token_id, amount).buildTransaction({
-                'from': self.admin_account.address, 'nonce': nonce, 'gasPrice': self.get_gas_price()
-            })
+            txn = self.contract.functions.burn(owner, token_id, amount).buildTransaction(
+                self.build_transaction_params({'from': self.admin_account.address, 'nonce': nonce})
+            )
             signed_txn = self.admin_account.sign_transaction(txn)
             txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
             receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash)
@@ -258,6 +261,11 @@ class BNBHandler(PlatformContractHandler):
             abi=settings.CONTRACT_SETTINGS['BNB']['USDC_CONTRACT_ABI']
         )
 
+    def build_transaction_params(self, kwargs: dict) -> dict:
+        _params = super().build_transaction_params(kwargs)
+        _params['gasPrice'] = self.get_gas_price()
+        return _params
+
 
 class FilecoinHandler(PlatformContractHandler):
 
@@ -271,6 +279,13 @@ class FilecoinHandler(PlatformContractHandler):
             address=settings.CONTRACT_SETTINGS['FILECOIN']['USDC_CONTRACT_ADDRESS'],
             abi=settings.CONTRACT_SETTINGS['FILECOIN']['USDC_CONTRACT_ABI']
         )
+
+    def build_transaction_params(self, kwargs: dict) -> dict:
+        _params = super().build_transaction_params(kwargs)
+        _params['gasPrice'] = self.get_gas_price()
+        _params['maxFeePerGas'] = Web3.toWei(3, 'gwei')
+        _params['maxPriorityFeePerGas'] = Web3.toWei(2, 'gwei')
+        return _params
 
 
 class ContractFactory:

@@ -98,7 +98,7 @@ class TwitterHandler(SocialMediaHandler):
 
         resp = requests.post(_uri, data=_data)
 
-        logger.info('response from access token api ->', resp, resp.text, resp.content)
+        logger.info(f'response from access token api -> {resp}, {resp.text}, {resp.content}')
 
         if not resp.ok:
             raise RequestError(f'Fail to get access token, error is {resp.text}')
@@ -188,7 +188,7 @@ class TwitterHandler(SocialMediaHandler):
         except Exception as e:
             logger.error(f'Exception when calling TwitterHandler.authenticate -> {e}')
             raise RequestError('Fail to authenticate, please try later...')
-        logger.info('auth url->', auth_url)
+        logger.info(f'auth url-> {auth_url}')
         return auth_url
 
     def link_user_and_share(self, wallet_addr: str, token: str, verifier: str, content: str):
@@ -284,7 +284,7 @@ class LinkedInHandler(SocialMediaHandler):
         scope = 'r_liteprofile%20r_emailaddress%20w_member_social'
         auth_uri = f'https://www.linkedin.com/oauth/v2/authorization?response_type=code&' \
                    f'client_id={client_id}&redirect_uri={quote(self.REDIRECT_URI)}&state={self.STATE}&scope={scope}'
-        logger.info('auth linkedIn uri ->', auth_uri)
+        logger.info(f'auth linkedIn uri -> {auth_uri}')
         return auth_uri
 
     def get_user(self, access_token: str) -> dict:
@@ -306,7 +306,7 @@ class LinkedInHandler(SocialMediaHandler):
         if not resp.ok:
             raise RequestError(f'Cannot get user profile, error is {resp.text}')
 
-        logger.info('linkedin user info -> ', resp.json())
+        logger.info(f'linkedin user info -> {resp.json()}')
         resp_data = resp.json()
         return {
             'account_id': resp_data['id'],
@@ -343,7 +343,7 @@ class LinkedInHandler(SocialMediaHandler):
         _uri = self._get_uri('shares')
         resp = requests.post(_uri, data=json.dumps(_data), headers=_headers)
 
-        logger.info(resp, resp.json())
+        logger.info(f'share response -> {resp}, {resp.json()}')
 
         if not resp.ok:
             raise RequestError(f'Fail to send share, error is {resp.text}')
