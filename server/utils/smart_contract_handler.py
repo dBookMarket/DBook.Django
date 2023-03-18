@@ -282,7 +282,6 @@ class FilecoinHandler(PlatformContractHandler):
 
     def build_transaction_params(self, kwargs: dict) -> dict:
         _params = super().build_transaction_params(kwargs)
-        _params['gasPrice'] = self.get_gas_price()
         _params['maxFeePerGas'] = Web3.toWei(3, 'gwei')
         _params['maxPriorityFeePerGas'] = Web3.toWei(2, 'gwei')
         return _params
