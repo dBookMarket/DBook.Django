@@ -6,6 +6,9 @@ from utils.serializers import CustomPKRelatedField
 from django.db.models import Min, Max
 from django.contrib.auth.models import AnonymousUser
 from books.models import Issue, Asset
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class UserRegistrySerializer(serializers.ModelSerializer):
@@ -56,7 +59,7 @@ class UserSerializer(serializers.ModelSerializer):
         try:
             return request.build_absolute_uri(f_obj.url) if f_obj else ''
         except Exception as e:
-            print(f'Fail to get absolute url, error:{e}')
+            logger.error(f'Fail to get absolute url, error:{e}')
             return ''
 
     def get_avatar_url(self, obj):

@@ -140,11 +140,15 @@ class PlatformContractHandler(object):
         to = Web3.toChecksumAddress(to)
 
         # send transaction
-        txn_hash = self.web3.eth.send_transaction(self.build_transaction_params({
+        nonce = self.web3.eth.get_transaction_count(self.admin_account.address)
+        signed_txn = self.web3.eth.account.sign_transaction(self.build_transaction_params({
+            'nonce': nonce,
             'from': self.admin_account.address,
             'to': to,
-            'value': self.to_usdc(amount)
-        }))
+            'value': self.to_usdc(amount),
+            'data': b''
+        }), self.admin_account.privateKey)
+        txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
         receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash)
         return receipt['status'] == 1
 
@@ -263,7 +267,7 @@ class BNBHandler(PlatformContractHandler):
 
     def build_transaction_params(self, kwargs: dict) -> dict:
         _params = super().build_transaction_params(kwargs)
-        _params['gasPrice'] = self.get_gas_price()
+        _params['gasPrice'] = self.web3.eth.gas_price
         return _params
 
 
@@ -282,8 +286,13 @@ class FilecoinHandler(PlatformContractHandler):
 
     def build_transaction_params(self, kwargs: dict) -> dict:
         _params = super().build_transaction_params(kwargs)
-        _params['maxFeePerGas'] = Web3.toWei(3, 'gwei')
-        _params['maxPriorityFeePerGas'] = Web3.toWei(2, 'gwei')
+
+        _params['maxPriorityFeePerGas'] = self.web3.eth.max_priority_fee
+        _params['maxFeePerGas'] = self.web3.eth.fee_history(1, 'pending')['baseFeePerGas'][
+                                      0] * 2 + self.web3.eth.max_priority_fee
+
+        _gas = self.web3.eth.estimate_gas(_params)
+        _params['gas'] = _gas
         return _params
 
 

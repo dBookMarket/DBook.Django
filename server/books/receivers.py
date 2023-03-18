@@ -73,6 +73,25 @@ def html_to_epub(obj_book: Book):
         book.add_item(epub.EpubNcx())
         book.add_item(epub.EpubNav())
 
+        # define CSS style
+        style = '''
+            body, p {
+                word-break: break-word;
+                width: 100%;
+                overflow-wrap: break-word;
+                word-wrap: break-word;
+                -ms-word-break: break-all;
+                -ms-hyphens: auto;
+                -moz-hyphens: auto;
+                -webkit-hyphens: auto;
+                hyphens: auto;
+            }
+        '''
+        nav_css = epub.EpubItem(uid="style_base", file_name="style/base.css", media_type="text/css", content=style)
+
+        # add CSS file
+        book.add_item(nav_css)
+
         book.spine = ['cover', 'nav', content]
         epub.write_epub(filepath, book)
 

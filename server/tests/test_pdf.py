@@ -66,9 +66,9 @@ if __name__ == '__main__':
     c2.set_content('<h1>Simple book</h1>')
 
     c3 = epub.EpubHtml(title='Content', file_name='content.xhtml', lang='hr')
-    c3.set_content('<html><body><p>Introduction paragraph.sdfffffffff</p>'
-                   '<p>fsdffffffffffffffffffffffsdfsdf</p>'
-                   '<p>fsdfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffsdfsdfdfsdf</p>'
+    c3.set_content('<html><body><p>Introduction paragraph.sdfffffffff'
+                   'fsdffffffffffffffffffffffsdfsdf'
+                   'fsdfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffsdfsdfdfsdf</p>'
                    '<p>fsdddddddddddddddddddddddddddddddddddfsdfs</p>'
                    '<p>fsdffffffffffffffffffffffffff</p></body></html>')
 
@@ -79,6 +79,24 @@ if __name__ == '__main__':
     # book.toc = (epub.Link('content.xhtml', 'Content', 'content'),)
     # book.add_item(epub.EpubNcx())
     # book.add_item(epub.EpubNav())
+    # define CSS style
+    style = '''
+        body, p {
+            word-break: break-word;
+            width: 100%;
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+            -ms-word-break: break-all;
+            -ms-hyphens: auto;
+            -moz-hyphens: auto;
+            -webkit-hyphens: auto;
+            hyphens: auto;
+        }
+    '''
+    nav_css = epub.EpubItem(uid="style_base", file_name="style/base.css", media_type="text/css", content=style)
+
+    # add CSS file
+    book.add_item(nav_css)
 
     book.spine = ['cover', c1, c2, c3]
     epub.write_epub('book.epub', book)

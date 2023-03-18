@@ -3,6 +3,9 @@ from collections import OrderedDict
 from rest_framework import serializers
 from guardian.shortcuts import assign_perm
 from django.contrib.auth.models import Group, Permission
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class BaseSerializer(serializers.ModelSerializer):
@@ -32,7 +35,7 @@ class BaseSerializer(serializers.ModelSerializer):
         try:
             return self.context['request'].build_absolute_uri(f_obj.url)
         except Exception as e:
-            print(f'Fail to get absolute url, error:{e}')
+            logger.error(f'Fail to get absolute url, error:{e}')
             return ''
 
     def _validate_file(self, f_obj, allowed_extensions, max_size):
