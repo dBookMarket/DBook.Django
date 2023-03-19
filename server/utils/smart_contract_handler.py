@@ -142,11 +142,13 @@ class PlatformContractHandler(object):
         # send transaction
         nonce = self.web3.eth.get_transaction_count(self.admin_account.address)
         signed_txn = self.web3.eth.account.sign_transaction(self.build_transaction_params({
+            'chainId': self.web3.eth.chain_id,
             'nonce': nonce,
             'from': self.admin_account.address,
             'to': to,
             'value': self.to_usdc(amount),
-            'data': b''
+            'data': b'',
+            'gas': 100000
         }), self.admin_account.privateKey)
         txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
         receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash)
@@ -289,10 +291,13 @@ class FilecoinHandler(PlatformContractHandler):
 
         _params['maxPriorityFeePerGas'] = self.web3.eth.max_priority_fee
         _params['maxFeePerGas'] = self.web3.eth.fee_history(1, 'pending')['baseFeePerGas'][
-                                      0] * 2 + self.web3.eth.max_priority_fee
+                                      0] * 2 + _params['maxPriorityFeePerGas']
 
-        _gas = self.web3.eth.estimate_gas(_params)
-        _params['gas'] = _gas
+        # {'code': 1, 'message': 'failed to estimate gas: message execution failed: exit 16,
+        # revert reason: none, vm error: message failed with backtrace:\n00: f010 (method 4)
+        # -- method expects arguments (16)\n (RetCode=16)'}
+        # _gas = self.web3.eth.estimate_gas(_params)
+        # _params['gas'] = _gas
         return _params
 
 
