@@ -20,7 +20,15 @@ celery==5.2.6
 django-apscheduler==0.6.2
 django-grappelli==3.0.3
 django-cors-headers==3.11.0
-pytest-cov==3.0.0
+pytest-cov==4.0.0
 tweepy==4.10.0
-weasyprint==52.5
+weasyprint==58.1
 pandas==1.5.1
+EbookLib==0.18
+channels==3.0.5
+channels-redis==3.4.1
+daphne==3.0.2
+beautifulsoup4==4.11.2
+lxml==4.6.3
+pdfkit==0.6.1
+PyPDF2==1.26.0

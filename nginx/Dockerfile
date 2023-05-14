@@ -3,6 +3,7 @@ FROM nginx:${NGINX_VERSION}
 
 COPY ./html /usr/share/nginx/html
 COPY ./app /home/app
+COPY ./cert /etc/nginx/cert
 
 RUN mv /etc/nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf.bak
 

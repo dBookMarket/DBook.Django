@@ -1,4 +1,4 @@
-from django.db.models.signals import post_save, pre_delete, pre_save
+from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 from books.models import Asset, Issue, Book, Draft, Bookmark, Wishlist, Token
 from django.db.transaction import atomic
@@ -10,11 +10,15 @@ from weasyprint import HTML
 from django.conf import settings
 import os
 import uuid
-# from django.core.files import File
+from ebooklib import epub
+from django.core.files import File
 from books.models import Preview
 from books.signals import sig_issue_new_book
 from books.issue_handler import IssueHandler
-from books.pdf_handler import PDFHandler
+from books.file_handler import FileHandlerFactory
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def upload_pdf(obj_book):
@@ -24,19 +28,90 @@ def upload_pdf(obj_book):
         if obj_book.task_id:
             file_service_connector.revoke_task(obj_book.task_id)
     except Exception as e:
-        print(f'Exception when revoking file upload task: {e}, task id: {obj_book.task_id}')
+        logger.error(f'Exception when revoking file upload task: {e}, task id: {obj_book.task_id}')
         raise ValidationError(
             {'file': 'Update file failed because of the failure of revoking the old one.'}
         )
     # start a new task
     try:
-        print(f'pdf path -> {obj_book.file.path}')
+        logger.info(f'pdf path -> {obj_book.file.path}')
         result = file_service_connector.upload_file(obj_book.file.path)
         if result:
             obj_book.task_id = result.task_id
             obj_book.save()
     except Exception as e:
-        print(f'Exception when calling upload_pdf: {e}')
+        logger.error(f'Exception when calling upload_pdf: {e}')
+
+
+def html_to_epub(obj_book: Book):
+    if obj_book.draft:
+        if not os.path.exists(settings.TEMPORARY_ROOT):
+            os.makedirs(settings.TEMPORARY_ROOT)
+
+        filename = f'{uuid.uuid4().hex}.epub'
+        filepath = os.path.join(settings.TEMPORARY_ROOT, filename)
+
+        book = epub.EpubBook()
+        book.set_title(obj_book.draft.title)
+        book.add_author(obj_book.author.name)
+        book.set_cover('cover.jpg', obj_book.cover.open('rb').read())
+
+        # cover = epub.EpubHtml(title='Cover', file_name='cover-page.xhtml')
+        # cover.set_content('<p><img src="cover.jpg" alt="cover image"/></p>')
+
+        # title = epub.EpubHtml(title='Title', file_name='title-page.xhtml')
+        # title.set_content(f'<h1>{obj_book.draft.title}</h1>')
+
+        content = epub.EpubHtml(title='Content', file_name='content-page.xhtml')
+        content.set_content(obj_book.draft.content)
+
+        # book.add_item(cover)
+        # book.add_item(title)
+        book.add_item(content)
+
+        book.toc = (epub.Link('content-page.xhtml', 'Content', 'content'),)
+        book.add_item(epub.EpubNcx())
+        book.add_item(epub.EpubNav())
+
+        # define CSS style
+        style = '''
+            body, p {
+                word-break: break-word;
+                width: 100%;
+                overflow-wrap: break-word;
+                word-wrap: break-word;
+                -ms-word-break: break-all;
+                -ms-hyphens: auto;
+                -moz-hyphens: auto;
+                -webkit-hyphens: auto;
+                hyphens: auto;
+            }
+        '''
+        nav_css = epub.EpubItem(uid="style_base", file_name="style/base.css", media_type="text/css", content=style)
+
+        # add CSS file
+        book.add_item(nav_css)
+
+        book.spine = ['cover', 'nav', content]
+        epub.write_epub(filepath, book)
+
+        try:
+            with open(filepath, 'rb') as f:
+                obj_book.file.save(f'{obj_book.draft.title}.epub', File(f))
+        finally:
+            os.remove(filepath)
+
+
+def html_to_pdf(obj_book: Book):
+    if obj_book.draft:
+        filename = f'{uuid.uuid4().hex}.pdf'
+        filepath = os.path.join(settings.TEMPORARY_ROOT, filename)
+        HTML(string=obj_book.draft.content).write_pdf(filepath)
+        try:
+            with open(filepath, 'rb') as f:
+                obj_book.file.save(f'{obj_book.draft.title}.pdf', File(f))
+        finally:
+            os.remove(filepath)
 
 
 @receiver(post_save, sender=Draft)
@@ -55,28 +130,20 @@ def post_save_book(sender, instance, **kwargs):
 @atomic
 def issue_new_book(sender, instance, **kwargs):
     # convert draft to pdf if using draft
-    if instance.draft:
-        filename = f'{uuid.uuid4().hex}.pdf'
-        filepath = os.path.join(settings.TEMPORARY_ROOT, filename)
-        HTML(string=instance.draft.content).write_pdf(filepath)
-        # try:
-        #     with open(filepath, 'rb') as f:
-        #         instance.file.save(f'{instance.draft.title}.pdf', File(f))
-        # finally:
-        #     os.remove(filepath)
-        instance.file = f'{settings.TEMPORARY_DIR}/{filename}'
-        instance.save()
+    html_to_epub(instance)
+
     # add preview
-    pdf_handler = PDFHandler(instance.file.path)
+    # pdf_handler = PDFHandler(instance.file.path)
+    f_handler = FileHandlerFactory(instance.type, instance.file.path)
     obj_preview, created = Preview.objects.get_or_create(book=instance)
     if not created and obj_preview.file:
         obj_preview.file.delete()
-    pre_file = pdf_handler.get_preview_doc(from_page=obj_preview.start_page - 1,
-                                           to_page=obj_preview.start_page + obj_preview.n_pages - 2)
+    pre_file = f_handler.get_preview_doc(from_page=obj_preview.start_page - 1,
+                                         to_page=obj_preview.start_page + obj_preview.n_pages - 2)
     obj_preview.file = pre_file
     obj_preview.save()
     # update number of pages
-    instance.n_pages = pdf_handler.get_pages()
+    instance.n_pages = f_handler.get_pages()
     instance.save()
     # upload file to filecoin
     upload_pdf(instance)
@@ -89,14 +156,8 @@ def post_save_issue(sender, instance, **kwargs):
 
     if instance.status == IssueStatus.PRE_SALE.value:
         # set timer
-        print(f'Put issue {instance.id} into the queue')
+        logger.info(f'Put issue {instance.id} into the queue')
         IssueHandler(instance).handle()
-
-
-@receiver(pre_save, sender=Issue)
-def pre_save_issue(sender, instance, **kwargs):
-    if instance.status == IssueStatus.OFF_SALE.value:
-        raise ValidationError(f"Sorry, it is not allowed to resale this book")
 
 
 @receiver(pre_delete, sender=Issue)

@@ -4,6 +4,7 @@ from stores.models import Trade
 from utils.enums import IssueStatus, BlockChainType, CeleryTaskStatus
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
+from django.core.validators import MinValueValidator, MaxValueValidator
 import uuid
 import os
 
@@ -17,6 +18,7 @@ class Draft(BaseModel):
     content = models.TextField(max_length=1000000, verbose_name='内容')
 
     class Meta:
+        ordering = ['-updated_at']
         verbose_name = '草稿'
         verbose_name_plural = verbose_name
 
@@ -45,7 +47,7 @@ class Book(BaseModel):
 
     class Meta:
         # UnorderedObjectListWarning
-        ordering = ['id']
+        ordering = ['-updated_at']
         verbose_name = '书籍'
         verbose_name_plural = verbose_name
 
@@ -55,37 +57,6 @@ class Book(BaseModel):
             extension = os.path.splitext(self.file.name)[1].replace('.', '')
             self.type = extension.lower()
         super().save(force_insert, force_update, using, update_fields)
-
-
-class Issue(BaseModel):
-    id = models.UUIDField(verbose_name='id', primary_key=True, blank=True, default=uuid.uuid4())
-
-    book = models.OneToOneField(to='Book', to_field='id', related_name='issue_book', verbose_name='书籍',
-                                on_delete=models.CASCADE)
-
-    quantity = models.IntegerField(blank=True, default=1, verbose_name='发行数量')
-    price = models.FloatField(blank=True, default=0, verbose_name='发行价格')
-    royalty = models.FloatField(blank=True, default=0, verbose_name='版税%')
-    buy_limit = models.IntegerField(blank=True, default=1, verbose_name='购买限制')
-    published_at = models.DateTimeField(verbose_name='发行时间')
-    duration = models.IntegerField(verbose_name='发行时长(min)')
-    n_circulations = models.IntegerField(blank=True, default=0, verbose_name='流通数量')
-    # destroyed_quantity = models.IntegerField(blank=True, default=0, verbose_name='销毁数量')
-    status = models.CharField(blank=True, max_length=50, choices=IssueStatus.choices(),
-                              default=IssueStatus.PRE_SALE.value, verbose_name='发行状态')
-    destroy_log = models.CharField(blank=True, default='', max_length=42, verbose_name='销毁地址')
-
-    class Meta:
-        ordering = ['id']
-        verbose_name = '书籍出版'
-        verbose_name_plural = verbose_name
-
-    def __str__(self):
-        return self.book.title
-
-    @property
-    def token(self):
-        return self.token_issue
 
 
 class Token(BaseModel):
@@ -105,6 +76,52 @@ class Token(BaseModel):
 
     def __str__(self):
         return f'{self.issue.book.title}'
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        if self.block_chain == BlockChainType.POLYGON.value:
+            self.contract_address = settings.CONTRACT_SETTINGS['POLYGON']['DBOOK_CONTRACT_ADDRESS']
+        elif self.block_chain == BlockChainType.BNB.value:
+            self.contract_address = settings.CONTRACT_SETTINGS['BNB']['DBOOK_CONTRACT_ADDRESS']
+        super().save(force_insert, force_update, using, update_fields)
+
+
+class Issue(BaseModel):
+    """
+    Only one issue of a book can be allowed to create
+    """
+    id = models.UUIDField(verbose_name='id', primary_key=True, default=uuid.uuid4, editable=False)
+
+    book = models.OneToOneField(to='Book', to_field='id', related_name='issue_book', verbose_name='书籍',
+                                on_delete=models.CASCADE)
+
+    quantity = models.IntegerField(blank=True, default=1, verbose_name='发行数量')
+    price = models.FloatField(blank=True, default=0, verbose_name='发行价格')
+    royalty = models.FloatField(blank=True, default=0, verbose_name='版税%',
+                                validators=[MinValueValidator(0), MaxValueValidator(100)])
+    buy_limit = models.IntegerField(blank=True, default=1, verbose_name='购买限制')
+    published_at = models.DateTimeField(verbose_name='发行时间')
+    duration = models.IntegerField(verbose_name='发行时长(min)')
+    n_circulations = models.IntegerField(blank=True, default=0, verbose_name='流通数量')
+    # destroyed_quantity = models.IntegerField(blank=True, default=0, verbose_name='销毁数量')
+    status = models.CharField(blank=True, max_length=50, choices=IssueStatus.choices(),
+                              default=IssueStatus.PRE_SALE.value, verbose_name='发行状态')
+    destroy_log = models.CharField(blank=True, default='', max_length=128, verbose_name='销毁地址')
+
+    class Meta:
+        ordering = ['-updated_at']
+        verbose_name = '书籍出版'
+        verbose_name_plural = verbose_name
+
+    def __str__(self):
+        return self.book.title
+
+    @property
+    def token(self):
+        try:
+            return Token.objects.get(issue=self)
+        except Token.DoesNotExist:
+            return None
 
 
 class Bookmark(BaseModel):
@@ -156,7 +173,7 @@ class Asset(BaseModel):
     # file = models.FileField(upload_to='tmp', blank=True, default='')
 
     class Meta:
-        ordering = ['id']
+        ordering = ['-updated_at']
         verbose_name = '个人资产'
         verbose_name_plural = verbose_name
 
@@ -206,7 +223,7 @@ class Wishlist(BaseModel):
                               verbose_name='发行书籍')
 
     class Meta:
-        ordering = ['id']
+        ordering = ['-updated_at']
         verbose_name = '心愿单'
         verbose_name_plural = verbose_name
 
@@ -220,7 +237,7 @@ class Advertisement(BaseModel):
     show = models.BooleanField(blank=True, default=True, verbose_name='是否显示')
 
     class Meta:
-        ordering = ['id']
+        ordering = ['-updated_at']
         verbose_name = '广告'
         verbose_name_plural = verbose_name
 

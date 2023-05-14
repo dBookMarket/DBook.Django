@@ -1,9 +1,9 @@
 from . import models, serializers, filters
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated, DjangoObjectPermissions, IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from authorities.permissions import ObjectPermissionsOrReadOnly
 from rest_framework.response import Response
-from django.db.models import Q, Sum
+from django.db.models import Q, Sum, F
 from utils.views import BaseViewSet
 
 
@@ -51,17 +51,19 @@ class TransactionViewSet(BaseViewSet):
         Count the sales of each day
         """
         queryset = self.filter_queryset(self.get_queryset())
-        _queryset = queryset.values('created_at__date').annotate(q=Sum('quantity')).values('created_at__date',
-                                                                                           'q').order_by(
-            'created_at__date')
+        _queryset = queryset.values('created_at').annotate(q=Sum('quantity'), p=Sum(F('quantity') * F('price'))).values(
+            'created_at', 'q', 'p').order_by('created_at')
         dates = []
         quantities = []
+        prices = []
         for obj in _queryset:
-            dates.append(obj.created_at__date.strftime('%Y-%m-%d'))
-            quantities.append(obj.q)
+            dates.append(obj['created_at'].strftime('%Y-%m-%d %H:%M:%S'))
+            quantities.append(obj['q'])
+            prices.append(obj['p'])
         return Response({
             'dates': dates,
-            'quantities': quantities
+            'quantities': quantities,
+            'prices': prices
         })
 
 
@@ -70,12 +72,13 @@ class BenefitViewSet(BaseViewSet):
     serializer_class = serializers.BenefitSerializer
     http_method_names = ['get']
 
-    @action(methods=['get'], detail=False, url_path='total')
+    @action(methods=['get'], detail=False, url_path='total', permission_classes=[IsAuthenticated])
     def total(self, request, *args, **kwargs):
         """
         return the user's total benefit
         """
         queryset = self.filter_queryset(self.get_queryset())
-        t_benefits = queryset.values('currency').annotate(t_amount=Sum('amount')).values('currency', 't_amount')
-        res = [{'currency': _obj.currency, 'amount': _obj.t_amount} for _obj in t_benefits]
+        t_benefits = queryset.filter(user=request.user).values('currency').annotate(t_amount=Sum('amount')).values(
+            'currency', 't_amount')
+        res = [{'currency': _obj.get('currency', 0), 'amount': _obj.get('t_amount', 0)} for _obj in t_benefits]
         return Response(res)

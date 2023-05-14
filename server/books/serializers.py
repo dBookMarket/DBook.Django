@@ -1,22 +1,15 @@
-# import os
-# from uuid import uuid4
 from rest_framework import serializers
-# from rest_framework.exceptions import PermissionDenied
 from . import models, signals
 from users.models import User
 from users.serializers import UserRelatedField
-# from accounts.serializers import UserListingSerializer
 from stores.models import Trade
 from utils.serializers import BaseSerializer, CustomPKRelatedField
-from utils.enums import CeleryTaskStatus
+from utils.enums import CeleryTaskStatus, BlockChainType
 from rest_framework.validators import UniqueValidator, UniqueTogetherValidator
-# from secure.encryption_handler import EncryptionHandler
-# from django.conf import settings
 from django.db.models import Max, Min, Sum
-# from books.file_service_connector import FileServiceConnector
-# from books.issue_handler import IssueHandler
 from django.contrib.auth.models import AnonymousUser
 from django.forms.models import model_to_dict
+from django.utils import timezone
 import copy
 
 
@@ -46,19 +39,17 @@ class BookSerializer(BaseSerializer):
     cover_url = serializers.SerializerMethodField(read_only=True)
 
     status = serializers.ReadOnlyField()
-    # bookmark = serializers.SerializerMethodField(read_only=True)
-    # token = serializers.SerializerMethodField(read_only=True)
     preview = serializers.SerializerMethodField(read_only=True)
     n_pages = serializers.ReadOnlyField()
     cid = serializers.ReadOnlyField()
+    has_issued = serializers.SerializerMethodField(read_only=True)
 
-    # def get_token(self, obj):
-    #     try:
-    #         instance = models.Token.objects.get(book=obj)
-    #         serializer = TokenSerializer(instance=instance, many=False, context=self.context)
-    #         return serializer.data
-    #     except models.Token.DoesNotExist:
-    #         return {}
+    def get_has_issued(self, obj):
+        try:
+            models.Issue.objects.get(book=obj)
+            return True
+        except models.Issue.DoesNotExist:
+            return False
 
     def get_preview(self, obj):
         try:
@@ -69,15 +60,6 @@ class BookSerializer(BaseSerializer):
 
     def get_cover_url(self, obj):
         return self.get_absolute_uri(obj.cover)
-
-    # def get_status(self, obj):
-    #     if not obj.task_id:
-    #         return 'pending'
-    #     fsc = FileServiceConnector()
-    #     result = fsc.get_async_result(obj.task_id)
-    #     if result is None:
-    #         return 'failure'
-    #     return result.status.lower()
 
     class Meta:
         model = models.Book
@@ -96,8 +78,20 @@ class BookSerializer(BaseSerializer):
         if value:
             queryset = models.Draft.objects.filter(author=user).filter(id=value.id)
             if queryset.count() == 0:
-                raise serializers.ValidationError('Sorry, this draft is not yours.')
+                raise serializers.ValidationError('Sorry, you have no access to this draft.')
         return value
+
+    def validate(self, attrs):
+        super().validate(attrs)
+
+        file = attrs.get('file')
+        draft = attrs.get('draft')
+
+        if not self.instance:
+            if not file and not draft:
+                raise serializers.ValidationError('No file or draft found')
+
+        return attrs
 
     def create(self, validated_data):
         obj = super().create(validated_data)
@@ -120,19 +114,26 @@ class BookSerializer(BaseSerializer):
 class BookListingSerializer(BookSerializer):
     class Meta:
         model = models.Book
-        fields = ['id', 'title', 'desc', 'cover_url', 'author', 'bookmark']
+        fields = ['id', 'title', 'desc', 'cover_url', 'author', 'has_issued', 'status']
 
 
 class TokenSerializer(BaseSerializer):
     issue = serializers.PrimaryKeyRelatedField(required=False, queryset=models.Issue.objects.all(), many=False,
                                                validators=[UniqueValidator(queryset=models.Token.objects.all())])
-    contract_address = serializers.CharField(required=False, max_length=150)
+    contract_address = serializers.CharField(read_only=True)
     standard = serializers.CharField(required=False, max_length=150, allow_blank=True)
-    block_chain = serializers.CharField(required=False, max_length=150, allow_blank=True)
+    block_chain = serializers.ChoiceField(required=True, choices=BlockChainType.choices())
     currency = serializers.CharField(required=False, max_length=150, allow_blank=True)
 
     class Meta:
         model = models.Token
+        fields = '__all__'
+
+
+class TokenNestSerializer(TokenSerializer):
+    issue = serializers.PrimaryKeyRelatedField(required=False, queryset=models.Issue.objects.all(), many=False)
+
+    class Meta(TokenSerializer.Meta):
         fields = '__all__'
 
 
@@ -171,13 +172,14 @@ class BookRelatedField(CustomPKRelatedField):
 
 class IssueSerializer(BaseSerializer):
     # book = serializers.PrimaryKeyRelatedField(queryset=models.Book.objects.all(), many=False)
-    book = BookRelatedField(required=True, queryset=models.Book.objects.all(), many=False)
+    book = BookRelatedField(required=True, queryset=models.Book.objects.all(), many=False,
+                            validators=[UniqueValidator(queryset=models.Issue.objects.all())])
     quantity = serializers.IntegerField()
     price = serializers.FloatField()
-    royalty = serializers.FloatField(required=False)
+    royalty = serializers.FloatField(required=False, min_value=0, max_value=100)
     buy_limit = serializers.IntegerField(required=False)
     published_at = serializers.DateTimeField()
-    duration = serializers.IntegerField()
+    duration = serializers.IntegerField(min_value=1)
 
     status = serializers.ReadOnlyField()
 
@@ -190,13 +192,25 @@ class IssueSerializer(BaseSerializer):
     is_wished = serializers.SerializerMethodField(read_only=True)
     n_owners = serializers.SerializerMethodField(read_only=True)
     bookmark = serializers.SerializerMethodField(read_only=True)
+    n_owned = serializers.SerializerMethodField(read_only=True)
 
     # token info
-    token = TokenSerializer(required=True, many=False)
+    token = TokenNestSerializer(required=True, many=False)
 
     class Meta:
         model = models.Issue
         fields = '__all__'
+
+    def validate_royalty(self, value):
+        if value == 0:
+            raise serializers.ValidationError('This field must be larger than 0')
+        return value
+
+    def validate_token(self, value):
+        token_issue = value.get('issue')
+        if token_issue and self.instance and token_issue.id != self.instance.id:
+            raise serializers.ValidationError('The token does not belong to this issue')
+        return value
 
     def validate_book(self, value):
         if value.status != CeleryTaskStatus.SUCCESS.value:
@@ -208,6 +222,11 @@ class IssueSerializer(BaseSerializer):
             raise serializers.ValidationError('Sorry, this book is not yours!')
         return value
 
+    def validate_published_at(self, value):
+        if value <= timezone.now():
+            raise serializers.ValidationError('The value of published_at is invalid, should be after now.')
+        return value
+
     def get_n_remains(self, obj):
         user = self.context['request'].user
         try:
@@ -215,7 +234,7 @@ class IssueSerializer(BaseSerializer):
             n_sales = Trade.objects.filter(user=user, issue=obj).aggregate(t_amount=Sum('quantity'))['t_amount']
             if n_sales is None:
                 n_sales = 0
-            return obj_asset.amount - n_sales
+            return obj_asset.quantity - n_sales
         except models.Asset.DoesNotExist:
             return 0
 
@@ -229,10 +248,25 @@ class IssueSerializer(BaseSerializer):
 
     def get_is_owned(self, obj):
         user = self.context['request'].user
+        if isinstance(user, AnonymousUser):
+            return False
         try:
-            return models.Asset.objects.get(user=user, issue=obj).amount > 0
+            return models.Asset.objects.get(user=user, issue=obj).quantity > 0
         except models.Asset.DoesNotExist:
             return False
+
+    def get_n_owned(self, obj):
+        user = self.context['request'].user
+        if isinstance(user, AnonymousUser):
+            return 0
+        try:
+            n_assets = models.Asset.objects.get(user=user, issue=obj).quantity
+            n_trades = Trade.objects.filter(user=user, issue=obj).aggregate(q=Sum('quantity'))['q']
+            if n_trades is None:
+                n_trades = 0
+            return n_assets - n_trades
+        except models.Asset.DoesNotExist:
+            return 0
 
     def get_n_owners(self, obj):
         return models.Asset.objects.filter(issue=obj).count()
@@ -274,14 +308,30 @@ class IssueSerializer(BaseSerializer):
         token = validated_data.pop('token', None)
         obj_issue = super().update(instance, validated_data)
         if token:
-            token_id = token.pop('id', None)
-            models.Token.objects.update_or_create(defaults={**{'issue': obj_issue}, **token}, id=token_id)
+            token['issue'] = obj_issue
+            try:
+                obj_token = models.Token.objects.get(issue=obj_issue)
+                for key, value in token.items():
+                    setattr(obj_token, key, value)
+                obj_token.save()
+            except models.Token.DoesNotExist:
+                models.Token.objects.create(**token)
         return obj_issue
 
 
 class IssueListingSerializer(IssueSerializer):
     class Meta(IssueSerializer.Meta):
-        fields = ['id', 'book', 'price', 'quantity', 'n_circulations', 'published_at']
+        fields = ['id', 'book', 'price', 'quantity', 'n_circulations', 'published_at', 'status', 'token']
+
+
+class IssueResaleSerializer(IssueSerializer):
+
+    def validate(self, attrs):
+        super().validate(attrs)
+        published_at = attrs.get('published_at')
+        if not published_at:
+            raise serializers.ValidationError({'published_at': 'This field is required.'})
+        return attrs
 
 
 class BookmarkSerializer(BaseSerializer):

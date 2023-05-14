@@ -37,23 +37,25 @@ class BookFilter(django_filters.FilterSet):
 
 
 class IssueFilter(django_filters.FilterSet):
+    author = django_filters.NumberFilter(field_name='book__author')
+
     class Meta:
         model = models.Issue
-        fields = ['book']
+        fields = ['book', 'author', 'book__author']
 
 
 class AssetFilter(django_filters.FilterSet):
     class Meta:
         model = models.Asset
-        fields = ['issue']
+        fields = ['issue', 'user']
 
-    @property
-    def qs(self):
-        parent = super().qs
-        user = getattr(self.request, 'user', None)
-        if isinstance(user, AnonymousUser):
-            return {}
-        return parent.filter(user=user, quantity__gt=0)
+    # @property
+    # def qs(self):
+    #     parent = super().qs
+    #     user = getattr(self.request, 'user', None)
+    #     if isinstance(user, AnonymousUser):
+    #         return {}
+    #     return parent.filter(user=user, quantity__gt=0)
 
 
 class WishlistFilter(django_filters.FilterSet):
@@ -65,7 +67,7 @@ class WishlistFilter(django_filters.FilterSet):
 class AdvertisementFilter(django_filters.FilterSet):
     class Meta:
         model = models.Advertisement
-        fields = ['show', 'issue']
+        fields = ['issue']
 
     @property
     def qs(self):

@@ -19,7 +19,7 @@ from . import filters
 from utils.helpers import Helper
 from utils.social_media_handler import SocialMediaFactory, DuplicationError, RequestError, TwitterHandler
 from utils.enums import UserType, SocialMediaType
-from utils.smart_contract_handler import PlatformContractHandler
+from utils.smart_contract_handler import PlatformContractHandler, PolygonHandler, BNBHandler, FilecoinHandler
 from utils.views import BaseViewSet
 
 
@@ -141,10 +141,12 @@ class UserViewSet(BaseViewSet):
     def add_author_perm(self):
         _user = self.request.user
 
-        # add author perm into smart contract
-        added = PlatformContractHandler().add_author(_user.address)
-        if not added:
-            raise ValidationError({'detail': 'Fail to add perm from contract, please try later.'})
+        # todo add author perm into smart contract
+        # added = bool(PolygonHandler().add_author(_user.address) and
+        #              BNBHandler().add_author(_user.address) and
+        #              FilecoinHandler().add_author(_user.address))
+        # if not added:
+        #     raise ValidationError({'detail': 'Fail to add perm on block-chain, please try later.'})
 
         # add issue perm
         # role author
@@ -160,8 +162,12 @@ class UserViewSet(BaseViewSet):
         if created:
             group.permissions.set([draft_perm, book_perm, issue_perm])
 
+        # get twitter account username
+        t_username = Account.objects.get(user=_user, type=SocialMediaType.TWITTER.value).username
+
         _user.groups.add(group)
         _user.is_verified = True
+        _user.twitter_url = f'https://twitter.com/{t_username}'
         _user.save()
 
     @action(methods=['put', 'patch'], detail=False, url_path='share')

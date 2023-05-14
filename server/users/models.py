@@ -39,6 +39,7 @@ class Account(BaseModel):
         ordering = ['id']
         verbose_name = '账户'
         verbose_name_plural = verbose_name
+        unique_together = ['user', 'type']
 
     def __str__(self):
         return f'{self.user.address}-{self.account_id}-{self.type}'

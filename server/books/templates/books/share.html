@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:site" content="@ddid.io" />
+    <meta name="twitter:creator" content="@ddid.io" />
+    <meta property="og:url" content="{{ redirect_url }}" />
+    <meta property="og:title" content="<a href='{{ redirect_url }}'>{{ issue.book.title }}</a>" />
+    <meta property="og:description" content="{{ issue.book.desc }}" />
+    <meta property="og:image" content="{{ request.get_host }}{{ issue.book.cover.url }}" />
+    <title>{{ issue.book.title }}</title>
+</head>
+<body>
+    {{ issue.book.title }}
+</body>
+</html>

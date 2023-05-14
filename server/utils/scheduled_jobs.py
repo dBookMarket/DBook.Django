@@ -1,19 +1,19 @@
-from books.models import Book, EncryptionKey, Issue
-from stores.models import Transaction
+from books.models import Book, EncryptionKey, Issue, Token
 from django.db.transaction import atomic
-from utils.enums import CeleryTaskStatus, IssueStatus, TransactionStatus
+from utils.enums import CeleryTaskStatus, IssueStatus
 from books.file_service_connector import FileServiceConnector
 from utils.redis_handler import IssueQueue
 from utils.smart_contract_handler import ContractFactory
 from books.issue_handler import IssueHandler
-from datetime import timedelta
-import pytz
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def watch_celery_task():
     # todo how to update book info
     #   how to upload a book with one cid
-    print('Dealing with celery tasks...')
+    logger.info('Dealing with celery tasks...')
     try:
         file_task_connector = FileServiceConnector()
         books = Book.objects.exclude(task_id='').exclude(status=CeleryTaskStatus.SUCCESS.value)
@@ -43,57 +43,73 @@ def watch_celery_task():
                     book.save()
 
     except Exception as e:
-        print(f'Exception when calling watch_celery_task: {e}')
+        logger.error(f'Exception when calling watch_celery_task: {e}')
 
 
 def issue_timer():
-    print('Check issue queue...')
+    logger.info('Check issue queue...')
     que = IssueQueue()
     issues = que.get_top()
-    print(f'Current issues...{issues}')
+    logger.info(f'Current issues...{issues}')
     if issues:
         queryset = Issue.objects.filter(id__in=issues)
         for issue in queryset:
             with atomic():
                 if issue.status == IssueStatus.PRE_SALE.value:
-                    # update status
-                    issue.status = IssueStatus.ON_SALE.value
+                    # check if has block chain information
+                    # When a new issue is added, the token has not been created after issue saving.
+                    try:
+                        Token.objects.get(issue=issue)
+                        # update status
+                        issue.status = IssueStatus.ON_SALE.value
+                    except Token.DoesNotExist:
+                        logger.error(f'token not found for issue {issue.id}')
+                        issue.status = IssueStatus.UNSOLD.value
                     issue.save()
                     # prepare for sale
-                    IssueHandler(issue).handle()
-                    # set timer for ending the sale
-                    end_time = issue.published_at + timedelta(minutes=issue.duration)
-                    utc_time = end_time.astimezone(pytz.UTC)
-                    que.check_in(str(issue.id), utc_time.timestamp())
+                    # IssueHandler(issue).handle()
+                    # # set timer for ending the sale
+                    # end_time = issue.published_at + timedelta(minutes=issue.duration)
+                    # utc_time = end_time.astimezone(pytz.UTC)
+                    # que.check_in(str(issue.id), utc_time.timestamp())
                 elif issue.status == IssueStatus.ON_SALE.value:
                     # update status
                     if issue.n_circulations > 0:
                         issue.status = IssueStatus.OFF_SALE.value
+                        # destroy unsold books by calling smart contract
+                        contract = ContractFactory(issue.token.block_chain)
+                        txn_hash, is_destroyed = contract.burn(issue.book.author.address, issue.token.id,
+                                                               issue.quantity - issue.n_circulations)
+                        # todo if not destroyed
+                        logger.info(f'Destroy NFT {issue.id} -> log: {txn_hash}')
+                        issue.destroy_log = txn_hash
                     else:
                         issue.status = IssueStatus.UNSOLD.value
                     issue.save()
                     # make it clean after sale
-                    IssueHandler(issue).handle()
+                    # IssueHandler(issue).handle()
                     # quit queue
-                    que.check_out()
-                else:
-                    que.check_out()
+                    # que.check_out()
+                # else:
+                #     IssueHandler(issue).handle()
+                    # que.check_out()
+                IssueHandler(issue).handle()
 
 
-def pay_back():
-    """
-    If some transaction is first release and failed, return money back to the buyer and remove this transaction
-    Only deal with the oldest five transactions per time because of the high cost of smart contract's operation
-    """
-    print('Money back to the buyers...')
-    queryset = Transaction.objects.filter(status=TransactionStatus.FAILURE.value, trade__first_release=True).order_by(
-        'created_at')
-    for txn in queryset[:5]:
-        try:
-            contract_handler = ContractFactory(txn.issue.token_issue.block_chain)
-            success = contract_handler.pay_back(txn.buyer.address, txn.quantity * txn.price)
-            if success:
-                txn.delete()
-        except Exception as e:
-            print(f'Exception when paying back to the buyer -> {e}')
-            pass
+# def pay_back():
+#     """
+#     If some transaction is first release and failed, return money back to the buyer and remove this transaction
+#     Only deal with the oldest five transactions per time because of the high cost of smart contract's operation
+#     """
+#     logger.info('Money back to the buyers...')
+#     queryset = Transaction.objects.filter(status=TransactionStatus.FAILURE.value, trade__first_release=True).order_by(
+#         'created_at')
+#     for txn in queryset[:5]:
+#         try:
+#             contract_handler = ContractFactory(txn.issue.token_issue.block_chain)
+#             success = contract_handler.money_back(txn.buyer.address, txn.quantity * txn.price)
+#             if success:
+#                 txn.delete()
+#         except Exception as e:
+#             logger.error(f'Exception when paying back to the buyer -> {e}')
+#             pass

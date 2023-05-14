@@ -8,11 +8,17 @@ class TradeFilter(django_filters.FilterSet):
         model = models.Trade
         fields = ['issue', 'user']
 
+    @property
+    def qs(self):
+        return super().qs.filter(first_release=False)
+
 
 class TransactionFilter(django_filters.FilterSet):
+    author = django_filters.NumberFilter(field_name='issue__book__author')
+
     class Meta:
         model = models.Transaction
-        fields = ['trade', 'buyer', 'trade__user', 'trade__issue', 'issue', 'seller']
+        fields = ['trade', 'buyer', 'trade__user', 'trade__issue', 'issue', 'seller', 'author']
 
 
 class BenefitFilter(django_filters.FilterSet):

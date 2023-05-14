@@ -4,7 +4,11 @@ from rest_framework.exceptions import PermissionDenied
 from .models import User, Fans
 from utils.serializers import CustomPKRelatedField
 from django.db.models import Min, Max
+from django.contrib.auth.models import AnonymousUser
 from books.models import Issue, Asset
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class UserRegistrySerializer(serializers.ModelSerializer):
@@ -43,17 +47,19 @@ class UserSerializer(serializers.ModelSerializer):
 
     statistic = serializers.SerializerMethodField(read_only=True)
 
+    is_fans = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = User
-        fields = ['id', 'address', 'name', 'desc', 'website_url', 'discord_url', 'avatar', 'banner', 'is_verified',
-                  'avatar_url', 'banner_url', 'statistic']
+        fields = ['id', 'address', 'name', 'desc', 'website_url', 'discord_url', 'twitter_url', 'avatar', 'banner',
+                  'is_verified', 'avatar_url', 'banner_url', 'statistic', 'is_fans']
 
     def get_absolute_uri(self, f_obj):
         request = self.context.get('request')
         try:
             return request.build_absolute_uri(f_obj.url) if f_obj else ''
         except Exception as e:
-            print(f'Fail to get absolute url, error:{e}')
+            logger.error(f'Fail to get absolute url, error:{e}')
             return ''
 
     def get_avatar_url(self, obj):
@@ -66,25 +72,36 @@ class UserSerializer(serializers.ModelSerializer):
         try:
             if obj.is_verified:
                 queryset = Issue.objects.filter(book__author=obj)
-                t_books = queryset.count()
+                # t_books = queryset.count()
+                t_books = 0
                 t_volume = 0
                 sales = 0
+                n_destroyed = 0
                 for obj_issue in queryset:
-                    t_volume += obj_issue.price * obj_issue.quantity
+                    t_books += obj_issue.quantity
+                    n_destroyed += obj_issue.quantity - obj_issue.n_circulations
+                    t_volume += obj_issue.price * obj_issue.n_circulations
                     sales += obj_issue.price * obj_issue.n_circulations
                 tmp = queryset.aggregate(min_price=Min('price'), max_price=Max('price'))
                 n_owners = Asset.objects.filter(issue__in=queryset).count()
                 return {
-                    'total_volume': t_volume,
-                    'min_price': tmp['min_price'],
-                    'max_price': tmp['max_price'],
+                    'total_volume': round(t_volume, 6),
+                    'min_price': tmp['min_price'] if tmp['min_price'] is not None else 0,
+                    'max_price': tmp['max_price'] if tmp['max_price'] is not None else 0,
                     'total_books': t_books,
-                    'sales': sales,
+                    'sales': round(sales, 6),
+                    'n_destroyed': n_destroyed,
                     'n_owners': n_owners
                 }
             return {}
         except AttributeError:
             return {}
+
+    def get_is_fans(self, obj):
+        user = self.context.get('request').user
+        if isinstance(user, AnonymousUser):
+            return False
+        return Fans.objects.filter(user=user, author=obj).count() > 0
 
     def validate(self, attrs):
         super().validate(attrs)
@@ -98,7 +115,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 class UserListingSerializer(UserSerializer):
     class Meta(UserSerializer.Meta):
-        fields = ['id', 'address', 'name', 'desc', 'avatar_url']
+        fields = ['id', 'address', 'name', 'desc', 'avatar_url', 'website_url', 'discord_url', 'twitter_url']
 
 
 class UserRelatedField(CustomPKRelatedField):
