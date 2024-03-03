@@ -148,7 +148,7 @@ class PlatformContractHandler(object):
             'to': to,
             'value': self.to_usdc(amount),
             'data': b'',
-            'gas': 100000
+            'gas': self.get_gas_price()
         }), self.admin_account.privateKey)
         txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
         receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash)
